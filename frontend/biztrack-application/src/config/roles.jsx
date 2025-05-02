@@ -1,20 +1,71 @@
-export const ROLES = {
-    SUPER_ADMIN: "SUPER_ADMIN",
-  
-    HOTEL_ADMIN: "HOTEL_ADMIN",
-    HOTEL_CASHIER: "HOTEL_CASHIER",
-    HOTEL_WAITER: "HOTEL_WAITER",
-  
-    KIOSK_ADMIN: "KIOSK_ADMIN",
-    KIOSK_CASHIER: "KIOSK_CASHIER",
-  
-    KINYOZI_ADMIN: "KINYOZI_ADMIN",
-    KINYOZI_OPERATOR: "KINYOZI_OPERATOR",
-  
-    CARWASH_ADMIN: "CARWASH_ADMIN",
-    CARWASH_OPERATOR: "CARWASH_OPERATOR",
-  
-    PHARMACY_ADMIN: "PHARMACY_ADMIN",
-    PHARMACY_CASHIER: "PHARMACY_CASHIER",
-  };
-  
+export const ROLES = [
+  {
+    role: "SUPER_ADMIN",
+    options: [
+      { value: "SUPER_ADMIN", label: "Super Admin" },
+      { value: "ADMIN", label: "Admin" },
+      { value: "CASHIER", label: "Cashier" },
+      { value: "SHOPKEEPER", label: "Shopkeeper" },
+      { value: "WAITER", label: "Waiter" },
+    ],
+    optionsCreate: [
+      { value: "SUPER_ADMIN", label: "Super Admin" },
+      { value: "ADMIN", label: "Admin" },
+    ],
+  },
+  {
+    role: "ADMIN",
+    options: [
+      { value: "ADMIN", label: "Admin" },
+      { value: "CASHIER", label: "Cashier" },
+      { value: "SHOPKEEPER", label: "Shopkeeper" },
+      { value: "WAITER", label: "Waiter" },
+    ],
+    optionsCreate: [
+      { value: "ADMIN", label: "Admin" },
+      { value: "CASHIER", label: "Cashier" },
+      { value: "SHOPKEEPER", label: "Shopkeeper" },
+    ],
+  },
+  {
+    role: "CASHIER",
+    options: [
+      { value: "CASHIER", label: "Cashier" },
+      { value: "SHOPKEEPER", label: "Shopkeeper" },
+    ],
+    optionsCreate: [
+      { value: "CASHIER", label: "Cashier" },
+      { value: "SHOPKEEPER", label: "Shopkeeper" },
+    ],
+  },
+  {
+    role: "SHOPKEEPER",
+    options: [
+      { value: "SHOPKEEPER", label: "Shopkeeper" },
+      { value: "CASHIER", label: "Cashier" },
+    ],
+    optionsCreate: [
+      { value: "SHOPKEEPER", label: "Shopkeeper" },
+    ],
+  },
+  {
+    role: "WAITER",
+    options: [
+      { value: "WAITER", label: "Waiter" },
+      { value: "CASHIER", label: "Cashier" },
+    ],
+    optionsCreate: [
+      { value: "WAITER", label: "Waiter" },
+    ],
+  },
+  {
+    role: "ALL",
+    options: [
+      { value: "SUPER_ADMIN", label: "Super Admin" },
+      { value: "ADMIN", label: "Admin" },
+      { value: "CASHIER", label: "Cashier" },
+      { value: "SHOPKEEPER", label: "Shopkeeper" },
+      { value: "WAITER", label: "Waiter" },
+    ],
+  },
+];

@@ -1,133 +1,97 @@
 export const ROLE_MATRIX = [
   {
-    role: "SUPER_ADMIN",
-    permissions: [
-      "Access All Businesses",
-      "Manage Roles",
-      "Create Business Admins",
-      "View All Reports",
-      "Login",
-    ],
-  },
-
-  // HOTEL
-  {
-    role: "HOTEL_ADMIN",
+    id: 1,
+    role: "Super Admin",
     permissions: [
       "Login",
-      "View Dashboard",
-      "Manage Menu",
-      "Manage Staff",
-      "View Sales",
-      "Restock Inventory",
-      "Manage Orders",
-      "Create Hotel Users",
+      "Create Business Admin (Kiosk Admin, Hotel Admin)",
+      "Create and manage roles for businesses",
+      "View and manage all business activities",
+      "View profile details and change own password",
     ],
   },
   {
-    role: "HOTEL_CASHIER",
+    id: 2,
+    role: "Kiosk Admin",
     permissions: [
       "Login",
-      "Process Payments",
-      "View Orders",
-      "View Dashboard",
+      "Manage products",
+      "View sales reports",
+      "View dashboard and daily sales",
+      "Manage business details (e.g., location, contact)",
+      "Create sales transactions",
+      "Generate receipts for sales",
+      "View profile details and change own password",
     ],
   },
   {
-    role: "HOTEL_WAITER",
+    id: 3,
+    role: "Hotel Admin",
     permissions: [
       "Login",
-      "Create Orders",
-      "View Menu",
-      "Track Order Status",
-    ],
-  },
-
-  // KIOSK
-  {
-    role: "KIOSK_ADMIN",
-    permissions: [
-      "Login",
-      "View Dashboard",
-      "Manage Products",
-      "Manage Staff",
-      "Restock",
-      "View Reports",
-      "Create Kiosk Users",
+      "Manage products (food and drinks)",
+      "Create and view orders (order details, customer info, and quantities)",
+      "View sales reports",
+      "View dashboard and daily sales",
+      "Manage staff roles (e.g., cashier, waiter)",
+      "Manage business details (e.g., location, contact)",
+      "Generate receipts for orders",
+      "View profile details and change own password",
     ],
   },
   {
-    role: "KIOSK_CASHIER",
+    id: 4,
+    role: "Kiosk Cashier",
     permissions: [
       "Login",
-      "Sell Products",
-      "View Products",
-      "Daily Sales Report",
-    ],
-  },
-
-  // KINYOZI
-  {
-    role: "KINYOZI_ADMIN",
-    permissions: [
-      "Login",
-      "Manage Services",
-      "Manage Staff",
-      "View Appointments",
-      "View Reports",
-      "Create Kinyozi Users",
+      "Complete sales transactions (receive payments)",
+      "Generate and view receipts",
+      "View product list and prices",
+      "View sales reports",
+      "View profile details and change own password",
     ],
   },
   {
-    role: "KINYOZI_OPERATOR",
+    id: 5,
+    role: "Hotel Waiter",
     permissions: [
       "Login",
-      "Start Service",
-      "View Schedule",
-      "Complete Service",
-    ],
-  },
-
-  // CARWASH
-  {
-    role: "CARWASH_ADMIN",
-    permissions: [
-      "Login",
-      "View Dashboard",
-      "Register Clients",
-      "Manage Services",
-      "View Reports",
-      "Create Carwash Users",
+      "Create orders (food, drinks)",
+      "View orders and add quantity",
+      "Generate order receipts",
+      "View profile details and change own password",
     ],
   },
   {
-    role: "CARWASH_OPERATOR",
+    id: 6,
+    role: "Hotel Cashier",
     permissions: [
       "Login",
-      "Mark Car as Cleaned",
-      "View Jobs",
-    ],
-  },
-
-  // PHARMACY
-  {
-    role: "PHARMACY_ADMIN",
-    permissions: [
-      "Login",
-      "Manage Inventory",
-      "View Sales",
-      "Register Prescriptions",
-      "Manage Staff",
-      "Create Pharmacy Users",
+      "Complete orders (payment via Mpesa or cash)",
+      "View and complete pending orders",
+      "Generate receipts for completed orders",
+      "View sales reports",
+      "View profile details and change own password",
     ],
   },
   {
-    role: "PHARMACY_CASHIER",
+    id: 7,
+    role: "Auditor",
     permissions: [
       "Login",
-      "Sell Medication",
-      "Check Stock",
-      "View Sales Today",
+      "View business activity reports (sales, orders, transactions)",
+      "View system logs",
+      "View profile details and change own password",
+    ],
+  },
+  {
+    id: 8,
+    role: "Agent",
+    permissions: [
+      "Login",
+      "View basic business information",
+      "View dashboard (only sales and order summaries)",
+      "View profile details and change own password",
     ],
   },
 ];

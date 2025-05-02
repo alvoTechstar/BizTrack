@@ -1,86 +1,30 @@
-import React, { useState } from "react";
-import { AppBar, Toolbar, IconButton, Popover, Avatar, Badge } from "@mui/material";
-import NotificationsNoneRoundedIcon from "@mui/icons-material/NotificationsNoneRounded";
-import PersonOutlineOutlinedIcon from "@mui/icons-material/PersonOutlineOutlined";
+import React from 'react';
+import { Bell, Menu, User } from 'lucide-react';
 
-export default function Header({ color = "#2563eb" }) {
-  const [anchorEl, setAnchorEl] = useState(null);
-
-  const handleAvatarClick = (event) => {
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleClosePopover = () => {
-    setAnchorEl(null);
-  };
-
-  const open = Boolean(anchorEl);
-
+export default function Topbar({ toggleSidebar }) {
   return (
-    <AppBar position="static" elevation={0} className="bg-white shadow-md">
-      <Toolbar className="flex justify-between px-4 sm:px-8">
-        {/* Left: Logo or App Title */}
-        <div className="flex items-center space-x-3">
-          <div className="w-8 h-8 rounded-full bg-blue-500 text-white font-bold flex items-center justify-center">
-            A
+    <header className="bg-white shadow-sm px-4 py-3 flex items-center justify-between sticky top-0 z-10">
+      <div className="flex items-center">
+        <button className="mr-4 text-gray-600 md:hidden" onClick={toggleSidebar}>
+          <Menu size={24} />
+        </button>
+        <h1 className="text-xl font-semibold text-gray-800">Dashboard</h1>
+      </div>
+
+      <div className="flex items-center space-x-4">
+        <button className="relative p-1 text-gray-600 hover:bg-gray-100 rounded-full">
+          <Bell size={20} />
+          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
+            3
+          </span>
+        </button>
+        <div className="flex items-center space-x-2">
+          <div className="bg-gray-200 rounded-full p-1">
+            <User size={20} className="text-gray-600" />
           </div>
-          <h1 className="text-lg font-semibold text-gray-800">AppName</h1>
+          <span className="hidden md:inline text-sm font-medium text-gray-700">John Smith</span>
         </div>
-
-        {/* Right: Notification + Profile */}
-        <div className="flex items-center space-x-4">
-          {/* Notification */}
-          <IconButton>
-            <Badge variant="dot" color="error">
-              <NotificationsNoneRoundedIcon className="text-gray-600" />
-            </Badge>
-          </IconButton>
-
-          {/* Avatar */}
-          <IconButton onClick={handleAvatarClick}>
-            <Avatar sx={{ bgcolor: color }} className="w-8 h-8">
-              <PersonOutlineOutlinedIcon />
-            </Avatar>
-          </IconButton>
-
-          {/* Popover Menu */}
-          <Popover
-            open={open}
-            anchorEl={anchorEl}
-            onClose={handleClosePopover}
-            anchorOrigin={{
-              vertical: "bottom",
-              horizontal: "right",
-            }}
-            transformOrigin={{
-              vertical: "top",
-              horizontal: "right",
-            }}
-            className="mt-2"
-          >
-            <div className="flex flex-col py-2 min-w-[150px] text-sm">
-              <button
-                onClick={() => {
-                  // navigate("/profile");
-                  handleClosePopover();
-                }}
-                className="px-4 py-2 text-left hover:bg-gray-100"
-              >
-                My Profile
-              </button>
-              <button
-                onClick={() => {
-                  // navigate("/logout");
-                  handleClosePopover();
-                }}
-                className="px-4 py-2 text-left hover:bg-gray-100 text-red-600"
-              >
-                Logout
-              </button>
-            </div>
-          </Popover>
-        </div>
-      </Toolbar>
-    </AppBar>
+      </div>
+    </header>
   );
 }
