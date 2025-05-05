@@ -1,4 +1,4 @@
-import React from "react"; 
+import React from "react";
 import Header from "../components/header";
 import Login from "../views/sign-in/Login";
 import Dashboard from "../views/main-app/dashboard";
@@ -17,93 +17,90 @@ import CashierDashboard from "../views/main-app/dashboard/hotel/casheardashboard
 import CashierOrders from "../views/main-app/dashboard/hotel/cashierorders";
 import App from "../views/main-app/modal";
 
-
+// Define routes with role-based access control
 export const routes = [
-    {
-        path: "*",
-        element: <Header/>,
-        isprivate: false,
-    },
-    // {
-    //     path: "/",
-    //     element: <Login/>,
-    //     isprivate: false,
-    // },
-    {
-        path: "/",
-        element: <Dashboard/>,
-        isprivate: false,
-    },
-    {
-        path: "sales",
-        element: <SalesPage/>,
-        isprivate: false,
-    },
-    {
-        path: "reports",
-        element: <ReportsPage/>,
-        isprivate: false,
-    },
-    {
-        path: "products/stock-management",
-        element: <StockManagementPage/>,
-        isprivate: false,
-    },
-    {
-        path: "products/ingredient-management",
-        element: <IngredientsManagementPage/>,
-        isprivate: false,
-    },
- 
-    // {
-    //     path: "dashboard",
-    //     element: <SuperAdminDashboard/>,
-    //     isprivate: false,
-    // },
-    // {
-    //     path: "dashboard",
-    //     element: <HotelAdminDashboard/>,
-    //     isprivate: false,
-    // },
-    {
-        path: "dashboard",
-        element: <CashierDashboard/>,
-        isprivate: false,
-    },
-    {
-        path: "products",
-        element: <MenuManagement/>,
-        isprivate: false,
-    },
-    {
-        path: "staff",
-        element: <StaffManagement/>,
-        isprivate: false,
-    },
-    // {
-    //     path: "inventory",
-    //     element: <InventoryPage/>,
-    //     isprivate: false,
-    // },
-    {
-        path: "inventory",
-        element: <HotelOrders/>,
-        isprivate: false,
-    },
-    {
-        path: "user-management",
-        element: <UserManagement/>,
-        isprivate: false,
-    },
-    {
-        path: "cashier-orders",
-        element: <CashierOrders/>,
-        isprivate: false,
-    },
-    {
-        path: "modal",
-        element: <App/>,
-        isprivate: false,
-    },
- 
+  {
+    path: "/",
+    element: <Login />,
+    isprivate: false,
+    allowedRoles: [], // Public route, no role restrictions
+  },
+  {
+    path: "/dashboard",
+    element: <Dashboard />,
+    isprivate: true,
+    allowedRoles: ["Super Admin", "Hotel Admin", "Kiosk Admin"], // Accessible to Super Admin, Hotel Admin, and Kiosk Admin
+  },
+  {
+    path: "sales",
+    element: <SalesPage />,
+    isprivate: true,
+    allowedRoles: ["Super Admin", "Hotel Admin", "Kiosk Admin"],
+  },
+  {
+    path: "reports",
+    element: <ReportsPage />,
+    isprivate: true,
+    allowedRoles: ["Super Admin", "Admin", "Auditor"], // Reports can be accessed by Super Admin, Admin, and Auditor
+  },
+  {
+    path: "products/stock-management",
+    element: <StockManagementPage />,
+    isprivate: true,
+    allowedRoles: ["Super Admin", "Admin", "Kiosk Admin", "Hotel Admin"],
+  },
+  {
+    path: "products/ingredient-management",
+    element: <IngredientsManagementPage />,
+    isprivate: true,
+    allowedRoles: ["Super Admin", "Admin"],
+  },
+  {
+    path: "dashboard/super-admin",
+    element: <SuperAdminDashboard />,
+    isprivate: true,
+    allowedRoles: ["Super Admin"],
+  },
+  {
+    path: "dashboard/hotel-admin",
+    element: <HotelAdminDashboard />,
+    isprivate: true,
+    allowedRoles: ["Hotel Admin"],
+  },
+  {
+    path: "products",
+    element: <MenuManagement />,
+    isprivate: true,
+    allowedRoles: ["Super Admin", "Hotel Admin", "Kiosk Admin"],
+  },
+  {
+    path: "staff",
+    element: <StaffManagement />,
+    isprivate: true,
+    allowedRoles: ["Super Admin", "Hotel Admin", "Kiosk Admin"],
+  },
+  {
+    path: "inventory",
+    element: <HotelOrders />,
+    isprivate: true,
+    allowedRoles: ["Hotel Admin", "Kiosk Admin"],
+  },
+  {
+    path: "user-management",
+    element: <UserManagement />,
+    isprivate: true,
+    allowedRoles: ["Super Admin"],
+  },
+  {
+    path: "cashier-orders",
+    element: <CashierOrders />,
+    isprivate: true,
+    allowedRoles: ["Hotel Admin", "Cashier"],
+  },
+  {
+    path: "modal",
+    element: <App />,
+    isprivate: false,
+    allowedRoles: [],
+  },
 ];
