@@ -15,5 +15,10 @@ export const MockUsers = [
       password: "Cashier@123",
       role: "Cashier",
     },
+        {
+      email: "kiosk@biz.com",
+      password: "Kiosk@123",
+      role: "Kiosk",
+    },
   ];
   
