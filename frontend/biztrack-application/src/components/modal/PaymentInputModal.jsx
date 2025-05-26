@@ -9,11 +9,10 @@ import VerveCard from "../../assets/card/safetoken.png";
 import Mastercard from '../../assets/card/mcidcheck.png';
 import Visa from '../../assets/card/Visa-Secure-Logo.png';
 import pciDssCard from '../../assets/card/pcidss.png';
-
-import TextInput from "../TextInput.jsx";
 import CardNumberInput from '../input/CardNumberInput.jsx';
 import FormButton from '../buttons/FormButton.jsx';
 import { cardNumberValidation, cvvValidation, expiryValidation } from '../../utilities/Sharedfunctions.jsx';
+import TextInput from '../input/TextInput.jsx';
 
 const PaymentInputModal = ({ open, onClose, footer, amount }) => {
   const [cardNumber, setCardNumber] = useState('');

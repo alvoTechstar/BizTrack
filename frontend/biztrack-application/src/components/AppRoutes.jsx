@@ -3,21 +3,22 @@ import { Navigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import Cookies from "js-cookie";
 
-const AppRoutes = ({ children }) => {
-  const auth = useSelector((state) => state.auth.value);  // Get the parsed user object from Redux
-  
-  // Block if no auth in Redux (or cookie is missing)
+const AppRoutes = ({ element, allowedRoles = [] }) => {
+  const auth = useSelector((state) => state.auth.value); // Get the parsed user object from Redux
+
+  // Block if no auth in Redux or cookie is missing
   if (!auth) {
     return <Navigate to="/login" replace />;
   }
 
-  // Get user role from the Redux state (which is already parsed)
+  // Get the user role from Redux state (assuming user role is stored under auth.user.role)
   const userRole = auth?.user?.role;
 
   // Check if the role has permission for the route
-  const isAllowed = children?.permissions?.includes(userRole);
+  const isAllowed = allowedRoles.includes(userRole);
 
-  return isAllowed ? children.element : <Navigate to="/not-authorized" replace />;
+  // If allowed, render the element (route component), otherwise show 'Not Authorized'
+  return isAllowed ? element : <Navigate to="/not-authorized" replace />;
 };
 
 export default AppRoutes;

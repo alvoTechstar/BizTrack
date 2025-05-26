@@ -1,17 +1,38 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import TextInput from "../../components/input/TextInput";
-import PasswordInput from "../../components/input/PasswordInput";
-import FormButton from "../../components/buttons/FormButton";
+import TextInput from "../../components/Input/TextInput";
+import PasswordInput from "../../components/Input/PasswordInput";
+import FormButton from "../../components/Buttons/FormButton";
 import NaviButton from "../../components/buttons/Navibutton";
-import Logo from "../../assets/Logos/isw.png";
-import loginBg from "../../assets/Backgrounds/login.png";
-import { validateEmail, validatePassword } from "../../utilities/Sharedfunctions";
+import loginBg from "../../assets/Backgrounds/background.png";
+import {
+  validateEmail,
+  validatePassword,
+} from "../../utilities/Sharedfunctions";
 import { MockUsers } from "../../config/Mockusers";
 import Cookies from "js-cookie";
 import { useDispatch } from "react-redux";
 import { authActions } from "../../store";
+import ModalFooter from "../../components/footer/ModalFooter";
 
+const normalizeRole = (role) => {
+  if (!role) return "";
+
+  // Handle case where role might already be in lowercase-hyphen format
+  if (role.includes("-")) {
+    return role.toLowerCase();
+  }
+
+  const [institution, roleName] = role.split("_");
+
+  if (!institution || !roleName) {
+    console.error("Invalid role format:", role);
+    return "";
+  }
+
+  // Convert to lowercase with hyphen
+  return `${institution.toLowerCase()}-${roleName.toLowerCase()}`;
+};
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -38,26 +59,20 @@ const Login = () => {
     setErrorMessage("");
 
     const matchedUser = MockUsers.find(
-      (u) => u.email === email && u.password === password
+      (user) => user.email === email && user.password === password
     );
 
     if (matchedUser) {
-      Cookies.set("user", JSON.stringify(matchedUser), { expires: 1 });
-      dispatch(authActions.setAuth(matchedUser));
+      const fullRole = normalizeRole(matchedUser.role);
+      const userWithNormalizedRole = { ...matchedUser, role: fullRole };
 
-      switch (matchedUser.role) {
-        case "Super Admin":
-          navigate("/dashboard");
-          break;
-        case "Hotel Admin":
-          navigate("/sales");
-          break;
-        case "Cashier":
-          navigate("/dashboard/cashier");
-          break;
-        default:
-          navigate("/");
-      }
+      console.log("User with Normalized Role:", userWithNormalizedRole);
+
+      Cookies.set("user", JSON.stringify(userWithNormalizedRole), {
+        expires: 1,
+      });
+      dispatch(authActions.setAuth(userWithNormalizedRole));
+      navigateToDashboard(fullRole);
     } else {
       setErrorMessage("Invalid email or password.");
     }
@@ -65,61 +80,92 @@ const Login = () => {
     setTimeout(() => setLoading(false), 1000);
   };
 
+  const navigateToDashboard = (role) => {
+    const normalizedRole = normalizeRole(role);
+
+    // ✅ FIXED: All keys are now uppercased to match normalized roles
+    const roleMap = {
+      "biztrack-admin": "/dashboard/super-admin",
+      "hotel-admin": "/dashboard/hotel-admin",
+      "hotel-cashier": "/dashboard/cashier",
+      "hotel-waiter": "/dashboard/waiter",
+      "kiosk-admin": "/dashboard/kiosk",
+      "kiosk-shopkeeper": "/dashboard/shopkeeper",
+    };
+
+    console.log("Looking for role:", normalizedRole);
+    console.log("Available paths:", roleMap);
+
+    const path = roleMap[normalizedRole];
+
+    if (path) {
+      navigate(path);
+    } else {
+      console.warn("Unrecognized role:", normalizedRole);
+      navigate("/not-authorized");
+    }
+  };
+
   return (
     <div className="min-h-screen grid lg:grid-cols-2 bg-gray-100">
       <div className="flex items-center justify-center p-6 relative z-10">
-        <div className="bg-white p-6 rounded-xl shadow-md w-full max-w-md">
-          <h1 className="text-2xl font-bold text-center mb-2">BizTrack</h1>
-          <h3 className="text-sm text-center text-gray-600 mb-6">
+        <div className="bg-white p-8 rounded-xl shadow-md border border-gray-500 w-full max-w-md mt-3">
+          <h2 className="text-xl font-semibold mb-1 text-left">
+            BizTrack Application
+          </h2>
+          <h1 className="text-3xl font-bold text-gray-700 mb-3 mt-3 text-left">
+            Hello, Welcome
+          </h1>
+          <p className="text-sm text-gray-600 mb-6 text-left">
             Enter credentials to login
-          </h3>
+          </p>
 
           <form onSubmit={handleSubmit}>
             <TextInput
               id="email"
-              label="Email"
+              label="Username"
               placeholder="Enter your email"
+              autoComplete="username" // ✅ Fix autocomplete warning
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               error={email !== "" && !validateEmail(email)}
-              errorMessage={"Please enter a valid email address."}
+              errorMessage="Please enter a valid email address."
             />
 
             <PasswordInput
               id="password"
               label="Password"
               placeholder="Enter your password"
+              autoComplete="current-password" // ✅ Fix autocomplete warning
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               error={password !== "" && !isValid}
-              errorMessage={
-                "Password must be at least 7 characters, contain uppercase, number, and symbol."
-              }
+              errorMessage="Password must be at least 7 characters, contain uppercase, number, and symbol."
             />
 
             {errorMessage && (
               <div className="text-red-600 text-sm mb-3">{errorMessage}</div>
             )}
+            <div className="mt-10 mb-2">
+              <FormButton
+                text="Login"
+                isLoading={loading}
+                validation={isValid}
+                type="submit"
+              />
+            </div>
 
-            <div className="mt-1 mb-4">
+            <div className="mt-3 mb-4 text-right">
               <NaviButton
                 text="Forgot Password?"
                 alignment="right"
                 action={() => navigate("/reset-password")}
               />
             </div>
-
-            {/* Submit button should NOT call action={handleSubmit}, because the form handles it */}
-            <FormButton
-              text="Login"
-              isLoading={loading}
-              validation={isValid}
-              type="submit" // Ensure it's a submit button
-            />
           </form>
 
-          <div className="mt-8 text-center">
-            <img src={Logo} alt="BizTrack Logo" className="h-10 mx-auto" />
+          <div className="mt-8 mb-2 text-center">
+            <ModalFooter />
           </div>
         </div>
       </div>
@@ -133,9 +179,10 @@ const Login = () => {
           borderBottomLeftRadius: "40px",
         }}
       >
-        <div className="bg-white-100 p-6 rounded-xl shadow-md max-w-md mx-auto mb-10">
+        <div className="bg-white p-6 rounded-xl shadow-md max-w-md mx-auto mb-10">
           <span className="text-[#111827] font-bold text-xl p-3">
-            Empower Your Business: Track Profits, Minimize Losses, Maximize Growth
+            Empower Your Business: Track Profits, Minimize Losses, Maximize
+            Growth
           </span>
         </div>
       </div>

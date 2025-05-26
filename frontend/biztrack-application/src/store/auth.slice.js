@@ -1,3 +1,4 @@
+// store/auth.slice.js
 import { createSlice } from "@reduxjs/toolkit";
 import Cookies from "js-cookie";
 
@@ -22,11 +23,17 @@ function createInitialState() {
 function createReducers() {
   return {
     setAuth,
+    logout, // Add the logout function
   };
 
   function setAuth(state, action) {
     state.value = action.payload;
     // Save the user data in the cookie as a stringified object
     Cookies.set("user", JSON.stringify(action.payload), { expires: 1 });
+  }
+
+  function logout(state) {
+    state.value = null;  // Clear the user data in the Redux store
+    Cookies.remove("user");  // Remove the user cookie
   }
 }

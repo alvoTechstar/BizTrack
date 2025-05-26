@@ -11,7 +11,7 @@ const NaviButton = ({ text, action, alignment = "left" }) => {
     <div className={`${alignmentClasses[alignment]} w-full`}>
       <button
         onClick={action}
-        className="text-sm text-indigo-600 hover:underline focus:outline-none transition-all duration-150"
+        className="text-[14px] leading-4 font-bold text-[#353f50]"
       >
         {text}
       </button>

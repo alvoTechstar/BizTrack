@@ -1,0 +1,653 @@
+import React, { useState, useMemo } from "react";
+import {
+  ChevronDown,
+  TrendingUp,
+  DollarSign,
+  ShoppingCart,
+  Users,
+  Calendar,
+  Filter,
+  ArrowUpDown,
+} from "lucide-react";
+
+// Mock data - replace with actual data from your backend
+const mockTransactions = [
+  {
+    id: 1,
+    customerId: 1,
+    customerName: "John Doe",
+    phone: "+254701234567",
+    amount: 1500,
+    paymentMethod: "Cash",
+    status: "Completed",
+    date: "2024-01-15",
+    products: [{ name: "Rice 2kg", quantity: 2, price: 750 }],
+  },
+  {
+    id: 2,
+    customerId: 2,
+    customerName: "Jane Smith",
+    phone: "+254709876543",
+    amount: 2300,
+    paymentMethod: "M-PESA",
+    status: "Completed",
+    date: "2024-01-14",
+    products: [
+      { name: "Sugar 1kg", quantity: 1, price: 150 },
+      { name: "Cooking Oil 1L", quantity: 1, price: 350 },
+    ],
+  },
+  {
+    id: 3,
+    customerId: 3,
+    customerName: "Peter Kamau",
+    phone: "+254712345678",
+    amount: 850,
+    paymentMethod: "Debt",
+    status: "Pending",
+    date: "2024-01-13",
+    products: [
+      { name: "Bread", quantity: 3, price: 80 },
+      { name: "Milk 500ml", quantity: 2, price: 65 },
+    ],
+  },
+  {
+    id: 4,
+    customerId: 4,
+    customerName: "Mary Wanjiku",
+    phone: "+254723456789",
+    amount: 1200,
+    paymentMethod: "Debt",
+    status: "Completed",
+    date: "2024-01-12",
+    products: [{ name: "Rice 2kg", quantity: 1, price: 750 }],
+  },
+  {
+    id: 5,
+    customerId: 1,
+    customerName: "John Doe",
+    phone: "+254701234567",
+    amount: 650,
+    paymentMethod: "Cash",
+    status: "Completed",
+    date: "2024-01-11",
+    products: [{ name: "Sugar 1kg", quantity: 2, price: 150 }],
+  },
+  {
+    id: 6,
+    customerId: 5,
+    customerName: "David Kiprop",
+    phone: "+254734567890",
+    amount: 1800,
+    paymentMethod: "Debt",
+    status: "Pending",
+    date: "2024-01-10",
+    products: [{ name: "Cooking Oil 1L", quantity: 2, price: 350 }],
+  },
+  {
+    id: 7,
+    customerId: 2,
+    customerName: "Jane Smith",
+    phone: "+254709876543",
+    amount: 950,
+    paymentMethod: "M-PESA",
+    status: "Completed",
+    date: "2024-01-09",
+    products: [{ name: "Bread", quantity: 5, price: 80 }],
+  },
+  {
+    id: 8,
+    customerId: 6,
+    customerName: "Grace Achieng",
+    phone: "+254745678901",
+    amount: 2100,
+    paymentMethod: "Cash",
+    status: "Completed",
+    date: "2024-01-08",
+    products: [
+      { name: "Rice 2kg", quantity: 2, price: 750 },
+      { name: "Sugar 1kg", quantity: 1, price: 150 },
+    ],
+  },
+];
+
+const formatCurrency = (amount) => `KSh ${amount.toLocaleString()}`;
+
+const SummaryCard = ({
+  title,
+  value,
+  icon: Icon,
+  bgColor,
+  iconColor,
+  description,
+}) => (
+  <div className="bg-white rounded-lg shadow-md p-6 border border-gray-200">
+    <div className="flex items-center justify-between">
+      <div className="flex-1">
+        <p className="text-sm font-medium text-gray-600 mb-1">{title}</p>
+        <p className="text-2xl font-bold text-gray-900">{value}</p>
+        {description && (
+          <p className="text-xs text-gray-500 mt-1">{description}</p>
+        )}
+      </div>
+      <div className={`p-3 rounded-full ${bgColor}`}>
+        <Icon className={`w-6 h-6 ${iconColor}`} />
+      </div>
+    </div>
+  </div>
+);
+
+const StatusBadge = ({ status, type = "status" }) => {
+  const getStatusColor = () => {
+    if (type === "payment") {
+      switch (status) {
+        case "Cash":
+          return "bg-green-100 text-green-800";
+        case "M-PESA":
+          return "bg-blue-100 text-blue-800";
+        case "Debt":
+          return "bg-red-100 text-red-800";
+        default:
+          return "bg-gray-100 text-gray-800";
+      }
+    } else {
+      switch (status) {
+        case "Completed":
+          return "bg-green-100 text-green-800";
+        case "Pending":
+          return "bg-yellow-100 text-yellow-800";
+        default:
+          return "bg-gray-100 text-gray-800";
+      }
+    }
+  };
+
+  return (
+    <span
+      className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor()}`}
+    >
+      {status}
+    </span>
+  );
+};
+
+export default function ShopkeeperReportsPage() {
+  const [activeTab, setActiveTab] = useState(0);
+  const [dateFilter, setDateFilter] = useState("week");
+  const [customStartDate, setCustomStartDate] = useState("");
+  const [customEndDate, setCustomEndDate] = useState("");
+  const [sortBy, setSortBy] = useState("date");
+  const [sortOrder, setSortOrder] = useState("desc");
+
+  // Filter data based on selected date range
+  const filteredData = useMemo(() => {
+    const now = new Date();
+    let startDate, endDate;
+
+    switch (dateFilter) {
+      case "day":
+        startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        endDate = new Date(
+          now.getFullYear(),
+          now.getMonth(),
+          now.getDate() + 1
+        );
+        break;
+      case "week":
+        const weekStart = new Date(now);
+        weekStart.setDate(now.getDate() - now.getDay());
+        startDate = weekStart;
+        endDate = new Date(weekStart);
+        endDate.setDate(weekStart.getDate() + 7);
+        break;
+      case "month":
+        startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+        endDate = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+        break;
+      case "custom":
+        if (customStartDate && customEndDate) {
+          startDate = new Date(customStartDate);
+          endDate = new Date(customEndDate);
+          endDate.setDate(endDate.getDate() + 1); // Include end date
+        } else {
+          return mockTransactions;
+        }
+        break;
+      default:
+        return mockTransactions;
+    }
+
+    if (!startDate || !endDate) return mockTransactions;
+
+    return mockTransactions.filter((transaction) => {
+      const transDate = new Date(transaction.date);
+      return transDate >= startDate && transDate < endDate;
+    });
+  }, [dateFilter, customStartDate, customEndDate]);
+
+  // Calculate sales report data
+  const salesData = useMemo(() => {
+    const completedTransactions = filteredData.filter(
+      (t) => t.status === "Completed" && t.paymentMethod !== "Debt"
+    );
+    const totalRevenue = completedTransactions.reduce(
+      (sum, t) => sum + t.amount,
+      0
+    );
+    const totalTransactions = completedTransactions.length;
+
+    // Calculate most sold product
+    const productSales = {};
+    completedTransactions.forEach((transaction) => {
+      transaction.products.forEach((product) => {
+        if (productSales[product.name]) {
+          productSales[product.name] += product.quantity;
+        } else {
+          productSales[product.name] = product.quantity;
+        }
+      });
+    });
+
+    const mostSoldProduct = Object.entries(productSales).reduce(
+      (max, [name, quantity]) =>
+        quantity > max.quantity ? { name, quantity } : max,
+      { name: "None", quantity: 0 }
+    );
+
+    return {
+      totalRevenue,
+      totalTransactions,
+      mostSoldProduct,
+      completedTransactions,
+    };
+  }, [filteredData]);
+
+  // Calculate debt report data
+  const debtData = useMemo(() => {
+    const debtTransactions = filteredData.filter(
+      (t) => t.paymentMethod === "Debt"
+    );
+    const pendingDebt = debtTransactions.filter((t) => t.status === "Pending");
+    const recoveredDebt = debtTransactions.filter(
+      (t) => t.status === "Completed"
+    );
+
+    const totalOutstanding = pendingDebt.reduce((sum, t) => sum + t.amount, 0);
+    const totalRecovered = recoveredDebt.reduce((sum, t) => sum + t.amount, 0);
+
+    return { totalOutstanding, totalRecovered, debtTransactions };
+  }, [filteredData]);
+
+  // Calculate product summary data
+  const productSummary = useMemo(() => {
+    const productData = {};
+
+    filteredData
+      .filter((t) => t.status === "Completed")
+      .forEach((transaction) => {
+        transaction.products.forEach((product) => {
+          if (productData[product.name]) {
+            productData[product.name].quantity += product.quantity;
+            productData[product.name].revenue +=
+              product.quantity * product.price;
+          } else {
+            productData[product.name] = {
+              name: product.name,
+              quantity: product.quantity,
+              revenue: product.quantity * product.price,
+            };
+          }
+        });
+      });
+
+    return Object.values(productData).sort((a, b) => {
+      if (sortBy === "name")
+        return sortOrder === "asc"
+          ? a.name.localeCompare(b.name)
+          : b.name.localeCompare(a.name);
+      if (sortBy === "quantity")
+        return sortOrder === "asc"
+          ? a.quantity - b.quantity
+          : b.quantity - a.quantity;
+      if (sortBy === "revenue")
+        return sortOrder === "asc"
+          ? a.revenue - b.revenue
+          : b.revenue - a.revenue;
+      return 0;
+    });
+  }, [filteredData, sortBy, sortOrder]);
+
+  const handleSort = (column) => {
+    if (sortBy === column) {
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+    } else {
+      setSortBy(column);
+      setSortOrder("asc");
+    }
+  };
+
+  const tabs = ["Sales Report", "Debt Report", "Product Summary"];
+
+  return (
+    <div className="min-h-screen bg-gray-50 p-6">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            Shopkeeper Reports
+          </h1>
+          <p className="text-gray-600">
+            Monitor your business performance and track key metrics
+          </p>
+        </div>
+
+        {/* Date Filter Controls */}
+        <div className="bg-white rounded-lg shadow-md p-6 mb-6 border border-gray-200">
+          <div className="flex flex-wrap items-center gap-4">
+            <div className="flex items-center gap-2">
+              <Filter className="w-5 h-5 text-gray-500" />
+              <span className="font-medium text-gray-700">Filter by:</span>
+            </div>
+
+            <div className="relative">
+              <select
+                value={dateFilter}
+                onChange={(e) => setDateFilter(e.target.value)}
+                className="appearance-none bg-white border border-gray-300 rounded-lg px-4 py-2 pr-8 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="day">Today</option>
+                <option value="week">This Week</option>
+                <option value="month">This Month</option>
+                <option value="custom">Custom Range</option>
+              </select>
+              <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
+            </div>
+
+            {dateFilter === "custom" && (
+              <>
+                <div className="flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-gray-500" />
+                  <input
+                    type="date"
+                    value={customStartDate}
+                    onChange={(e) => setCustomStartDate(e.target.value)}
+                    className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Start Date"
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-gray-500">to</span>
+                  <input
+                    type="date"
+                    value={customEndDate}
+                    onChange={(e) => setCustomEndDate(e.target.value)}
+                    className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="End Date"
+                  />
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Tabs */}
+        <div className="bg-white rounded-lg shadow-md mb-6 border border-gray-200">
+          <div className="border-b border-gray-200">
+            <nav className="flex space-x-8 px-6">
+              {tabs.map((tab, index) => (
+                <button
+                  key={index}
+                  onClick={() => setActiveTab(index)}
+                  className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                    activeTab === index
+                      ? "border-blue-500 text-blue-600"
+                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                  }`}
+                >
+                  {tab}
+                </button>
+              ))}
+            </nav>
+          </div>
+        </div>
+
+        {/* Sales Report Tab */}
+        {activeTab === 0 && (
+          <div className="space-y-6">
+            {/* Summary Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <SummaryCard
+                title="Total Revenue"
+                value={formatCurrency(salesData.totalRevenue)}
+                icon={TrendingUp}
+                bgColor="bg-blue-100"
+                iconColor="text-blue-600"
+                description="From completed transactions"
+              />
+              <SummaryCard
+                title="Total Transactions"
+                value={salesData.totalTransactions}
+                icon={ShoppingCart}
+                bgColor="bg-green-100"
+                iconColor="text-green-600"
+                description="Cash & M-PESA payments"
+              />
+              <SummaryCard
+                title="Most Sold Product"
+                value={`${salesData.mostSoldProduct.name}`}
+                icon={DollarSign}
+                bgColor="bg-purple-100"
+                iconColor="text-purple-600"
+                description={`${salesData.mostSoldProduct.quantity} units sold`}
+              />
+            </div>
+
+            {/* Transactions Table */}
+            <div className="bg-white rounded-lg shadow-md border border-gray-200">
+              <div className="px-6 py-4 border-b border-gray-200">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Recent Completed Transactions
+                </h3>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Date
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Customer
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Amount
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Payment Method
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Products
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {salesData.completedTransactions.map((transaction) => (
+                      <tr key={transaction.id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {new Date(transaction.date).toLocaleDateString()}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm font-medium text-gray-900">
+                            {transaction.customerName}
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            {transaction.phone}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
+                          {formatCurrency(transaction.amount)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <StatusBadge
+                            status={transaction.paymentMethod}
+                            type="payment"
+                          />
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-900">
+                          {transaction.products
+                            .map((p) => `${p.name} (${p.quantity})`)
+                            .join(", ")}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Debt Report Tab */}
+        {activeTab === 1 && (
+          <div className="space-y-6">
+            {/* Summary Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <SummaryCard
+                title="Total Outstanding Debt"
+                value={formatCurrency(debtData.totalOutstanding)}
+                icon={Users}
+                bgColor="bg-red-100"
+                iconColor="text-red-600"
+                description="Pending payments"
+              />
+              <SummaryCard
+                title="Total Recovered Debt"
+                value={formatCurrency(debtData.totalRecovered)}
+                icon={TrendingUp}
+                bgColor="bg-green-100"
+                iconColor="text-green-600"
+                description="Completed payments"
+              />
+            </div>
+
+            {/* Debt Transactions Table */}
+            <div className="bg-white rounded-lg shadow-md border border-gray-200">
+              <div className="px-6 py-4 border-b border-gray-200">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Debt Transactions
+                </h3>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Customer Name
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Phone Number
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Amount Owed
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Status
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Date Incurred
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {debtData.debtTransactions.map((transaction) => (
+                      <tr key={transaction.id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          {transaction.customerName}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {transaction.phone}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
+                          {formatCurrency(transaction.amount)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <StatusBadge status={transaction.status} />
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {new Date(transaction.date).toLocaleDateString()}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Product Summary Tab */}
+        {activeTab === 2 && (
+          <div className="space-y-6">
+            <div className="bg-white rounded-lg shadow-md border border-gray-200">
+              <div className="px-6 py-4 border-b border-gray-200">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Product Sales Summary
+                </h3>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <button
+                          onClick={() => handleSort("name")}
+                          className="flex items-center gap-1 hover:text-gray-700"
+                        >
+                          Product Name
+                          <ArrowUpDown className="w-3 h-3" />
+                        </button>
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <button
+                          onClick={() => handleSort("quantity")}
+                          className="flex items-center gap-1 hover:text-gray-700"
+                        >
+                          Quantity Sold
+                          <ArrowUpDown className="w-3 h-3" />
+                        </button>
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <button
+                          onClick={() => handleSort("revenue")}
+                          className="flex items-center gap-1 hover:text-gray-700"
+                        >
+                          Total Revenue
+                          <ArrowUpDown className="w-3 h-3" />
+                        </button>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {productSummary.map((product, index) => (
+                      <tr key={index} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          {product.name}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {product.quantity}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
+                          {formatCurrency(product.revenue)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

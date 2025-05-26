@@ -1,4 +1,3 @@
-// App.jsx
 import React from "react";
 import {
   BrowserRouter as Router,
@@ -8,35 +7,39 @@ import {
 } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { Provider } from "react-redux";
-import { store } from "./store"; // Redux store
+import { store } from "./store";
 import Cookies from "js-cookie";
 import { routes } from "./config/routes";
 import Login from "./views/sign-in/Login";
+import MainLayout from "./layout";
+import ProfilePage from "./views/main-app/profile/ProfilePage";
+import ForgotPassword from "./views/sign-in/ForgotPassword";
 
-// PrivateRoute Component
-const PrivateRoute = ({ element, permissions }) => {
+const PrivateWrapper = ({ children, allowedRoles }) => {
   const auth = useSelector((state) => state.auth.value);
   const cookieUser = Cookies.get("user");
 
+  // Check authentication
   if (!auth || !cookieUser) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/" replace />;
   }
 
+  // Parse user data
   let user;
   try {
     user = typeof auth === "string" ? JSON.parse(auth) : auth;
   } catch (e) {
     console.error("Error parsing auth user:", e);
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/" replace />;
   }
 
-  const role = user?.role || user?.user?.role || user?.userRole;
-  const isAllowed = Array.isArray(permissions) ? permissions.includes(role) : true;
+  // Check role
+  const role = user?.role || user?.user?.role;
+  if (allowedRoles.length > 0 && !allowedRoles.includes(role)) {
+    return <Navigate to="/" replace />;
+  }
 
-  console.log("User role:", role);
-  console.log("Route permissions:", permissions);
-
-  return isAllowed ? element : <Navigate to="/not-authorized" replace />;
+  return <MainLayout>{children}</MainLayout>;
 };
 
 const App = () => {
@@ -44,29 +47,29 @@ const App = () => {
     <Provider store={store}>
       <Router>
         <Routes>
-          {/* Public route */}
-          <Route path="/login" element={<Login />} />
+          {/* Public routes */}
+          <Route path="/" element={<Login />} />
+          <Route path="/modal" element={<App />} />
+          <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/reset-password" element={<ForgotPassword />} />
 
-          {/* Secure routes */}
-          {routes.map((route) => (
-            <Route
-              key={route.path}
-              path={route.path}
-              element={
-                route.isprivate ? (
-                  <PrivateRoute
-                    element={route.element}
-                    permissions={route.permissions}
-                  />
-                ) : (
-                  route.element
-                )
-              }
-            />
-          ))}
+          {/* Protected routes */}
+          {routes
+            .filter((route) => route.isPrivate)
+            .map((route) => (
+              <Route
+                key={route.path}
+                path={route.path}
+                element={
+                  <PrivateWrapper allowedRoles={route.allowedRoles}>
+                    {route.element}
+                  </PrivateWrapper>
+                }
+              />
+            ))}
 
           {/* Fallback */}
-          <Route path="*" element={<Navigate to="/login" replace />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Router>
     </Provider>

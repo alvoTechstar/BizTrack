@@ -14,9 +14,9 @@ const FormButton = ({
       disabled={isLoading || !validation || disabled}
       className={`w-full py-3 text-white rounded-lg ${
         isLoading
-          ? "bg-blue-500 cursor-not-allowed"
+          ? "bg-gray-600 cursor-not-allowed"
           : validation
-          ? "bg-blue-600 hover:bg-blue-700"
+          ? "bg-gray-800 hover:bg-gray-700"
           : "bg-gray-400 cursor-not-allowed"
       } transition-colors duration-300`}
     >

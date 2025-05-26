@@ -11,14 +11,21 @@ const PasswordInput = ({
   disabled = false,
   error = false,
   errorMessage = "",
+  required = false,
 }) => {
   const [showPassword, setShowPassword] = useState(false);
 
   return (
     <div className="mb-4 w-full">
-      <label htmlFor={id} className="block text-sm font-medium text-gray-700 mb-1">
-        {label}
-      </label>
+      <div className="mb-1">
+        <span
+          className={`text-[14px] leading-4 font-bold text-[#353f50] ${
+            required ? "inline" : "block"
+          }`}
+        >
+          {label}
+        </span>
+      </div>
       <div className="relative">
         <input
           id={id}
@@ -38,9 +45,7 @@ const PasswordInput = ({
           {showPassword ? <VisibilityOff /> : <Visibility />}
         </div>
       </div>
-      {error && (
-        <p className="text-sm text-red-500 mt-1">{errorMessage}</p>
-      )}
+      {error && <p className="text-sm text-red-500 mt-1">{errorMessage}</p>}
     </div>
   );
 };
