@@ -1,4 +1,4 @@
-import * as yup from 'yup';
+import * as yup from "yup";
 import JSEncrypt from "jsencrypt";
 import { returnStatusResponse } from "../services/LocalStorageService";
 
@@ -82,7 +82,7 @@ export const validatePassword = (test, password) => {
 
 // utilities/Sharedfunctions.js
 export function normalizeRole(role) {
-  switch (role) {
+  switch (role.toLowerCase()) {
     case "biztrack-admin":
       return "Super Admin";
     case "hotel-admin":
@@ -95,6 +95,18 @@ export function normalizeRole(role) {
       return "Kiosk Admin";
     case "kiosk-shopkeeper":
       return "Shopkeeper";
+    case "hospital-admin":
+      return "Hospital Admin";
+    case "hospital-receptionist":
+      return "Receptionist";
+    case "hospital-doctor":
+      return "Doctor";
+    case "hospital-nurse":
+      return "Nurse";
+    case "hospital-pharmacist":
+      return "Pharmacist";
+    case "hospital-labtechnician":
+      return "Lab Technician";
     default:
       return role;
   }

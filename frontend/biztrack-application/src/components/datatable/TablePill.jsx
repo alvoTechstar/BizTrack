@@ -1,18 +1,14 @@
+// TablePill.jsx
 import React from 'react';
 import { Chip } from '@mui/material';
 
-export default function TablePill({ status }) {
-  const colorMap = {
-    Completed: 'success',
-    Pending: 'warning',
-    Failed: 'error',
-  };
-
+export default function TablePill({ status, statusConfig }) {
   return (
     <Chip
-      label={status}
+      label={statusConfig?.label || status}
       size="small"
-      color={colorMap[status] || 'default'}
+      color={statusConfig?.color || 'default'}
+      icon={statusConfig?.icon || null}
       variant="outlined"
     />
   );

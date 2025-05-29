@@ -1,13 +1,12 @@
 import React, { useState, useMemo } from "react";
 import {
-  ChevronDown,
   TrendingUp,
   DollarSign,
   ShoppingCart,
   Users,
-  Calendar,
-  Filter,
   ArrowUpDown,
+  Clock,
+  Calendar,
 } from "lucide-react";
 
 // Mock data - replace with actual data from your backend
@@ -20,7 +19,8 @@ const mockTransactions = [
     amount: 1500,
     paymentMethod: "Cash",
     status: "Completed",
-    date: "2024-01-15",
+    date: new Date().toISOString().split('T')[0], // Today's date
+    time: "09:15",
     products: [{ name: "Rice 2kg", quantity: 2, price: 750 }],
   },
   {
@@ -31,7 +31,8 @@ const mockTransactions = [
     amount: 2300,
     paymentMethod: "M-PESA",
     status: "Completed",
-    date: "2024-01-14",
+    date: new Date().toISOString().split('T')[0], // Today's date
+    time: "10:30",
     products: [
       { name: "Sugar 1kg", quantity: 1, price: 150 },
       { name: "Cooking Oil 1L", quantity: 1, price: 350 },
@@ -45,7 +46,8 @@ const mockTransactions = [
     amount: 850,
     paymentMethod: "Debt",
     status: "Pending",
-    date: "2024-01-13",
+    date: new Date().toISOString().split('T')[0], // Today's date
+    time: "11:45",
     products: [
       { name: "Bread", quantity: 3, price: 80 },
       { name: "Milk 500ml", quantity: 2, price: 65 },
@@ -59,7 +61,8 @@ const mockTransactions = [
     amount: 1200,
     paymentMethod: "Debt",
     status: "Completed",
-    date: "2024-01-12",
+    date: new Date().toISOString().split('T')[0], // Today's date
+    time: "12:20",
     products: [{ name: "Rice 2kg", quantity: 1, price: 750 }],
   },
   {
@@ -70,7 +73,8 @@ const mockTransactions = [
     amount: 650,
     paymentMethod: "Cash",
     status: "Completed",
-    date: "2024-01-11",
+    date: new Date().toISOString().split('T')[0], // Today's date
+    time: "13:15",
     products: [{ name: "Sugar 1kg", quantity: 2, price: 150 }],
   },
   {
@@ -81,7 +85,8 @@ const mockTransactions = [
     amount: 1800,
     paymentMethod: "Debt",
     status: "Pending",
-    date: "2024-01-10",
+    date: new Date().toISOString().split('T')[0], // Today's date
+    time: "14:45",
     products: [{ name: "Cooking Oil 1L", quantity: 2, price: 350 }],
   },
   {
@@ -92,7 +97,8 @@ const mockTransactions = [
     amount: 950,
     paymentMethod: "M-PESA",
     status: "Completed",
-    date: "2024-01-09",
+    date: new Date().toISOString().split('T')[0], // Today's date
+    time: "15:30",
     products: [{ name: "Bread", quantity: 5, price: 80 }],
   },
   {
@@ -103,7 +109,8 @@ const mockTransactions = [
     amount: 2100,
     paymentMethod: "Cash",
     status: "Completed",
-    date: "2024-01-08",
+    date: new Date().toISOString().split('T')[0], // Today's date
+    time: "16:10",
     products: [
       { name: "Rice 2kg", quantity: 2, price: 750 },
       { name: "Sugar 1kg", quantity: 1, price: 150 },
@@ -171,63 +178,34 @@ const StatusBadge = ({ status, type = "status" }) => {
   );
 };
 
-export default function ShopkeeperReportsPage() {
+export default function ShopkeeperDailyReports() {
   const [activeTab, setActiveTab] = useState(0);
-  const [dateFilter, setDateFilter] = useState("week");
-  const [customStartDate, setCustomStartDate] = useState("");
-  const [customEndDate, setCustomEndDate] = useState("");
-  const [sortBy, setSortBy] = useState("date");
+  const [sortBy, setSortBy] = useState("time");
   const [sortOrder, setSortOrder] = useState("desc");
 
-  // Filter data based on selected date range
-  const filteredData = useMemo(() => {
-    const now = new Date();
-    let startDate, endDate;
+  // Get current date information
+  const currentDate = new Date();
+  const dateString = currentDate.toLocaleDateString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+  const startTime = "08:00 AM";
+  const endTime = currentDate.toLocaleTimeString('en-US', {
+    hour: '2-digit',
+    minute: '2-digit'
+  });
 
-    switch (dateFilter) {
-      case "day":
-        startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        endDate = new Date(
-          now.getFullYear(),
-          now.getMonth(),
-          now.getDate() + 1
-        );
-        break;
-      case "week":
-        const weekStart = new Date(now);
-        weekStart.setDate(now.getDate() - now.getDay());
-        startDate = weekStart;
-        endDate = new Date(weekStart);
-        endDate.setDate(weekStart.getDate() + 7);
-        break;
-      case "month":
-        startDate = new Date(now.getFullYear(), now.getMonth(), 1);
-        endDate = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-        break;
-      case "custom":
-        if (customStartDate && customEndDate) {
-          startDate = new Date(customStartDate);
-          endDate = new Date(customEndDate);
-          endDate.setDate(endDate.getDate() + 1); // Include end date
-        } else {
-          return mockTransactions;
-        }
-        break;
-      default:
-        return mockTransactions;
-    }
-
-    if (!startDate || !endDate) return mockTransactions;
-
-    return mockTransactions.filter((transaction) => {
-      const transDate = new Date(transaction.date);
-      return transDate >= startDate && transDate < endDate;
-    });
-  }, [dateFilter, customStartDate, customEndDate]);
+  // Filter data for today only
+  const todayData = useMemo(() => {
+    const today = new Date().toISOString().split('T')[0];
+    return mockTransactions.filter(transaction => transaction.date === today);
+  }, []);
 
   // Calculate sales report data
   const salesData = useMemo(() => {
-    const completedTransactions = filteredData.filter(
+    const completedTransactions = todayData.filter(
       (t) => t.status === "Completed" && t.paymentMethod !== "Debt"
     );
     const totalRevenue = completedTransactions.reduce(
@@ -260,11 +238,11 @@ export default function ShopkeeperReportsPage() {
       mostSoldProduct,
       completedTransactions,
     };
-  }, [filteredData]);
+  }, [todayData]);
 
   // Calculate debt report data
   const debtData = useMemo(() => {
-    const debtTransactions = filteredData.filter(
+    const debtTransactions = todayData.filter(
       (t) => t.paymentMethod === "Debt"
     );
     const pendingDebt = debtTransactions.filter((t) => t.status === "Pending");
@@ -276,13 +254,13 @@ export default function ShopkeeperReportsPage() {
     const totalRecovered = recoveredDebt.reduce((sum, t) => sum + t.amount, 0);
 
     return { totalOutstanding, totalRecovered, debtTransactions };
-  }, [filteredData]);
+  }, [todayData]);
 
   // Calculate product summary data
   const productSummary = useMemo(() => {
     const productData = {};
 
-    filteredData
+    todayData
       .filter((t) => t.status === "Completed")
       .forEach((transaction) => {
         transaction.products.forEach((product) => {
@@ -315,7 +293,7 @@ export default function ShopkeeperReportsPage() {
           : b.revenue - a.revenue;
       return 0;
     });
-  }, [filteredData, sortBy, sortOrder]);
+  }, [todayData, sortBy, sortOrder]);
 
   const handleSort = (column) => {
     if (sortBy === column) {
@@ -334,59 +312,17 @@ export default function ShopkeeperReportsPage() {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Shopkeeper Reports
+            Daily Reports
           </h1>
-          <p className="text-gray-600">
-            Monitor your business performance and track key metrics
-          </p>
-        </div>
-
-        {/* Date Filter Controls */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6 border border-gray-200">
-          <div className="flex flex-wrap items-center gap-4">
+          <div className="flex items-center gap-4 text-gray-600">
             <div className="flex items-center gap-2">
-              <Filter className="w-5 h-5 text-gray-500" />
-              <span className="font-medium text-gray-700">Filter by:</span>
+              <Calendar className="w-5 h-5" />
+              <span className="font-medium">{dateString}</span>
             </div>
-
-            <div className="relative">
-              <select
-                value={dateFilter}
-                onChange={(e) => setDateFilter(e.target.value)}
-                className="appearance-none bg-white border border-gray-300 rounded-lg px-4 py-2 pr-8 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option value="day">Today</option>
-                <option value="week">This Week</option>
-                <option value="month">This Month</option>
-                <option value="custom">Custom Range</option>
-              </select>
-              <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
+            <div className="flex items-center gap-2">
+              <Clock className="w-5 h-5" />
+              <span>{startTime} - {endTime}</span>
             </div>
-
-            {dateFilter === "custom" && (
-              <>
-                <div className="flex items-center gap-2">
-                  <Calendar className="w-4 h-4 text-gray-500" />
-                  <input
-                    type="date"
-                    value={customStartDate}
-                    onChange={(e) => setCustomStartDate(e.target.value)}
-                    className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Start Date"
-                  />
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-gray-500">to</span>
-                  <input
-                    type="date"
-                    value={customEndDate}
-                    onChange={(e) => setCustomEndDate(e.target.value)}
-                    className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="End Date"
-                  />
-                </div>
-              </>
-            )}
           </div>
         </div>
 
@@ -417,7 +353,7 @@ export default function ShopkeeperReportsPage() {
             {/* Summary Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <SummaryCard
-                title="Total Revenue"
+                title="Today's Revenue"
                 value={formatCurrency(salesData.totalRevenue)}
                 icon={TrendingUp}
                 bgColor="bg-blue-100"
@@ -433,7 +369,7 @@ export default function ShopkeeperReportsPage() {
                 description="Cash & M-PESA payments"
               />
               <SummaryCard
-                title="Most Sold Product"
+                title="Top Product Today"
                 value={`${salesData.mostSoldProduct.name}`}
                 icon={DollarSign}
                 bgColor="bg-purple-100"
@@ -446,7 +382,7 @@ export default function ShopkeeperReportsPage() {
             <div className="bg-white rounded-lg shadow-md border border-gray-200">
               <div className="px-6 py-4 border-b border-gray-200">
                 <h3 className="text-lg font-semibold text-gray-900">
-                  Recent Completed Transactions
+                  Today's Completed Transactions
                 </h3>
               </div>
               <div className="overflow-x-auto">
@@ -454,7 +390,7 @@ export default function ShopkeeperReportsPage() {
                   <thead className="bg-gray-50">
                     <tr>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Date
+                        Time
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Customer
@@ -471,10 +407,12 @@ export default function ShopkeeperReportsPage() {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {salesData.completedTransactions.map((transaction) => (
+                    {salesData.completedTransactions
+                      .sort((a, b) => b.time.localeCompare(a.time))
+                      .map((transaction) => (
                       <tr key={transaction.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {new Date(transaction.date).toLocaleDateString()}
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          {transaction.time}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm font-medium text-gray-900">
@@ -503,6 +441,12 @@ export default function ShopkeeperReportsPage() {
                   </tbody>
                 </table>
               </div>
+              {salesData.completedTransactions.length === 0 && (
+                <div className="text-center py-8">
+                  <ShoppingCart className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-500">No completed transactions today</p>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -513,7 +457,7 @@ export default function ShopkeeperReportsPage() {
             {/* Summary Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <SummaryCard
-                title="Total Outstanding Debt"
+                title="Outstanding Debt Today"
                 value={formatCurrency(debtData.totalOutstanding)}
                 icon={Users}
                 bgColor="bg-red-100"
@@ -521,7 +465,7 @@ export default function ShopkeeperReportsPage() {
                 description="Pending payments"
               />
               <SummaryCard
-                title="Total Recovered Debt"
+                title="Recovered Debt Today"
                 value={formatCurrency(debtData.totalRecovered)}
                 icon={TrendingUp}
                 bgColor="bg-green-100"
@@ -534,13 +478,16 @@ export default function ShopkeeperReportsPage() {
             <div className="bg-white rounded-lg shadow-md border border-gray-200">
               <div className="px-6 py-4 border-b border-gray-200">
                 <h3 className="text-lg font-semibold text-gray-900">
-                  Debt Transactions
+                  Today's Debt Transactions
                 </h3>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead className="bg-gray-50">
                     <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Time
+                      </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Customer Name
                       </th>
@@ -553,14 +500,16 @@ export default function ShopkeeperReportsPage() {
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Status
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Date Incurred
-                      </th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {debtData.debtTransactions.map((transaction) => (
+                    {debtData.debtTransactions
+                      .sort((a, b) => b.time.localeCompare(a.time))
+                      .map((transaction) => (
                       <tr key={transaction.id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          {transaction.time}
+                        </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                           {transaction.customerName}
                         </td>
@@ -573,14 +522,17 @@ export default function ShopkeeperReportsPage() {
                         <td className="px-6 py-4 whitespace-nowrap">
                           <StatusBadge status={transaction.status} />
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {new Date(transaction.date).toLocaleDateString()}
-                        </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
+              {debtData.debtTransactions.length === 0 && (
+                <div className="text-center py-8">
+                  <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-500">No debt transactions today</p>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -591,7 +543,7 @@ export default function ShopkeeperReportsPage() {
             <div className="bg-white rounded-lg shadow-md border border-gray-200">
               <div className="px-6 py-4 border-b border-gray-200">
                 <h3 className="text-lg font-semibold text-gray-900">
-                  Product Sales Summary
+                  Today's Product Sales Summary
                 </h3>
               </div>
               <div className="overflow-x-auto">
@@ -644,6 +596,12 @@ export default function ShopkeeperReportsPage() {
                   </tbody>
                 </table>
               </div>
+              {productSummary.length === 0 && (
+                <div className="text-center py-8">
+                  <DollarSign className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-500">No product sales today</p>
+                </div>
+              )}
             </div>
           </div>
         )}

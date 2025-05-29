@@ -4,28 +4,19 @@ import { Link, useLocation } from "react-router-dom";
 import { MENU } from "../../config/Menu";
 import { normalizeRole } from "../../utilities/Sharedfunctions";
 import { X } from "lucide-react";
-import BiztrackLogo from "../../assets/Logos/biztrack-logo.png";
+import { useTheme } from "../theme/ThemeContext";
 
 const Sidebar = ({ isOpen, toggleSidebar }) => {
   const user = useSelector((state) => state.auth.value);
   const location = useLocation();
   const role = normalizeRole(user?.role);
 
-  // Debug logs
-  console.log("Current user role:", user?.role);
-  console.log("Normalized role:", role);
-  console.log("All menu items:", MENU);
+  const { logoUrl, primaryColor } = useTheme();
 
-  // Filter menu items
-  const allowedMenuItems = MENU.filter((item) => {
-    const isAllowed = item.permissions.includes(role);
-    console.log(`Checking ${item.key}:`, isAllowed);
-    return isAllowed;
-  });
+  const allowedMenuItems = MENU.filter((item) =>
+    item.permissions.includes(role)
+  );
 
-  console.log("Allowed menu items:", allowedMenuItems);
-
-  // Auto-close sidebar when a menu item is clicked (mobile)
   const handleItemClick = () => {
     if (isOpen && window.innerWidth < 1024) {
       toggleSidebar();
@@ -34,14 +25,6 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
 
   return (
     <>
-      {/* Backdrop for mobile */}
-      {isOpen && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-20 lg:hidden"
-          onClick={toggleSidebar}
-        />
-      )}
-
       {/* Sidebar container */}
       <aside
         className={`bg-white shadow-md w-64 fixed top-0 left-0 h-full z-30 transform transition-transform duration-300 ease-in-out
@@ -49,11 +32,10 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
           isOpen ? "translate-x-0" : "-translate-x-full"
         } lg:translate-x-0 lg:static lg:h-auto`}
       >
-        {/* Close icon for mobile */}
         <div className="flex items-center justify-between px-4 py-3 lg:hidden border-b">
           <img
-            src={BiztrackLogo}
-            alt="BizTrack Logo"
+            src={logoUrl}
+            alt="Business Logo"
             className="h-8 object-contain"
           />
           <button
@@ -64,9 +46,13 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
           </button>
         </div>
 
-        {/* App name (desktop) */}
-        <div className="hidden lg:block px-4 py-3 text-xl font-bold ">
-          <img src={BiztrackLogo} className="ml-1 h-10 mx-12" />
+        <div className="hidden lg:flex items-center justify-center px-4 py-3 text-xl font-bold">
+          <img
+            src={logoUrl}
+            alt="Business Logo"
+            className="h-10 mx-auto object-contain justify-start ml-6"
+            style={{ maxHeight: "30px" }}
+          />
         </div>
 
         {/* Menu */}
@@ -79,9 +65,17 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
                     to={item.path}
                     className={`flex items-center px-3 py-2 rounded-md text-sm font-medium ${
                       location.pathname === item.path
-                        ? "bg-blue-50 text-blue-600"
+                        ? "bg-opacity-10"
                         : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
                     }`}
+                    style={{
+                      backgroundColor:
+                        location.pathname === item.path
+                          ? `${primaryColor}1A`
+                          : "",
+                      color:
+                        location.pathname === item.path ? primaryColor : "",
+                    }}
                     onClick={handleItemClick}
                   >
                     <span className="mr-3">{item.icon}</span>

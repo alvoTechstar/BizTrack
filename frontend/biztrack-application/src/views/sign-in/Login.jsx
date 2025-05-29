@@ -9,30 +9,27 @@ import {
   validateEmail,
   validatePassword,
 } from "../../utilities/Sharedfunctions";
-import { MockUsers } from "../../config/Mockusers";
+import { MockUsers } from "../../config/Mockusers"; // Assuming your MockUsers is here
 import Cookies from "js-cookie";
 import { useDispatch } from "react-redux";
-import { authActions } from "../../store";
+import { authActions } from "../../store"; // Assuming authActions is exported from ./store/index.js
 import ModalFooter from "../../components/footer/ModalFooter";
 
+// Ensure normalizeRole is defined or imported here if it's not global
 const normalizeRole = (role) => {
   if (!role) return "";
-
-  // Handle case where role might already be in lowercase-hyphen format
   if (role.includes("-")) {
+    // Already normalized
     return role.toLowerCase();
   }
-
   const [institution, roleName] = role.split("_");
-
   if (!institution || !roleName) {
-    console.error("Invalid role format:", role);
+    console.error("Invalid role format for normalization:", role);
     return "";
   }
-
-  // Convert to lowercase with hyphen
   return `${institution.toLowerCase()}-${roleName.toLowerCase()}`;
 };
+
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -63,15 +60,29 @@ const Login = () => {
     );
 
     if (matchedUser) {
+      // The role stored in MockUsers is like "Hotel_Admin"
+      // The role in the cookie/Redux should be normalized "hotel-admin"
       const fullRole = normalizeRole(matchedUser.role);
-      const userWithNormalizedRole = { ...matchedUser, role: fullRole };
+      // Ensure the associatedBusinessId is part of the user object
+      const userWithNormalizedRole = {
+        ...matchedUser,
+        role: fullRole,
+        // Make sure associatedBusinessId is present in MockUsers directly.
+        // If it's not, you'd need to find it here, e.g.,
+        // associatedBusinessId: mockBusinesses.find(b => b.type === 'Hotel')?.id, // This is too generic
+        // It's crucial that MockUsers directly contains associatedBusinessId.
+        // (As per our `mockData.js` update, it should be there)
+      };
 
-      console.log("User with Normalized Role:", userWithNormalizedRole);
+      console.log(
+        "User with Normalized Role and Business ID:",
+        userWithNormalizedRole
+      );
 
       Cookies.set("user", JSON.stringify(userWithNormalizedRole), {
         expires: 1,
       });
-      dispatch(authActions.setAuth(userWithNormalizedRole));
+      dispatch(authActions.setAuth(userWithNormalizedRole)); // This triggers theme update
       navigateToDashboard(fullRole);
     } else {
       setErrorMessage("Invalid email or password.");
@@ -81,9 +92,8 @@ const Login = () => {
   };
 
   const navigateToDashboard = (role) => {
-    const normalizedRole = normalizeRole(role);
+    const normalizedRole = normalizeRole(role); // ensure consistent normalization
 
-    // ✅ FIXED: All keys are now uppercased to match normalized roles
     const roleMap = {
       "biztrack-admin": "/dashboard/super-admin",
       "hotel-admin": "/dashboard/hotel-admin",
@@ -91,6 +101,12 @@ const Login = () => {
       "hotel-waiter": "/dashboard/waiter",
       "kiosk-admin": "/dashboard/kiosk",
       "kiosk-shopkeeper": "/dashboard/shopkeeper",
+      "hospital-admin": "/dashboard/hospital-admin",
+      "hospital-receptionist": "/dashboard/receptionist",
+      "hospital-doctor": "/dashboard/doctor",
+      "hospital-nurse": "/dashboard/nurse",
+      "hospital-pharmacist": "/dashboard/pharmacist",
+      "hospital-labtechnician": "/dashboard/labtechnician",
     };
 
     console.log("Looking for role:", normalizedRole);
@@ -102,7 +118,7 @@ const Login = () => {
       navigate(path);
     } else {
       console.warn("Unrecognized role:", normalizedRole);
-      navigate("/not-authorized");
+      navigate("/unauthorized"); // Redirect to unauthorized page
     }
   };
 
@@ -125,7 +141,7 @@ const Login = () => {
               id="email"
               label="Username"
               placeholder="Enter your email"
-              autoComplete="username" // ✅ Fix autocomplete warning
+              autoComplete="username"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               error={email !== "" && !validateEmail(email)}
@@ -136,7 +152,7 @@ const Login = () => {
               id="password"
               label="Password"
               placeholder="Enter your password"
-              autoComplete="current-password" // ✅ Fix autocomplete warning
+              autoComplete="current-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               error={password !== "" && !isValid}
@@ -170,7 +186,6 @@ const Login = () => {
         </div>
       </div>
 
-      {/* Background Image Section */}
       <div
         className="hidden lg:flex bg-cover bg-center h-full flex-col justify-end"
         style={{
@@ -187,7 +202,6 @@ const Login = () => {
         </div>
       </div>
 
-      {/* Mobile Background Image */}
       <div
         className="lg:hidden sm:block absolute top-0 left-0 w-full h-full bg-cover bg-center"
         style={{

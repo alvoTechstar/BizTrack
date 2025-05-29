@@ -1,89 +1,124 @@
 export const ROLES = [
+  // Super Admin role
   {
-    role: "Biztrack_ADMIN",
+    role: "biztrack-admin",
     options: [
-      { value: "Biztrack_ADMIN", label: "Super Admin" },
-      { value: "Hotel_Admin", label: "Hotel Admin" },
-      { value: "Hotel_Cashier", label: "Cashier" },
-      { value: "Kiosk_Admin", label: "Kiosk Admin" },
-      { value: "Kiosk_Shopkeeper", label: "Shopkeeper" },
-      { value: "Hotel_Waiter", label: "Waiter" },
+      { value: "biztrack-admin", label: "Super Admin" },
+      { value: "hotel-admin", label: "Hotel Admin" },
+      { value: "kiosk-admin", label: "Kiosk Admin" },
+      { value: "hospital-admin", label: "Hospital Admin" },
     ],
     optionsCreate: [
-      { value: "Biztrack_ADMIN", label: "Super Admin" },
-      { value: "Hotel_Admin", label: "Hotel Admin" },
+      { value: "hotel-admin", label: "Hotel Admin" },
+      { value: "kiosk-admin", label: "Kiosk Admin" },
+      { value: "hospital-admin", label: "Hospital Admin" },
     ],
   },
+
+  // Hotel Admin role
   {
-    role: "Hotel_Admin",
+    role: "hotel-admin",
     options: [
-      { value: "Hotel_Admin", label: "Hotel Admin" },
-      { value: "Hotel_Cashier", label: "Cashier" },
-      { value: "Kiosk_Admin", label: "Kiosk Admin" },
-      { value: "Kiosk_Shopkeeper", label: "Shopkeeper" },
-      { value: "Hotel_Waiter", label: "Waiter" },
+      { value: "hotel-admin", label: "Hotel Admin" },
+      { value: "hotel-cashier", label: "Cashier" },
+      { value: "hotel-waiter", label: "Waiter" },
     ],
     optionsCreate: [
-      { value: "Hotel_Admin", label: "Hotel Admin" },
-      { value: "Hotel_Cashier", label: "Cashier" },
-      { value: "Hotel_Waiter", label: "Waiter" },
+      { value: "hotel-cashier", label: "Cashier" },
+      { value: "hotel-waiter", label: "Waiter" },
     ],
   },
+
+  // Kiosk Admin role
   {
-    role: "Hotel_Cashier",
+    role: "kiosk-admin",
     options: [
-      { value: "Hotel_Cashier", label: "Cashier" },
-      { value: "Kiosk_Admin", label: "Kiosk Admin" },
-      { value: "Kiosk_Shopkeeper", label: "Shopkeeper" },
-      { value: "Hotel_Admin", label: "Hotel Admin" },
+      { value: "kiosk-admin", label: "Kiosk Admin" },
+      { value: "kiosk-shopkeeper", label: "Shopkeeper" },
     ],
     optionsCreate: [
-      { value: "Hotel_Cashier", label: "Cashier" },
-      { value: "Kiosk_Shopkeeper", label: "Shopkeeper" },
+      { value: "kiosk-shopkeeper", label: "Shopkeeper" },
     ],
   },
+
+  // Hospital Admin role
   {
-    role: "Kiosk_Admin",
+    role: "hospital-admin",
     options: [
-      { value: "Kiosk_Admin", label: "Kiosk Admin" },
-      { value: "Hotel_Cashier", label: "Cashier" },
-      { value: "Kiosk_Shopkeeper", label: "Shopkeeper" },
+      { value: "hospital-admin", label: "Hospital Admin" },
+      { value: "hospital-receptionist", label: "Receptionist" },
+      { value: "hospital-doctor", label: "Doctor" },
+      { value: "hospital-nurse", label: "Nurse" },
+      { value: "hospital-pharmacist", label: "Pharmacist" },
+      { value: "hospital-labtechnician", label: "Lab Technician" },
     ],
     optionsCreate: [
-      { value: "Kiosk_Admin", label: "Kiosk Admin" },
-      { value: "Kiosk_Shopkeeper", label: "Shopkeeper" },
+      { value: "hospital-receptionist", label: "Receptionist" },
+      { value: "hospital-doctor", label: "Doctor" },
+      { value: "hospital-nurse", label: "Nurse" },
+      { value: "hospital-pharmacist", label: "Pharmacist" },
+      { value: "hospital-labtechnician", label: "Lab Technician" },
     ],
   },
+
+  // Individual roles (optional for clarity)
   {
-    role: "Kiosk_Shopkeeper",
-    options: [
-      { value: "Kiosk_Shopkeeper", label: "Shopkeeper" },
-      { value: "Hotel_Cashier", label: "Cashier" },
-    ],
-    optionsCreate: [
-      { value: "Kiosk_Shopkeeper", label: "Shopkeeper" },
-    ],
+    role: "hotel-cashier",
+    options: [{ value: "hotel-cashier", label: "Cashier" }],
+    optionsCreate: [{ value: "hotel-cashier", label: "Cashier" }],
   },
   {
-    role: "Hotel_Waiter",
-    options: [
-      { value: "Hotel_Waiter", label: "Waiter" },
-      { value: "Hotel_Cashier", label: "Cashier" },
-      { value: "Hotel_Admin", label: "Hotel Admin" },
-    ],
-    optionsCreate: [
-      { value: "Hotel_Waiter", label: "Waiter" },
-    ],
+    role: "hotel-waiter",
+    options: [{ value: "hotel-waiter", label: "Waiter" }],
+    optionsCreate: [{ value: "hotel-waiter", label: "Waiter" }],
   },
   {
-    role: "ALL",
+    role: "kiosk-shopkeeper",
+    options: [{ value: "kiosk-shopkeeper", label: "Shopkeeper" }],
+    optionsCreate: [{ value: "kiosk-shopkeeper", label: "Shopkeeper" }],
+  },
+  {
+    role: "hospital-receptionist",
+    options: [{ value: "hospital-receptionist", label: "Receptionist" }],
+    optionsCreate: [{ value: "hospital-receptionist", label: "Receptionist" }],
+  },
+  {
+    role: "hospital-doctor",
+    options: [{ value: "hospital-doctor", label: "Doctor" }],
+    optionsCreate: [{ value: "hospital-doctor", label: "Doctor" }],
+  },
+  {
+    role: "hospital-nurse",
+    options: [{ value: "hospital-nurse", label: "Nurse" }],
+    optionsCreate: [{ value: "hospital-nurse", label: "Nurse" }],
+  },
+  {
+    role: "hospital-pharmacist",
+    options: [{ value: "hospital-pharmacist", label: "Pharmacist" }],
+    optionsCreate: [{ value: "hospital-pharmacist", label: "Pharmacist" }],
+  },
+  {
+    role: "hospital-labtechnician",
+    options: [{ value: "hospital-labtechnician", label: "Lab Technician" }],
+    optionsCreate: [{ value: "hospital-labtechnician", label: "Lab Technician" }],
+  },
+
+  // All roles (for global dropdowns, if needed)
+  {
+    role: "all",
     options: [
-      { value: "Biztrack_ADMIN", label: "Super Admin" },
-      { value: "Hotel_Admin", label: "Hotel Admin" },
-      { value: "Hotel_Cashier", label: "Cashier" },
-      { value: "Kiosk_Admin", label: "Kiosk Admin" },
-      { value: "Kiosk_Shopkeeper", label: "Shopkeeper" },
-      { value: "Hotel_Waiter", label: "Waiter" },
+      { value: "biztrack-admin", label: "Super Admin" },
+      { value: "hotel-admin", label: "Hotel Admin" },
+      { value: "hotel-cashier", label: "Cashier" },
+      { value: "hotel-waiter", label: "Waiter" },
+      { value: "kiosk-admin", label: "Kiosk Admin" },
+      { value: "kiosk-shopkeeper", label: "Shopkeeper" },
+      { value: "hospital-admin", label: "Hospital Admin" },
+      { value: "hospital-receptionist", label: "Receptionist" },
+      { value: "hospital-doctor", label: "Doctor" },
+      { value: "hospital-nurse", label: "Nurse" },
+      { value: "hospital-pharmacist", label: "Pharmacist" },
+      { value: "hospital-labtechnician", label: "Lab Technician" },
     ],
   },
 ];

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import Cookies from "js-cookie";
-import TextInput from "../../../components/input/TextInput";
-import PasswordInput from "../../../components/input/PasswordInput";
+import TextInput from "../../../components/Input/TextInput";
+import PasswordInput from "../../../components/Input/PasswordInput";
 import AppFormButton from "../../../components/buttons/AppFormButton";
 const MyProfile = () => {
   const [firstName, setFirstName] = useState("");
@@ -67,7 +67,7 @@ const MyProfile = () => {
   };
 
   return (
-    <div className="p-6">
+    <div className="p-3 mb-8 bg-white rounded-lg shadow-md">
       <h2 className="text-2xl font-semibold text-gray-800 mb-2">My Profile</h2>
       <p className="text-sm text-gray-500 mb-6">
         You can only edit your phone number and change your password.

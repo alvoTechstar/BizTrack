@@ -7,7 +7,7 @@ export default function TablePagination({ currentPage, totalPages, onPageChange 
   };
 
   return (
-    <Stack direction="row" justifyContent="flex-end" sx={{ mt: 3 }}>
+    <Stack direction="row" justifyContent="flex-end" sx={{ mt: 3, mr: 6, mb: 2 }}>
       <Pagination
         count={totalPages}
         page={currentPage}

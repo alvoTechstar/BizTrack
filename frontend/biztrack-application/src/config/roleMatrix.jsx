@@ -92,4 +92,72 @@ export const ROLE_MATRIX = [
       "View profile details and change own password",
     ],
   },
+  // Hospital Management Roles
+  {
+    id: 9,
+    role: "Hospital Admin",
+    permissions: [
+      "Login",
+      "Manage patients",
+      "Manage users (Doctor, Nurse, Lab Technician, Receptionist, Pharmacist)",
+      "Manage medicines",
+      "View all payments (consultation, lab, pharmacy)",
+      "View reports",
+      "View profile details and change own password",
+    ],
+  },
+  {
+    id: 10,
+    role: "Doctor",
+    permissions: [
+      "Login",
+      "View assigned patients",
+      "Record consultations",
+      "Request lab tests",
+      "Prescribe medication",
+      "View profile details and change own password",
+    ],
+  },
+  {
+    id: 11,
+    role: "Nurse",
+    permissions: [
+      "Login",
+      "View patient procedures",
+      "Record injections and observations",
+      "View profile details and change own password",
+    ],
+  },
+  {
+    id: 12,
+    role: "Lab Technician",
+    permissions: [
+      "Login",
+      "View lab test requests",
+      "Record lab results",
+      "View profile details and change own password",
+    ],
+  },
+  {
+    id: 13,
+    role: "Receptionist",
+    permissions: [
+      "Login",
+      "Register patients",
+      "Manage consultation and lab payments",
+      "Track patients in queue",
+      "View profile details and change own password",
+    ],
+  },
+  {
+    id: 14,
+    role: "Pharmacist",
+    permissions: [
+      "Login",
+      "Manage prescriptions",
+      "Dispense medication",
+      "Manage medicines (Add/Edit/Delete)",
+      "View profile details and change own password",
+    ],
+  },
 ];

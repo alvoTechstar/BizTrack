@@ -1,11 +1,16 @@
 import React from "react";
 import DashboardIcon from "@mui/icons-material/Dashboard";
 import StoreIcon from "@mui/icons-material/Store";
-import HotelIcon from "@mui/icons-material/Hotel";
 import ListIcon from "@mui/icons-material/List";
 import PeopleIcon from "@mui/icons-material/People";
 import BarChartIcon from "@mui/icons-material/BarChart";
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
+import LocalHospitalIcon from '@mui/icons-material/LocalHospital';
+import InventoryIcon from '@mui/icons-material/Inventory';
+import MedicationIcon from '@mui/icons-material/Medication';
+import ScienceIcon from '@mui/icons-material/Science';
+import LocalPharmacyIcon from '@mui/icons-material/LocalPharmacy';
+
 
 
 export const MENU = [
@@ -76,6 +81,22 @@ export const MENU = [
     permissions: ["Hotel Admin"],
     subitems: [],
     path: "/staff",
+  },
+    {
+    key: "staff-payment",
+    title: "Staff Payments",
+    icon: <PeopleIcon />,
+    permissions: ["Hotel Admin"],
+    subitems: [],
+    path: "/staffpayment",
+  },
+    {
+    key: "expenses",
+    title: "Expenses",
+    icon: <AccountBalanceWalletIcon />,
+    permissions: ["Hotel Admin"],
+    subitems: [],
+    path: "/hotel/expenses",
   },
   {
     key: "hotel-reports",
@@ -206,4 +227,176 @@ export const MENU = [
     subitems: [],
     path: "/shopkeeper/reports",
   },
+    // Hospital Admin
+  {
+    key: "hospital-dashboard",
+    title: "Dashboard",
+    icon: <DashboardIcon />,
+    permissions: ["Hospital Admin"],
+    subitems: [],
+    path: "/dashboard/hospital-admin",
+  },
+  {
+    key: "hospital-patients",
+    title: "Patients",
+    icon: <LocalHospitalIcon />,
+    permissions: ["Hospital Admin"],
+    subitems: [],
+    path: "/hospital/patients",
+  },
+  {
+    key: "hospital-staff",
+    title: "Staff Management",
+    icon: <PeopleIcon />,
+    permissions: ["Hospital Admin"],
+    subitems: [],
+    path: "/hospital/staff",
+  },
+    {
+    key: "pharmacy-stock",
+    title: "Pharmacy Stock",
+    icon: <LocalPharmacyIcon />,
+    permissions: ["Hospital Admin"],
+    subitems: [],
+    path: "/pharmacy/stock",
+  },
+  {
+    key: "hospital-reports",
+    title: "Reports",
+    icon: <BarChartIcon />,
+    permissions: ["Hospital Admin"],
+    subitems: [],
+    path: "/hospital/admin-reports",
+  },
+
+  // Receptionist
+  {
+    key: "receptionist-dashboard",
+    title: "Dashboard",
+    icon: <DashboardIcon />,
+    permissions: ["Receptionist"],
+    subitems: [],
+    path: "/dashboard/receptionist",
+  },
+  {
+    key: "receptionist-patients",
+    title: "Patient Records",
+    icon: <LocalHospitalIcon />,
+    permissions: ["Receptionist"],
+    subitems: [],
+    path: "/receptionist/patients",
+  },
+  {
+    key: "receptionist-appointments",
+    title: "Appointments",
+    icon: <ListIcon />,
+    permissions: ["Receptionist"],
+    subitems: [],
+    path: "/receptionist/appointments",
+  },
+
+  // Doctor
+  {
+    key: "doctor-dashboard",
+    title: "Dashboard",
+    icon: <DashboardIcon />,
+    permissions: ["Doctor"],
+    subitems: [],
+    path: "/dashboard/doctor",
+  },
+  {
+    key: "doctor-patients",
+    title: "My Patients",
+    icon: <LocalHospitalIcon />,
+    permissions: ["Doctor"],
+    subitems: [],
+    path: "/doctor/patients",
+  },
+  {
+    key: "doctor-appointments",
+    title: "Appointments",
+    icon: <ListIcon />,
+    permissions: ["Doctor"],
+    subitems: [],
+    path: "/doctor/appointments",
+  },
+
+  // Nurse
+  {
+    key: "nurse-dashboard",
+    title: "Dashboard",
+    icon: <DashboardIcon />,
+    permissions: ["Nurse"],
+    subitems: [],
+    path: "/dashboard/nurse",
+  },
+  {
+    key: "nurse-patients",
+    title: "Patient Care",
+    icon: <LocalHospitalIcon />,
+    permissions: ["Nurse"],
+    subitems: [],
+    path: "/nurse/patients",
+  },
+  {
+    key: "nurse-vitals",
+    title: "Vitals",
+    icon: <InventoryIcon />,
+    permissions: ["Nurse"],
+    subitems: [],
+    path: "/nurse/vitals",
+  },
+
+  // Pharmacist
+  {
+    key: "pharmacist-dashboard",
+    title: "Dashboard",
+    icon: <DashboardIcon />,
+    permissions: ["Pharmacist"],
+    subitems: [],
+    path: "/dashboard/pharmacist",
+  },
+  {
+    key: "pharmacist-inventory",
+    title: "Inventory",
+    icon: <MedicationIcon />,
+    permissions: ["Pharmacist"],
+    subitems: [],
+    path: "/pharmacist/inventory",
+  },
+  {
+    key: "pharmacist-dispense",
+    title: "Dispense Drugs",
+    icon: <StoreIcon />,
+    permissions: ["Pharmacist"],
+    subitems: [],
+    path: "/pharmacist/dispense",
+  },
+
+  // Lab Technician
+  {
+    key: "labtech-dashboard",
+    title: "Dashboard",
+    icon: <DashboardIcon />,
+    permissions: ["Lab Technician"],
+    subitems: [],
+    path: "/dashboard/labtech",
+  },
+  {
+    key: "labtech-tests",
+    title: "Tests",
+    icon: <ScienceIcon />,
+    permissions: ["Lab Technician"],
+    subitems: [],
+    path: "/labtech/tests",
+  },
+  {
+    key: "labtech-results",
+    title: "Results",
+    icon: <BarChartIcon />,
+    permissions: ["Lab Technician"],
+    subitems: [],
+    path: "/labtech/results",
+  },
+
 ];

@@ -6,11 +6,15 @@ import Cookies from "js-cookie";
 import { authActions } from "../../store";
 import ProfilePopper from "./ProfilePopover";
 
+import { useTheme } from "../theme/ThemeContext";
+
 export default function Topbar({ toggleSidebar }) {
   const user = useSelector((state) => state.auth.value);
   const role = user?.role?.replace(/\s+/g, "_");
   const dispatch = useDispatch();
   const navigate = useNavigate();
+
+  const { logoUrl, primaryColor } = useTheme();
 
   const [anchorEl, setAnchorEl] = useState(null);
 
@@ -21,13 +25,14 @@ export default function Topbar({ toggleSidebar }) {
     localStorage.removeItem("user");
     Cookies.remove("user");
     dispatch(authActions.logout());
-    navigate("/login");
+    navigate("/");
   };
 
   const handleOpenProfile = () => {
-    handleClose(); // Close the popper
-    navigate("/profile"); // Navigate to profile route
+    handleClose();
+    navigate("/profile");
   };
+
   const getInitials = (roleStr) => {
     if (!roleStr) return "NA";
     const parts = roleStr
@@ -39,49 +44,55 @@ export default function Topbar({ toggleSidebar }) {
   };
 
   return (
-    <header className="bg-white shadow-sm px-4 py-3 flex items-center justify-between sticky top-0 z-10">
-      {/* Sidebar Toggle */}
+    <header
+      className="shadow-sm px-4 py-3 flex items-center justify-between sticky top-0 z-10"
+      style={{ backgroundColor: primaryColor || "#6f42c1" }}
+    >
       <div className="flex items-center">
-        <button
-          className="mr-4 text-gray-600 md:hidden"
-          onClick={toggleSidebar}
-        >
+        <button className="mr-2 text-white lg:hidden" onClick={toggleSidebar}>
           <Menu size={24} />
         </button>
-        <h1 className="text-xl font-semibold text-gray-800 lg:hidden">
-          BizTrack
-        </h1>
+
+        <img
+          src={logoUrl}
+          alt="Business Logo"
+          className="h-8 md:h-10 w-auto lg:hidden"
+          style={{ maxHeight: "40px" }}
+        />
       </div>
 
-      {/* Right Side: Notifications + Profile */}
       <div className="flex items-center space-x-4 relative">
-        <button className="relative p-1 text-gray-600 hover:bg-gray-100 rounded-full transition">
+        <button className="relative p-1 text-white hover:bg-opacity-80 rounded-full transition">
           <Bell size={20} />
           <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
             3
           </span>
         </button>
 
-        {/* Profile Button */}
         <div
-          className="flex items-center space-x-2 cursor-pointer px-2 py-1 rounded hover:bg-gray-100 transition"
+          className="flex items-center space-x-2 cursor-pointer px-2 py-1 rounded hover:bg-opacity-80 transition"
           onClick={handleClick}
         >
-          {/* Initials Circle */}
-          <div className="bg-gray-500 text-white rounded-full h-7 w-7 flex items-center justify-center text-sm font-semibold p-1">
-            {getInitials(role)}
+          <div
+            className="text-white rounded-full h-7 w-7 flex items-center justify-center text-sm font-semibold p-1"
+            style={{
+              backgroundColor: `color-mix(in srgb, ${primaryColor} 50%, white)`,
+            }}
+          >
+            {getInitials(user?.name)}
           </div>
-          <span className="hidden md:inline text-sm font-medium text-gray-700">
-            Hi, {role}
-          </span>
+          <div className="hidden md:inline text-xs text-white">
+            <span className="text-xs font-semibold">Hi, {user?.name}</span>
+            <br />
+            <span className="text-xs font-medium">{role}</span>
+          </div>
         </div>
 
-        {/* Profile Dropdown Popper */}
         <ProfilePopper
           anchorEl={anchorEl}
           handleClose={handleClose}
           handleLogout={handleLogout}
-          handleOpenProfile={handleOpenProfile} // 👈 now navigates to /profile
+          handleOpenProfile={handleOpenProfile}
         />
       </div>
     </header>

@@ -1,36 +1,40 @@
 import React from "react";
 import Login from "../views/sign-in/Login";
-import Dashboard from "../views/main-app/dashboard/kiosk/kioskadmin";
-import SalesPage from "../views/main-app/sales";
-import ReportsPage from "../views/main-app/reports/hotel/admin";
-import StockManagementPage from "../views/main-app/products/stock-management";
-import SuperAdminDashboard from "../views/main-app/dashboard/super-admin/index";
-import HotelAdminDashboard from "../views/main-app/dashboard/hotel/admin/index";
-import CashierDashboard from "../views/main-app/dashboard/hotel/cashier/index";
-import MenuManagement from "../views/main-app/products/menumanagement";
-import StaffManagement from "../views/main-app/User-Management/hotel/index";
-import InventoryPage from "../views/main-app/products/inventory";
-import HotelOrders from "../views/main-app/sales/hotel-orders";
-import App from "../views/main-app/modal";
+import ForgotPassword from "../views/sign-in/ForgotPassword";
+import ProfilePage from "../views/main-app/profile/ProfilePage";
+import SuperAdminDashboard from "../views/main-app/dashboard/super-admin";
+import UserManagement from "../views/main-app/User-Management/super-admin";
+import HotelAdminDashboard from "../views/main-app/dashboard/hotel/admin";
+import CashierDashboard from "../views/main-app/dashboard/hotel/cashier";
 import CreateOrder from "../views/main-app/sales/CreateOrder";
 import CompleteOrder from "../views/main-app/sales/CompleteOrder";
-import ProfilePage from "../views/main-app/profile/ProfilePage";
+import MenuManagement from "../views/main-app/products/menumanagement";
 import IngredientsManagementPage from "../views/main-app/products/ingredient-management";
-import ForgotPassword from "../views/sign-in/ForgotPassword";
-import UserManagement from "../views/main-app/User-Management/super-admin";
+import StaffManagement from "../views/main-app/User-Management/hotel";
+import StaffPayment from "../views/main-app/User-Management/hotel/staff/StaffPayment";
+import HotelOrders from "../views/main-app/sales/hotel-orders";
+import HotelExpenses from "../views/main-app/expenses/hotel/Hotelexpenses";
+import ReportsPage from "../views/main-app/reports/hotel/admin";
+
+import Dashboard from "../views/main-app/dashboard/kiosk/kioskadmin";
+import InventoryPage from "../views/main-app/products/inventory";
+import StockManagementPage from "../views/main-app/products/stock-management";
 import KioskStaffManagement from "../views/main-app/User-Management/kiosk";
-import DebtManagement from "../views/main-app/debtmanagement/DebtManagement";
-import ShopkeeperReportsPage from "../views/main-app/reports/kiosk/shopkeeper/ShopkeeperReportsPage";
 import KioskAdminReportsPage from "../views/main-app/reports/kiosk/kioskadmin/KioskAdminReportsPage";
+import SalesPage from "../views/main-app/sales/kiosk";
+import ShopkeeperReportsPage from "../views/main-app/reports/kiosk/shopkeeper/ShopkeeperReportsPage";
+import DebtManagement from "../views/main-app/debtmanagement/DebtManagement";
+import HospitalAdminDashboard from "../views/main-app/dashboard/hospital/hospitaladmin/HospitalAdminDashboard";
+import PharmacyStock from "../views/main-app/products/hospital/PharmacyStock";
+import HospitalStaff from "../views/main-app/User-Management/hospital/hospitalStaff";
+import PatientListPage from "../views/main-app/patients/hospitaladmin/PatientslistPage";
+import HospitalReports from "../views/main-app/reports/hospital/hospitaladmin/HospitalAdminReports";
+import NotFound from "../components/notfound";
+import Unauthorized from "../components/notfound/Unauthorized";
 
 export const routes = [
   // Public Routes
-  {
-    path: "/",
-    element: <Login />,
-    isPrivate: false,
-    allowedRoles: [],
-  },
+  { path: "/", element: <Login />, isPrivate: false, allowedRoles: [] },
   {
     path: "/reset-password",
     element: <ForgotPassword />,
@@ -38,14 +42,20 @@ export const routes = [
     allowedRoles: [],
   },
   {
-    path: "/modal",
-    element: <App />,
+    path: "/profile",
+    element: <ProfilePage />,
     isPrivate: false,
     allowedRoles: [],
   },
   {
-    path: "/profile",
-    element: <ProfilePage />,
+    path: "/not-found",
+    element: <NotFound />,
+    isPrivate: false,
+    allowedRoles: [],
+  },
+  {
+    path: "/unauthorized",
+    element: <Unauthorized />,
     isPrivate: false,
     allowedRoles: [],
   },
@@ -64,7 +74,7 @@ export const routes = [
     allowedRoles: ["biztrack-admin"],
   },
 
-  // Hotel Admin
+  // Hotel
   {
     path: "/dashboard/hotel-admin",
     element: <HotelAdminDashboard />,
@@ -77,7 +87,6 @@ export const routes = [
     isPrivate: true,
     allowedRoles: ["hotel-admin", "kiosk-admin"],
   },
-
   {
     path: "/products/ingredient-management",
     element: <IngredientsManagementPage />,
@@ -91,21 +100,22 @@ export const routes = [
     allowedRoles: ["hotel-admin"],
   },
   {
+    path: "/staffpayment",
+    element: <StaffPayment />,
+    isPrivate: true,
+    allowedRoles: ["hotel-admin"],
+  },
+  {
     path: "/orders/hotel",
     element: <HotelOrders />,
     isPrivate: true,
     allowedRoles: ["hotel-admin"],
   },
   {
-    path: "/reports",
-    element: <ReportsPage />,
+    path: "/hotel/expenses",
+    element: <HotelExpenses />,
     isPrivate: true,
-    allowedRoles: [
-      "hotel-admin",
-      "kiosk-admin",
-      "biztrack-admin",
-      "hotel-cashier",
-    ],
+    allowedRoles: ["hotel-admin"],
   },
 
   // Cashier
@@ -129,14 +139,14 @@ export const routes = [
     isPrivate: true,
     allowedRoles: ["hotel-waiter"],
   },
-    {
+  {
     path: "/dashboard/create-order",
     element: <CreateOrder />,
     isPrivate: true,
     allowedRoles: ["hotel-waiter"],
   },
 
-  // Kiosk Admin
+  // Kiosk
   {
     path: "/dashboard/kiosk",
     element: <Dashboard />,
@@ -168,7 +178,6 @@ export const routes = [
     allowedRoles: ["kiosk-admin"],
   },
 
-  // Shopkeeper
   {
     path: "/dashboard/shopkeeper",
     element: <Dashboard />,
@@ -194,7 +203,69 @@ export const routes = [
     allowedRoles: ["kiosk-shopkeeper"],
   },
 
-  // Fallback route
+  // Hospital admin
+  {
+    path: "/dashboard/hospital-admin",
+    element: <HospitalAdminDashboard />,
+    isPrivate: true,
+    allowedRoles: ["hospital-admin"],
+  },
+  {
+    path: "/pharmacy/stock",
+    element: <PharmacyStock />,
+    isPrivate: true,
+    allowedRoles: ["hospital-admin"],
+  },
+  {
+    path: "/hospital/staff",
+    element: <HospitalStaff />,
+    isPrivate: true,
+    allowedRoles: ["hospital-admin"],
+  },
+  {
+    path: "/hospital/patients",
+    element: <PatientListPage />,
+    isPrivate: true,
+    allowedRoles: ["hospital-admin"],
+  },
+  {
+    path: "/hospital/admin-reports",
+    element: <HospitalReports />,
+    isPrivate: true,
+    allowedRoles: ["hospital-admin"],
+  },
+  {
+    path: "/dashboard/receptionist",
+    element: <HotelAdminDashboard />,
+    isPrivate: true,
+    allowedRoles: ["hospital-receptionist"],
+  },
+  {
+    path: "/dashboard/doctor",
+    element: <HotelAdminDashboard />,
+    isPrivate: true,
+    allowedRoles: ["hospital-doctor"],
+  },
+  {
+    path: "/dashboard/nurse",
+    element: <HotelAdminDashboard />,
+    isPrivate: true,
+    allowedRoles: ["hospital-nurse"],
+  },
+  {
+    path: "/dashboard/pharmacist",
+    element: <HotelAdminDashboard />,
+    isPrivate: true,
+    allowedRoles: ["hospital-pharmacist"],
+  },
+  {
+    path: "/dashboard/labtechnician",
+    element: <HotelAdminDashboard />,
+    isPrivate: true,
+    allowedRoles: ["hospital-labtechnician"],
+  },
+
+  // Fallback
   {
     path: "*",
     element: <div>404 Not Found</div>,
