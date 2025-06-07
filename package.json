@@ -1,0 +1,7 @@
+{
+  "dependencies": {
+    "axios": "^1.9.0",
+    "jsencrypt": "^3.3.2",
+    "reactjs-localstorage": "^1.0.1"
+  }
+}
