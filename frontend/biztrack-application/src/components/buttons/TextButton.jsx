@@ -8,6 +8,7 @@ export default function TextButton({
   action,
   isLoading,
   color,
+  icon,
 }) {
   return (
     <div className={`w-full text-${alignment} text-sm`}>
@@ -19,15 +20,18 @@ export default function TextButton({
           thickness={5}
         />
       ) : (
-        <span
-          className={`cursor-pointer font-medium hover:underline ${
-            color ? "" : "text-blue-600"
-          }`}
-          style={color ? { color: color } : {}}
-          onClick={action}
-        >
-          {actionText}
-        </span>
+        icon && (
+          <span
+            className={`cursor-pointer font-medium hover:underline flex items-center gap-1 ${
+              color ? "" : "text-blue-600"
+            }`}
+            style={color ? { color: color } : {}}
+            onClick={action}
+          >
+            {icon}
+            {actionText}
+          </span>
+        )
       )}
     </div>
   );

@@ -4,7 +4,8 @@ export const ROLE_MATRIX = [
     role: "Super Admin",
     permissions: [
       "Login",
-      "Create Business Admin (Kiosk Admin, Hotel Admin)",
+      "Create and manage businesses",
+      "Create Business Admin (Kiosk Admin, Hotel Admin, Hospital Admin)",
       "Create and manage roles for businesses",
       "View and manage all business activities",
       "View profile details and change own password",
@@ -39,7 +40,7 @@ export const ROLE_MATRIX = [
   },
   {
     id: 4,
-    role: "Kiosk Cashier",
+    role: "Kiosk Shopkeeper",
     permissions: [
       "Login",
       "Complete sales transactions (receive payments)",
@@ -72,29 +73,10 @@ export const ROLE_MATRIX = [
       "View profile details and change own password",
     ],
   },
-  {
-    id: 7,
-    role: "Auditor",
-    permissions: [
-      "Login",
-      "View business activity reports (sales, orders, transactions)",
-      "View system logs",
-      "View profile details and change own password",
-    ],
-  },
-  {
-    id: 8,
-    role: "Agent",
-    permissions: [
-      "Login",
-      "View basic business information",
-      "View dashboard (only sales and order summaries)",
-      "View profile details and change own password",
-    ],
-  },
+
   // Hospital Management Roles
   {
-    id: 9,
+    id: 7,
     role: "Hospital Admin",
     permissions: [
       "Login",
@@ -107,7 +89,7 @@ export const ROLE_MATRIX = [
     ],
   },
   {
-    id: 10,
+    id: 8,
     role: "Doctor",
     permissions: [
       "Login",
@@ -119,7 +101,7 @@ export const ROLE_MATRIX = [
     ],
   },
   {
-    id: 11,
+    id: 9,
     role: "Nurse",
     permissions: [
       "Login",
@@ -129,7 +111,7 @@ export const ROLE_MATRIX = [
     ],
   },
   {
-    id: 12,
+    id: 10,
     role: "Lab Technician",
     permissions: [
       "Login",
@@ -139,23 +121,24 @@ export const ROLE_MATRIX = [
     ],
   },
   {
-    id: 13,
+    id: 11,
     role: "Receptionist",
     permissions: [
       "Login",
       "Register patients",
-      "Manage consultation and lab payments",
       "Track patients in queue",
+      "Manage appointments",
       "View profile details and change own password",
     ],
   },
   {
-    id: 14,
+    id: 12,
     role: "Pharmacist",
     permissions: [
       "Login",
       "Manage prescriptions",
       "Dispense medication",
+      "Receives payments for consultation and lab tests",
       "Manage medicines (Add/Edit/Delete)",
       "View profile details and change own password",
     ],

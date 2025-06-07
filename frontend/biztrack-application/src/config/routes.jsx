@@ -1,7 +1,6 @@
 import React from "react";
 import Login from "../views/sign-in/Login";
 import ForgotPassword from "../views/sign-in/ForgotPassword";
-import ProfilePage from "../views/main-app/profile/ProfilePage";
 import SuperAdminDashboard from "../views/main-app/dashboard/super-admin";
 import UserManagement from "../views/main-app/User-Management/super-admin";
 import HotelAdminDashboard from "../views/main-app/dashboard/hotel/admin";
@@ -14,7 +13,6 @@ import StaffManagement from "../views/main-app/User-Management/hotel";
 import StaffPayment from "../views/main-app/User-Management/hotel/staff/StaffPayment";
 import HotelOrders from "../views/main-app/sales/hotel-orders";
 import HotelExpenses from "../views/main-app/expenses/hotel/Hotelexpenses";
-import ReportsPage from "../views/main-app/reports/hotel/admin";
 
 import Dashboard from "../views/main-app/dashboard/kiosk/kioskadmin";
 import InventoryPage from "../views/main-app/products/inventory";
@@ -31,6 +29,7 @@ import PatientListPage from "../views/main-app/patients/hospitaladmin/Patientsli
 import HospitalReports from "../views/main-app/reports/hospital/hospitaladmin/HospitalAdminReports";
 import NotFound from "../components/notfound";
 import Unauthorized from "../components/notfound/Unauthorized";
+import ReceptionistQueuePage from "../views/main-app/patients/receptionist/ReceptionistQueuePage";
 
 export const routes = [
   // Public Routes
@@ -41,12 +40,7 @@ export const routes = [
     isPrivate: false,
     allowedRoles: [],
   },
-  {
-    path: "/profile",
-    element: <ProfilePage />,
-    isPrivate: false,
-    allowedRoles: [],
-  },
+
   {
     path: "/not-found",
     element: <NotFound />,
@@ -234,9 +228,10 @@ export const routes = [
     isPrivate: true,
     allowedRoles: ["hospital-admin"],
   },
+  //hospital receptionist
   {
-    path: "/dashboard/receptionist",
-    element: <HotelAdminDashboard />,
+    path: "/patient/queue",
+    element: <ReceptionistQueuePage />,
     isPrivate: true,
     allowedRoles: ["hospital-receptionist"],
   },

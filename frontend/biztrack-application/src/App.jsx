@@ -18,7 +18,7 @@ import MainLayout from "./layout";
 import AppRoutes from "./components/AppRoutes";
 import NotFound from "./components/notfound";
 import Unauthorized from "./components/notfound/Unauthorized";
-import ProfilePage from "./views/main-app/profile/ProfilePage";
+import { CircularProgress } from "@mui/material";
 
 const ThemedMainLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -62,8 +62,13 @@ const ThemedMainLayout = () => {
 
   if (isLoadingAuth) {
     return (
-      <div className="flex justify-center items-center h-screen text-xl">
-        Loading application...
+      <div className="flex flex-col justify-center items-center h-screen">
+        <CircularProgress color="primary" size={60} />{" "}
+        {/* Your loading animation */}
+        <p className="mt-4 text-xl text-gray-700">
+          Loading application...
+        </p>{" "}
+        {/* Optional: keep the text */}
       </div>
     );
   }
@@ -86,13 +91,12 @@ const ThemedMainLayout = () => {
 const App = () => {
   return (
     <Provider store={store}>
-      <ThemeProvider>
-        <Router>
+      <Router>
+        <ThemeProvider>
           <Routes>
             {/* Public routes */}
             <Route path="/" element={<Login />} />
             <Route path="/reset-password" element={<ForgotPassword />} />
-            <Route path="/profile" element={<ProfilePage />} />
             <Route path="/unauthorized" element={<Unauthorized />} />
             <Route path="/not-found" element={<NotFound />} />
             <Route element={<ThemedMainLayout />}>
@@ -133,8 +137,8 @@ const App = () => {
             </Route>
             <Route path="*" element={<Navigate to="/not-found" replace />} />
           </Routes>
-        </Router>
-      </ThemeProvider>
+        </ThemeProvider>
+      </Router>
     </Provider>
   );
 };

@@ -1,76 +1,63 @@
-import React from "react";
-import CheckCircleOutlineRoundedIcon from "@mui/icons-material/CheckCircleOutlineRounded";
-import PasswordInput from "./PasswordInput";
-// import "./input.css";
-import { validatePassword } from "../../utilities/Sharedfunctions";
+import React, { useState } from "react";
+import { Visibility, VisibilityOff } from "@mui/icons-material";
+import { useTheme } from "../theme/ThemeContext";
 
-const REQUIREMENTS = [
-  { label: "A minimum of 7 characters", test: "length" },
-  { label: "A special character (@#$*)", test: "characters" },
-  { label: "A capital letter", test: "uppercase" },
-  { label: "A number", test: "number" },
-];
-
-export default function PasswordResetInput({
+const PasswordInput = ({
   id,
   label,
   placeholder,
-  input,
-  handleInput,
-  id2,
-  label2,
-  placeholder2,
-  input2,
-  loading,
-  error,
-}) {
+  value,
+  onChange,
+  disabled = false,
+  error = false,
+  errorMessage = "",
+  required = false,
+}) => {
+  const [showPassword, setShowPassword] = useState(false);
+  const { primaryColor } = useTheme(); // <--- primaryColor is retrieved here
+
   return (
-    <div>
-      {/* First Password Field */}
-      <PasswordInput
-        id={id}
-        label={label}
-        placeholder={placeholder}
-        input={input}
-        handleInput={handleInput}
-        disabled={loading}
-        error={error || (input && !validatePassword("all", input))}
-        errorMessage={
-          error ? "New password cannot be the same as old password" : null
-        }
-      />
-
-      {/* Password Requirements Checker */}
-      {input && !validatePassword("all", input) && (
-        <div className="validation-container">
-          {REQUIREMENTS.map((key) => (
-            <div key={key.test} className="validation-item">
-              <CheckCircleOutlineRoundedIcon
-                style={{
-                  color: validatePassword(key.test, input)
-                    ? "#74C965"
-                    : "#D1D5DB",
-                  fontSize: 18,
-                  marginRight: "6px",
-                }}
-              />
-              <span>{key.label}</span>
-            </div>
-          ))}
+    <div className="mb-4 w-full">
+      <div className="mb-1">
+        <span
+          className={`text-[14px] leading-4 font-bold text-[#353f50] ${
+            required ? "inline" : "block"
+          }`}
+        >
+          {label}
+        </span>
+      </div>
+      <div className="relative">
+        <input
+          id={id}
+          type={showPassword ? "text" : "password"}
+          value={value}
+          onChange={onChange}
+          placeholder={placeholder}
+          disabled={disabled}
+          className={`
+            w-full px-4 py-2 border
+            ${error ? "border-red-500" : "border-gray-300"}
+            rounded-lg shadow-sm focus:outline-none
+            focus:ring-2 // <-- This applies the ring
+            focus:border-[${primaryColor}] // <-- This sets the border color to primaryColor on focus
+            ${disabled ? "bg-gray-100 cursor-not-allowed" : ""}
+          `}
+          style={{
+            "--tw-ring-color": primaryColor, // <-- This sets the ring color to primaryColor
+          }}
+        />
+        <div
+          onClick={() => setShowPassword(!showPassword)}
+          className="absolute right-3 top-2.5 cursor-pointer"
+          style={{ color: primaryColor || "text.gray-500" }} // For the visibility icon
+        >
+          {showPassword ? <VisibilityOff /> : <Visibility />}
         </div>
-      )}
-
-      {/* Confirm Password Field */}
-      <PasswordInput
-        id={id2}
-        label={label2}
-        placeholder={placeholder2}
-        input={input2}
-        handleInput={handleInput}
-        disabled={!input}
-        error={input && input2 && input !== input2}
-        errorMessage={"Passwords do not match"}
-      />
+      </div>
+      {error && <p className="text-sm text-red-500 mt-1">{errorMessage}</p>}
     </div>
   );
-}
+};
+
+export default PasswordInput;

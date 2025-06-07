@@ -272,11 +272,11 @@ export const MENU = [
   // Receptionist
   {
     key: "receptionist-dashboard",
-    title: "Dashboard",
+    title: "Recepition Queue",
     icon: <DashboardIcon />,
     permissions: ["Receptionist"],
     subitems: [],
-    path: "/dashboard/receptionist",
+    path: "/patient/queue",
   },
   {
     key: "receptionist-patients",

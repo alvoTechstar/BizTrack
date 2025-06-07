@@ -9,7 +9,7 @@ export const mockBusinesses = [
     name: 'Biztrack Central',
     type: 'Platform',
     logoUrl:  Biztracklogo, 
-    primaryColor: '#6f42c1', // Purple (Biztrack Admin theme)
+    primaryColor: '#118eed', 
   },
   {
     id: 'biz-hotel-grandhyatt',

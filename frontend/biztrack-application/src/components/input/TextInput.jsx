@@ -1,5 +1,5 @@
-// components/TextInput.jsx
-import React from "react";
+import React, { useState } from "react";
+import { useTheme } from "../theme/ThemeContext";
 
 const TextInput = ({
   id,
@@ -14,23 +14,22 @@ const TextInput = ({
   type = "text",
   error = false,
   errorMessage = "",
-  endAdornment,             // ← new prop
+  endAdornment,
 }) => {
+  const { primaryColor } = useTheme();
+  const [isFocused, setIsFocused] = useState(false);
+
   return (
     <div className="mb-4 w-full">
-      {/* label as before */}
       <div className="mb-1">
-        <span className={`text-[14px] leading-4 font-bold text-[#353f50] ${required ? "inline" : "block"}`}>
+        <span className="text-[14px] leading-4 font-bold text-[#353f50]">
           {label}
+          {required && (
+            <span className="text-red-500 font-bold text-[12px] ml-1">*</span>
+          )}
         </span>
-        {required && (
-          <span className="inline text-red-500 font-bold text-[12px] leading-4">
-            *
-          </span>
-        )}
       </div>
 
-      {/* wrap the input itself in a relative container */}
       <div className="relative">
         <input
           id={id}
@@ -38,16 +37,33 @@ const TextInput = ({
           type={type}
           value={value || ""}
           onChange={onChange}
-          onBlur={onBlur}
+          onFocus={() => setIsFocused(true)}
+          onBlur={(e) => {
+            setIsFocused(false);
+            onBlur?.(e);
+          }}
           placeholder={placeholder}
           disabled={disabled}
-          className={`w-full pr-10 px-4 py-2 border ${
-            error ? "border-red-500" : "border-gray-300"
-          } rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500`}
+          className={`
+            w-full pr-10 px-4 py-2 border rounded-lg shadow-sm
+            focus:outline-none
+            ${error ? "border-red-500" : "border-gray-300"}
+            ${disabled ? "bg-gray-100 cursor-not-allowed" : ""}
+          `}
+          style={
+            isFocused && !error
+              ? {
+                  borderColor: primaryColor,
+                  boxShadow: `0 0 0 2px ${primaryColor}33`,
+                }
+              : {}
+          }
         />
-        {/* absolute icon, now truly centered on the input */}
         {endAdornment && (
-          <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
+          <div
+            className="absolute inset-y-0 right-3 flex items-center pointer-events-none"
+            style={{ color: primaryColor }}
+          >
             {endAdornment}
           </div>
         )}

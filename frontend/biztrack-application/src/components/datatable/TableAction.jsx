@@ -1,35 +1,60 @@
-// TableAction.jsx
-import React from 'react';
-import { IconButton, Tooltip } from '@mui/material';
-import { actionConfigs } from './TableConfig';
+// src/components/DataTable/TableAction.jsx
+import React from "react";
+import { IconButton, Tooltip, Box } from "@mui/material";
+import VisibilityIcon from "@mui/icons-material/Visibility";
+import EditIcon from "@mui/icons-material/Edit";
+import DeleteIcon from "@mui/icons-material/Delete";
+import PrintIcon from "@mui/icons-material/Print";
+import MoreHorizIcon from "@mui/icons-material/MoreHoriz"; // Generic icon for unknown actions
 
-export default function TableAction({
-  actionsToShow = [], // ['view', 'edit', ...]
-  onView,
-  onEdit,
-  onDelete,
-  onPay,
-  onPrint,
-}) {
-  const handlers = { view: onView, edit: onEdit, delete: onDelete, pay: onPay, print: onPrint };
+/**
+ * Reusable component to display action buttons for a table row.
+ * @param {object} props
+ * @param {string[]} props.actions - An array of action keys available for the current row (e.g., ['view', 'edit']).
+ * @param {object} props.row - The data object for the current row.
+ * @param {function(string, object): void} props.onAction - Callback function when an action is triggered.
+ * @param {object} props.customActionConfigs - Object mapping action keys to icon, label, and tooltip.
+ */
+const TableAction = ({ actions, row, onAction, customActionConfigs }) => {
+  // Default icons for common actions, used if not overridden by customActionConfigs
+  const defaultIconMap = {
+    view: VisibilityIcon,
+    edit: EditIcon,
+    delete: DeleteIcon,
+    print: PrintIcon,
+    more: MoreHorizIcon,
+  };
+
+  // Helper to get action configuration, falling back to defaults
+  const getConfig = (actionKey) => {
+    return (
+      customActionConfigs?.[actionKey] || {
+        icon: defaultIconMap[actionKey] || MoreHorizIcon, // Fallback to MoreHorizIcon if no specific icon
+        label: actionKey.charAt(0).toUpperCase() + actionKey.slice(1), // Capitalize the action key for label
+        tooltip: actionKey.charAt(0).toUpperCase() + actionKey.slice(1), // Capitalize for tooltip
+      }
+    );
+  };
 
   return (
-    <>
-      {actionsToShow.map((action) => {
-        const config = actionConfigs[action];
-        if (!config) return null;
+    <Box className="flex items-center space-x-1">
+      {actions.map((actionKey) => {
+        const { icon: IconComponent, label, tooltip } = getConfig(actionKey);
         return (
-          <Tooltip title={config.label} key={action}>
+          <Tooltip title={tooltip} key={actionKey}>
             <IconButton
-              onClick={handlers[action]}
+              onClick={() => onAction(actionKey, row)}
+              aria-label={label}
               size="small"
-              color={config.color}
+              className="text-gray-600 hover:text-blue-500" // Tailwind for subtle hover effect
             >
-              {config.icon}
+              <IconComponent fontSize="small" />
             </IconButton>
           </Tooltip>
         );
       })}
-    </>
+    </Box>
   );
-}
+};
+
+export default TableAction;
