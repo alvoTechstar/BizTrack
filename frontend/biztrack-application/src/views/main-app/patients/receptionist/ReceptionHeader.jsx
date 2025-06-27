@@ -3,32 +3,37 @@
 import React from "react";
 import { Box, Typography, Button } from "@mui/material";
 import PersonAddIcon from "@mui/icons-material/PersonAdd";
+import { useTheme } from "../../../../components/theme/ThemeContext";
 
 const ReceptionHeader = ({ currentDate, onTogglePanel }) => {
+  const theme = useTheme();
+  const PrimaryColor = theme.primaryColor;
   return (
     <Box className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 items-center">
       {/* Left: Date heading */}
       <Box className="md:col-span-2">
-        <Typography
-          variant="h5"
-          component="h1"
-          className="text-gray-800 font-semibold"
-        >
-          Queue for {currentDate}
-        </Typography>
+        <span className="text-gray-700 font-semibold text-xl md:text-md">
+          Showing queue for {currentDate}
+        </span>
       </Box>
 
       {/* Right: Button */}
       <Box className="md:col-span-1 flex justify-start md:justify-end">
         <Button
-          variant="contained"
-          color="primary"
           startIcon={<PersonAddIcon />}
           onClick={onTogglePanel}
-          className="w-full md:w-auto normal-case"
+          sx={{
+            textTransform: "none",
+            backgroundColor: `${PrimaryColor} !important`,
+            color: "white !important",
+            "&:hover": {
+              backgroundColor: `${PrimaryColor} !important`,
+              opacity: 0.9,
+            },
+          }}
         >
           New Queue Entry
-        </Button>
+        </Button>{" "}
       </Box>
     </Box>
   );

@@ -14,6 +14,8 @@ import Cookies from "js-cookie";
 import { useDispatch } from "react-redux";
 import { authActions } from "../../store";
 import ModalFooter from "../../components/footer/ModalFooter";
+import AppFormButton from "../../components/buttons/AppFormButton";
+import { useTheme } from "../../components/theme/ThemeContext";
 
 // Role normalization utility
 const normalizeRole = (role) => {
@@ -36,6 +38,7 @@ const Login = () => {
 
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const { primaryColor: PrimaryColor } = useTheme();
 
   // Check if inputs are valid
   useEffect(() => {
@@ -49,7 +52,7 @@ const Login = () => {
   }, [email, password]);
 
   const handleSubmit = (e) => {
-    e.preventDefault(); 
+    e.preventDefault();
     setLoading(true);
     setErrorMessage("");
 
@@ -151,6 +154,7 @@ const Login = () => {
             <div className="mt-10 mb-2">
               <FormButton
                 text="Login"
+                color={PrimaryColor}
                 isLoading={loading}
                 validation={isValid}
                 type="submit"

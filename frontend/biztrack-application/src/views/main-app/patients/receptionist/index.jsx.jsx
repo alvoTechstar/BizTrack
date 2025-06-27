@@ -9,8 +9,8 @@ import { v4 as uuidv4 } from "uuid";
 import ReportProblemOutlinedIcon from "@mui/icons-material/ReportProblemOutlined";
 
 import ReceptionHeader from "./ReceptionHeader";
-import NewQueue from "./NewQueue"; // Ensure this NewQueue is the one without Material-UI Modal
-import PatientRegistration from "./PatientRegistration"; // Ensure this is the version modified to not use M-UI Modal
+import NewQueue from "./NewQueue";
+import PatientRegistration from "./PatientRegistration";
 import QueueDataTable from "./QueueDataTable";
 import AppFormButton from "../../../../components/buttons/AppFormButton";
 import { STATUS_OPTIONS, initialPatientsData } from "./Constants";
@@ -42,10 +42,17 @@ const ReceptionistQueuePage = () => {
 
   // Use a ref to capture the height of the header, if needed for positioning
   const headerRef = useRef(null);
+  const [headerHeight, setHeaderHeight] = useState(0); // State to store header height
 
   useEffect(() => {
-    // Only set the default view if no panel is currently open
-    // This prevents the useEffect from changing the view while a panel is intentionally open
+    // Measure header height after render
+    if (headerRef.current) {
+      setHeaderHeight(headerRef.current.offsetHeight);
+    }
+  }, [activeMainView]); // Re-measure if main view changes (panel opens/closes)
+
+
+  useEffect(() => {
     if (
       activeMainView !== MAIN_VIEW.ADD_NEW_QUEUE_PANEL &&
       activeMainView !== MAIN_VIEW.REGISTER_PATIENT_PANEL
@@ -71,7 +78,6 @@ const ReceptionistQueuePage = () => {
     };
     setQueue((prevQueue) => [...prevQueue, newQueueEntry]);
     setNextQueueNumber((prev) => prev + 1);
-    // After adding, close the panel and let useEffect determine the main view
     handleCloseNewQueuePanel();
   };
 
@@ -100,7 +106,6 @@ const ReceptionistQueuePage = () => {
     };
     setQueue((prevQueue) => [...prevQueue, newQueueEntry]);
     setNextQueueNumber((prev) => prev + 1);
-    // After adding, close the panel and let useEffect determine the main view
     handleCloseRegisterPatientPanel();
   };
 
@@ -117,8 +122,6 @@ const ReceptionistQueuePage = () => {
   };
 
   const handleCloseNewQueuePanel = () => {
-    // Setting to null/undefined will trigger the useEffect to re-evaluate
-    // based on queue.length, thus showing table or no_queue_message
     setActiveMainView(null);
   };
 
@@ -127,37 +130,27 @@ const ReceptionistQueuePage = () => {
   };
 
   const handleCloseRegisterPatientPanel = () => {
-    // Setting to null/undefined will trigger the useEffect to re-evaluate
-    // based on queue.length, thus showing table or no_queue_message
     setActiveMainView(null);
   };
 
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
-      {/* The main container should be relative so absolute children are positioned correctly */}
       <Container
         maxWidth="xl"
         className="py-4 md:py-8 bg-gray-50 min-h-screen relative flex flex-col"
       >
         {/* Header Section - Always visible and clickable */}
-        <div ref={headerRef}>
-          {" "}
-          {/* Attach ref to the header's container */}
+        <div ref={headerRef} className="mb-4 md:mb-6">
           <ReceptionHeader
             currentDate={currentDate}
-            onTogglePanel={handleOpenNewQueuePanel} // This button opens the NewQueue panel
+            onTogglePanel={handleOpenNewQueuePanel}
           />
         </div>
 
         {/* This div holds the main content (table or no-queue message) */}
-        {/* It grows to fill available space below the header */}
         <div className="flex-1 overflow-y-auto relative">
-          {" "}
-          {/* Added relative for potential future absolute elements here */}
           {activeMainView === MAIN_VIEW.NO_QUEUE_MESSAGE && (
             <div className="flex items-center justify-center h-full mt-20">
-              {" "}
-              {/* Center content vertically within this div */}
               <Paper
                 elevation={4}
                 className="p-6 text-center space-y-4 font-sans max-w-sm w-full bg-white rounded-lg shadow-xl"
@@ -185,7 +178,7 @@ const ReceptionistQueuePage = () => {
           )}
         </div>
 
-        {/* NewQueue Panel - Rendered only when active. Its position is absolute relative to <Container> */}
+        {/* NewQueue Panel */}
         {activeMainView === MAIN_VIEW.ADD_NEW_QUEUE_PANEL && (
           <NewQueue
             isOpen={true} // Always true when this branch is rendered
@@ -194,16 +187,18 @@ const ReceptionistQueuePage = () => {
             queue={queue}
             onAddExistingPatientToQueue={handleAddExistingPatientToQueue}
             onOpenRegisterModal={handleOpenRegisterPatientPanel}
+            headerHeight={headerHeight} // Pass header height
           />
         )}
 
-        {/* PatientRegistration Panel - Rendered only when active. Its position is absolute relative to <Container> */}
+        {/* PatientRegistration Panel */}
         {activeMainView === MAIN_VIEW.REGISTER_PATIENT_PANEL && (
           <PatientRegistration
-            open={true} // Always true when this branch is rendered
+            isOpen={true} // Always true when this branch is rendered
             onClose={handleCloseRegisterPatientPanel}
             onRegisterPatient={handleRegisterAndAddToQueue}
             patients={patients}
+            headerHeight={headerHeight} // Pass header height
           />
         )}
       </Container>

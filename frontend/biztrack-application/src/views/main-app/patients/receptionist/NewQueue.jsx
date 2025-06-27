@@ -24,6 +24,8 @@ import SelectInput from "../../../../components/input/SelectInput";
 import ReportProblemOutlinedIcon from "@mui/icons-material/ReportProblemOutlined";
 import NaviButton from "../../../../components/buttons/Navibutton";
 
+import { useTheme } from "../../../../components/theme/ThemeContext";
+
 // Define UI states
 const UI_STATE = {
   SEARCH: "search",
@@ -47,6 +49,9 @@ const NewQueue = ({
     VISIT_TYPES_QUEUE[0]
   );
   const [uiState, setUiState] = useState(UI_STATE.SEARCH);
+
+  const theme = useTheme();
+  const PrimaryColor = theme.primaryColor;
 
   const handleSearchPatient = () => {
     setErrorPanelMessage("");
@@ -133,23 +138,48 @@ const NewQueue = ({
   if (!isOpen) return null;
 
   return (
-    // Removed the backdrop div and its styles.
-    // The positioning (absolute, inset-0, flex, items-center, justify-center)
-    // now directly applies to the Paper component's container if you want it centered.
-    // If you want it positioned relative to its parent, you'll need to adjust.
-    // For now, this centers the paper within its direct parent (likely the main content area).
     <div className="absolute inset-0 flex items-center justify-center z-50">
       <Paper
         elevation={4}
         className="p-4 md:p-6 mb-6 relative z-10 w-full md:max-w-2xl bg-white rounded-lg shadow-xl"
-        // Removed sx for overflowY and maxHeight to allow content to dictate height
-        // and prevent internal scrollbar.
       >
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-lg font-semibold">Add Patient to Queue</h2>
-          <IconButton onClick={resetPanelState} size="small">
-            <CloseIcon />
-          </IconButton>
+          <div className="flex items-end">
+            <IconButton
+              onClick={onClose}
+              size="small"
+              sx={{
+                backgroundColor: PrimaryColor, // Set the background color to your theme's primary color
+                color: "white", // Set the icon (text) color to white
+                borderRadius: "50%", // Make it perfectly circular
+                "&:hover": {
+                  backgroundColor: PrimaryColor, // Keep background color on hover
+                  opacity: 0.9, // Slightly dim on hover for visual feedback
+                },
+                // Optional: Add padding if the icon looks too small in the circle
+                padding: "3px", // Adjust as needed, 'size="small"' default padding is often 5px
+              }}
+            >
+              <CloseIcon fontSize="small" />
+            </IconButton>
+          </div>
+        </div>
+        <div className="flex justify-between items-center mb-4">
+          <div className="flex items-center" />
+          <div className="flex justify-end mr-16">
+            <NaviButton
+              text="Add New Patient"
+              action={() => {
+                onClose();
+                onOpenRegisterModal();
+              }}
+              color={PrimaryColor}
+              size="small"
+              validation={true}
+              isLoading={false}
+            />
+          </div>
         </div>
 
         {errorPanelMessage && (
@@ -173,34 +203,43 @@ const NewQueue = ({
             >
               <FormControlLabel
                 value={SEARCH_BY_PHONE}
-                control={<Radio />}
+                control={
+                  <Radio
+                    sx={{
+                      "&.Mui-checked": {
+                        // Style when the radio button is checked
+                        color: PrimaryColor,
+                      },
+                    }}
+                  />
+                }
                 label="Phone Number"
               />
               <FormControlLabel
                 value={SEARCH_BY_ID}
-                control={<Radio />}
+                control={
+                  <Radio
+                    sx={{
+                      "&.Mui-checked": {
+                        // Style when the radio button is checked
+                        color: PrimaryColor,
+                      },
+                    }}
+                  />
+                }
                 label="National ID"
               />
             </RadioGroup>
-            <div className="justify-end flex space-x-2">
-              <NaviButton
-                text="Register Patient"
-                to="/hospital/register"
-                color="info"
-                size="small"
-              />
-            </div>
-
             <TextInput
               label={`Enter ${searchType}`}
+              placeholder="Enter value here"
               value={searchValue}
               onChange={(e) => setSearchValue(e.target.value)}
               size="small"
             />
-
             <AppFormButton
               text="Search"
-              color="#1976d2"
+              color={PrimaryColor}
               icon={<SearchIcon />}
               action={handleSearchPatient}
               validation={!!searchValue}
@@ -262,14 +301,14 @@ const NewQueue = ({
                   required
                   error={false}
                   errorMessage=""
-                  color="#2563EB"
+                  color={PrimaryColor}
                 />
               </div>
 
               <div className="pt-2">
                 <AppFormButton
                   text="Add to Queue"
-                  color="#10b981"
+                  color={PrimaryColor}
                   icon={null}
                   action={handleAddPatient}
                   validation={true}
@@ -302,8 +341,8 @@ const NewQueue = ({
                 color="#ef4444"
                 icon={null}
                 action={() => {
-                  onOpenRegisterModal();
                   onClose();
+                  onOpenRegisterModal();
                 }}
                 validation={true}
                 isLoading={false}

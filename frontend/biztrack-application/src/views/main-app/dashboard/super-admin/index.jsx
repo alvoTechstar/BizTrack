@@ -1,13 +1,39 @@
-import React from "react";
+import React, { useState } from "react";
 import { Grid } from "@mui/material";
 import KPICards from "./KPICards";
-import BusinessTable from "./BusinnessTable";
-import RevenueChart from "./RevenueCharts";
-import RecentTransactions from "./RecentTransaction";
-import QuickActions from "./QuickAction";
+import BusinessTable from "../../User-Management/super-admin/BusinessTable";
+import AdminTable from "../../User-Management/super-admin/AdminTable";
+import TransactionsTable from "./TransactionsTable";
+import RevenueTable from "./RevenueTable";
+import RevenueChart from "./RevenueCharts"; // Corrected import to RevenueChart
 import { businessData, kpiData } from "../../../../utilities/SamplData";
 
 function SuperAdminDashboard() {
+  // State to manage which component is visible below the cards
+  // Set default view to null, and let the switch's default handle the char
+  const [activeView, setActiveView] = useState(null); 
+
+  // This function will be passed to KPICards to update the state on click
+  const handleCardClick = (viewName) => {
+    setActiveView(viewName);
+  };
+
+  // Helper function to render the correct component based on the active view
+  const renderActiveComponent = () => {
+    switch (activeView) {
+      case "businesses":
+        return <BusinessTable />;
+      case "admins":
+        return <AdminTable />;
+      case "transactions":
+        return <TransactionsTable />;
+      case "revenue":
+        return <RevenueTable />;
+      default: // If activeView is null (initial) or any other unmatched value, render chart
+        return <RevenueChart businesses={businessData} />;
+    }
+  };
+
   return (
     <div className="container mx-auto px-4 py-8">
       <header className="mb-8">
@@ -18,14 +44,14 @@ function SuperAdminDashboard() {
           Overview of platform performance and analytics
         </p>
       </header>
-      <QuickActions />
 
-      <KPICards data={kpiData} />
+      {/* Pass the handler function to the KPICards component */}
+      <KPICards data={kpiData} onCardClick={handleCardClick} />
 
       <Grid container spacing={4}>
-        <Grid  item xs={12} lg={8} className="w-full">
-          <BusinessTable businesses={businessData} />
-          <RevenueChart businesses={businessData} />
+        <Grid item xs={12} className="w-full">
+          {/* The content here changes based on the card clicked */}
+          {renderActiveComponent()}
         </Grid>
       </Grid>
     </div>

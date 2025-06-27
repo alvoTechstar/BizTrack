@@ -9,19 +9,13 @@ import {
   Paper,
   Box,
   Typography,
-  TextField, // Added for search input
-  Select, // Added for filter dropdown
-  MenuItem, // Added for filter options
-  InputAdornment, // For search icon
-  IconButton, // For clear search
 } from "@mui/material";
-import "../../index.css"; 
+import "../../index.css";
 
 // Import custom reusable components
 import TablePill from "./TablePill";
 import TableAction from "./TableAction";
 import TablePagination from "./TablePagination";
-import TableModal from "./TableModal";
 import SelectInput from "../input/SelectInput";
 import SearchInput from "../input/SearchInput";
 
@@ -33,8 +27,6 @@ const DataTable = ({
   customStatusStyles = {},
   customActionConfigs = {},
   onAction = () => {},
-  rowsPerPageOptions = [5, 10, 25, 50],
-  defaultRowsPerPage = 10,
   pagination = true,
   title,
   showToolbar = false,
@@ -45,11 +37,8 @@ const DataTable = ({
   onFilterChange = () => {},
 }) => {
   const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(defaultRowsPerPage);
-  const [openModal, setOpenModal] = useState(false);
-  const [modalContent, setModalContent] = useState(null);
+  const rowsPerPage = 5; // Fixed at 5 rows per page
 
-  // Effect to reset page to 0 if data changes or if the current page becomes out of bounds
   useEffect(() => {
     if (data.length > 0 && page * rowsPerPage >= data.length) {
       setPage(0);
@@ -60,55 +49,35 @@ const DataTable = ({
     setPage(newPage);
   };
 
-  const handleChangeRowsPerPage = (event) => {
-    setRowsPerPage(parseInt(event.target.value, 10));
-    setPage(0); // Reset page to 0 when rows per page changes
-  };
-
-  const handleOpenModal = (row) => {
-    setModalContent(row);
-    setOpenModal(true);
-  };
-
-  const handleCloseModal = () => {
-    setOpenModal(false);
-    setModalContent(null);
-  };
-
-  // Determines which actions are available for a given row based on its status
   const getActionsForRow = (row) => {
-    const status = statusField ? row[statusField] : null;
-    return statusActionMap[status] || [];
+    let actions = [];
+    if (statusField && row[statusField] !== undefined) {
+      const status = row[statusField];
+      actions = statusActionMap[status] || [];
+    }
+
+    if (actions.length === 0 && statusActionMap.default) {
+      actions = statusActionMap.default;
+    }
+    return actions;
   };
 
-  // Internal handler for actions, allowing 'view' to open the modal
   const handleInternalAction = (actionKey, row) => {
-    if (actionKey === "view") {
-      handleOpenModal(row); // Open the built-in modal for 'view' action
-    }
-    // Always call the external onAction prop for further custom logic
     onAction(actionKey, row);
   };
 
-  // --- Filtering and Searching Logic ---
   const filteredData = useMemo(() => {
     let currentData = data;
 
-    // Apply filter first
     if (filterValue && filterValue !== "all") {
-      // Assuming 'all' is a reset value
-      // This example filters by a 'type' field. Adjust as needed.
-      currentData = currentData.filter((row) => row.type === filterValue);
+      currentData = currentData.filter((row) => row.service === filterValue);
     }
 
-    // Then apply search
     if (searchTerm) {
       const lowerCaseSearchTerm = searchTerm.toLowerCase();
       currentData = currentData.filter((row) =>
         columns.some((column) => {
-          // Skip action column and columns without a field
           if (column.isActionColumn || !column.field) return false;
-
           const value = row[column.field];
           if (typeof value === "string" || typeof value === "number") {
             return String(value).toLowerCase().includes(lowerCaseSearchTerm);
@@ -120,17 +89,16 @@ const DataTable = ({
     return currentData;
   }, [data, filterValue, searchTerm, columns]);
 
-  // Memoize paginated data to avoid re-calculating on every render
   const paginatedData = useMemo(() => {
     if (!pagination) {
-      return filteredData; // Return all filtered data if pagination is disabled
+      return filteredData;
     }
     const startIndex = page * rowsPerPage;
     const endIndex = startIndex + rowsPerPage;
     return filteredData.slice(startIndex, endIndex);
   }, [filteredData, page, rowsPerPage, pagination]);
 
-  const hasData = filteredData && filteredData.length > 0; // Check filteredData for 'No data available' message
+  const hasData = filteredData && filteredData.length > 0;
 
   return (
     <Paper elevation={3} className="p-4 rounded-lg shadow-md bg-white">
@@ -146,32 +114,28 @@ const DataTable = ({
         )}
         {showToolbar && (
           <Box className="flex flex-wrap gap-4 items-center justify-end mr-30">
-            {/* Use your custom SearchInput component */}
             <SearchInput
               id="data-table-search"
               placeholder="Search..."
               input={searchTerm}
-              handleInput={onSearchChange} // Directly pass onSearchChange
-              handleClear={() => onSearchChange("")} // Pass empty string to clear search
+              handleInput={onSearchChange}
+              handleClear={() => onSearchChange("")}
             />
 
             {filterOptions.length > 0 && (
-              // Use your custom SelectInput component
               <div className="">
                 <SelectInput
                   id="data-table-filter"
                   name="data-table-filter"
-                  options={[{ value: "", label: "All" }, ...filterOptions]} // Add "All" option to your filterOptions
+                  options={[{ value: "all", label: "All" }, ...filterOptions]}
                   value={filterValue}
-                  onChange={(e) => onFilterChange(e.target.value)} // Pass onChange handler
-                  displayEmpty // Prop to show placeholder/first option when no value selected
-                  size="small" // Assuming your SelectInput supports size
-                  className="w-full sm:w-48" // Tailwind for width. Adjust or remove if SelectInput handles its own width
+                  onChange={onFilterChange}
+                  displayEmpty
+                  size="small"
+                  className="w-full sm:w-48"
                 />
               </div>
             )}
-
-            {/* You can add more buttons/filters here */}
           </Box>
         )}
       </div>
@@ -182,16 +146,29 @@ const DataTable = ({
           aria-label="biztrack data table"
           className="min-w-full"
         >
-          {/* Apply background and top border here */}
           <TableHead>
-            <TableRow className="bg-gray-100 border-t border-gray-200">
-              {" "}
-              {/* This line applies the background */}
+            <TableRow
+              sx={{
+                backgroundColor: "#f3f4f6",
+                borderTop: "1px solid #e5e7eb",
+                "& .MuiTableCell-head": {
+                  backgroundColor: "inherit",
+                  borderBottom: "1px solid #e5e7eb",
+                },
+              }}
+            >
               {columns.map((column) => (
                 <TableCell
                   key={column.field || column.label}
-                  className="text-sm font-semibold text-gray-700 whitespace-nowrap px-2 py-1.5 border-b border-gray-200"
-                  style={{ minWidth: column.minWidth || "auto" }}
+                  sx={{
+                    fontSize: "0.875rem",
+                    fontWeight: 600,
+                    color: "#374151",
+                    whiteSpace: "nowrap",
+                    px: 2,
+                    py: 1.5,
+                    minWidth: column.minWidth || "auto",
+                  }}
                 >
                   {column.label}
                 </TableCell>
@@ -216,9 +193,13 @@ const DataTable = ({
                 >
                   {columns.map((column, colIndex) => (
                     <TableCell
-                      key={column.field || `col-${colIndex}`} // Unique key for cell
-                      // Reduced padding further to 'px-2 py-1.5' for body cells
+                      key={column.field || `col-${colIndex}`}
                       className="px-2 py-1.5 border-b border-gray-100 text-gray-800 align-top text-xs"
+                      sx={
+                        column.isActionColumn
+                          ? { display: "flex", alignItems: "center", gap: 1 }
+                          : {}
+                      }
                     >
                       {column.render ? (
                         column.render(row)
@@ -248,25 +229,14 @@ const DataTable = ({
         </Table>
       </TableContainer>
 
-      {pagination &&
-        filteredData.length > 0 && ( // Only show pagination if there's filtered data
-          <TablePagination
-            count={filteredData.length}
-            page={page}
-            rowsPerPage={rowsPerPage}
-            onPageChange={handleChangePage}
-            onRowsPerPageChange={handleChangeRowsPerPage}
-            rowsPerPageOptions={rowsPerPageOptions}
-          />
-        )}
-
-      {/* TableModal is rendered conditionally when openModal is true */}
-      <TableModal
-        open={openModal}
-        onClose={handleCloseModal}
-        title="Record Details"
-        content={modalContent}
-      />
+      {pagination && filteredData.length > 0 && (
+        <TablePagination
+          count={filteredData.length}
+          page={page}
+          rowsPerPage={rowsPerPage}
+          onPageChange={handleChangePage}
+        />
+      )}
     </Paper>
   );
 };

@@ -25,11 +25,15 @@ import DebtManagement from "../views/main-app/debtmanagement/DebtManagement";
 import HospitalAdminDashboard from "../views/main-app/dashboard/hospital/hospitaladmin/HospitalAdminDashboard";
 import PharmacyStock from "../views/main-app/products/hospital/PharmacyStock";
 import HospitalStaff from "../views/main-app/User-Management/hospital/hospitalStaff";
-import PatientListPage from "../views/main-app/patients/hospitaladmin/PatientslistPage";
+// import PatientListPage from "../views/main-app/patients/hospitaladmin/PatientslistPage";
 import HospitalReports from "../views/main-app/reports/hospital/hospitaladmin/HospitalAdminReports";
 import NotFound from "../components/notfound";
 import Unauthorized from "../components/notfound/Unauthorized";
-import ReceptionistQueuePage from "../views/main-app/patients/receptionist/ReceptionistQueuePage";
+import ReceptionistQueuePage from "../views/main-app/patients/receptionist/index.jsx";
+import SuperAdminReports from "../views/main-app/reports/super-admin";
+import ReceptionistPatientRecordsPage from "../views/main-app/patients/patientrecords/receptionist/index.jsx";
+import AdminPatientRecordsPage from "../views/main-app/patients/patientrecords/admin/index.jsx";
+import DoctorView from "../views/main-app/dashboard/hospital/doctor/index.jsx";
 
 export const routes = [
   // Public Routes
@@ -64,6 +68,12 @@ export const routes = [
   {
     path: "/user-management",
     element: <UserManagement />,
+    isPrivate: true,
+    allowedRoles: ["biztrack-admin"],
+  },
+    {
+    path: "/reports",
+    element: <SuperAdminReports />,
     isPrivate: true,
     allowedRoles: ["biztrack-admin"],
   },
@@ -218,7 +228,7 @@ export const routes = [
   },
   {
     path: "/hospital/patients",
-    element: <PatientListPage />,
+    element: <AdminPatientRecordsPage />,
     isPrivate: true,
     allowedRoles: ["hospital-admin"],
   },
@@ -235,9 +245,16 @@ export const routes = [
     isPrivate: true,
     allowedRoles: ["hospital-receptionist"],
   },
+    {
+    path: "/patient/records",
+    element: <ReceptionistPatientRecordsPage />,
+    isPrivate: true,
+    allowedRoles: ["hospital-receptionist"],
+  },
+  // Hospital Doctor
   {
     path: "/dashboard/doctor",
-    element: <HotelAdminDashboard />,
+    element: <DoctorView />,
     isPrivate: true,
     allowedRoles: ["hospital-doctor"],
   },

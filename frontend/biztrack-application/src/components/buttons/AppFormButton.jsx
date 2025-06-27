@@ -19,7 +19,7 @@ export default function AppFormButton({
       disabled={!!(isLoading || !validation)}
       onClick={() => action()}
     >
-      {icon && <span className="text-inherit flex items-center">{React.cloneElement(icon, { fontSize: "small" })}</span>}
+      {icon && <span className="text-inherit flex items-center ">{React.cloneElement(icon, { fontSize: "small" })}</span>}
       <span>{text}</span>
     </button>
   );

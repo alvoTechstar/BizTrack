@@ -5,9 +5,8 @@ import Topbar from "../components/header";
 import Footer from "../components/footer";
 
 import MyProfile from "../views/main-app/profile";
-// You might pass a modal component or a render prop for modals here
-// const MainLayout = ({ children, sidebarOpen, toggleSidebar, activeModal }) => {
-const MainLayout = ({ children, sidebarOpen, toggleSidebar }) => { // Keep it simple for now
+
+const MainLayout = ({ children, sidebarOpen, toggleSidebar }) => { 
 
   const [profileViewOpen, setProfileViewOpen] = useState(false);
 

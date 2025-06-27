@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import AppFormButton from "../../../../components/buttons/AppFormButton";
-import TextInput from "../../../../components/input/TextInput";
+import TextInput from "../../../../components/Input/TextInput";
 import SelectInput from "../../../../components/input/SelectInput";
 import ColorPickerInput from "../../../../components/input/ColorPickerInput";
 import { UploadButton } from "../../../../components/buttons/UploadButton";

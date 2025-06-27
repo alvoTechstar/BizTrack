@@ -284,16 +284,9 @@ export const MENU = [
     icon: <LocalHospitalIcon />,
     permissions: ["Receptionist"],
     subitems: [],
-    path: "/receptionist/patients",
+    path: "/patient/records",
   },
-  {
-    key: "receptionist-appointments",
-    title: "Appointments",
-    icon: <ListIcon />,
-    permissions: ["Receptionist"],
-    subitems: [],
-    path: "/receptionist/appointments",
-  },
+
 
   // Doctor
   {

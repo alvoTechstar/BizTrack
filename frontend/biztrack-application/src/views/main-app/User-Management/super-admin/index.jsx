@@ -133,29 +133,29 @@ function UserManagement() {
               }}
             >
               <Tab
-                icon={<GroupIcon fontSize="small" />}
-                iconPosition="start"
-                label="Admins"
-                id="superadmin-usermanagement-tab-0"
-                aria-controls="superadmin-usermanagement-tabpanel-0"
-              />
-              <Tab
                 icon={<BusinessIcon fontSize="small" />}
                 iconPosition="start"
                 label="Businesses"
                 id="superadmin-usermanagement-tab-1"
                 aria-controls="superadmin-usermanagement-tabpanel-1"
               />
+              <Tab
+                icon={<GroupIcon fontSize="small" />}
+                iconPosition="start"
+                label="Admins"
+                id="superadmin-usermanagement-tab-0"
+                aria-controls="superadmin-usermanagement-tabpanel-0"
+              />
             </Tabs>
           </Box>
 
           {/* Margin below tabs */}
           <Box className=" mb-2">
-            <TabPanel value={currentTab} index={0}>
-              <AdminTable />
-            </TabPanel>
             <TabPanel value={currentTab} index={1}>
               <BusinessTable />
+            </TabPanel>
+            <TabPanel value={currentTab} index={0}>
+              <AdminTable />
             </TabPanel>
           </Box>
         </Box>

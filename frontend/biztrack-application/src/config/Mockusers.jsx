@@ -30,7 +30,7 @@ export const mockBusinesses = [
     name: 'City Care Hospital',
     type: 'Hospital',
     logoUrl:  Hospital,
-    primaryColor: '#dc3545', // Red for Hospital
+    primaryColor: '#d9a109', // Red for Hospital
   },
 ];
 

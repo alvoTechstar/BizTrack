@@ -1,55 +1,81 @@
-// src/components/DataTable/TableAction.jsx
 import React from "react";
-import { IconButton, Tooltip, Box } from "@mui/material";
+import { IconButton, Tooltip, Box, Button } from "@mui/material";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import PrintIcon from "@mui/icons-material/Print";
-import MoreHorizIcon from "@mui/icons-material/MoreHoriz"; // Generic icon for unknown actions
+import MoreHorizIcon from "@mui/icons-material/MoreHoriz";
 
-/**
- * Reusable component to display action buttons for a table row.
- * @param {object} props
- * @param {string[]} props.actions - An array of action keys available for the current row (e.g., ['view', 'edit']).
- * @param {object} props.row - The data object for the current row.
- * @param {function(string, object): void} props.onAction - Callback function when an action is triggered.
- * @param {object} props.customActionConfigs - Object mapping action keys to icon, label, and tooltip.
- */
-const TableAction = ({ actions, row, onAction, customActionConfigs }) => {
-  // Default icons for common actions, used if not overridden by customActionConfigs
+const TableAction = ({ actions, row, onAction, customActionConfigs = {} }) => {
   const defaultIconMap = {
-    view: VisibilityIcon,
-    edit: EditIcon,
-    delete: DeleteIcon,
-    print: PrintIcon,
-    more: MoreHorizIcon,
+    view: <VisibilityIcon fontSize="small" />,
+    edit: <EditIcon fontSize="small" />,
+    delete: <DeleteIcon fontSize="small" />,
+    print: <PrintIcon fontSize="small" />,
+    more: <MoreHorizIcon fontSize="small" />,
   };
 
-  // Helper to get action configuration, falling back to defaults
-  const getConfig = (actionKey) => {
-    return (
-      customActionConfigs?.[actionKey] || {
-        icon: defaultIconMap[actionKey] || MoreHorizIcon, // Fallback to MoreHorizIcon if no specific icon
-        label: actionKey.charAt(0).toUpperCase() + actionKey.slice(1), // Capitalize the action key for label
-        tooltip: actionKey.charAt(0).toUpperCase() + actionKey.slice(1), // Capitalize for tooltip
-      }
-    );
+  const getActionConfig = (actionKey) => {
+    // Get default config
+    const defaultConfig = {
+      icon: defaultIconMap[actionKey] || defaultIconMap.more,
+      tooltip: actionKey
+        .replace(/_/g, " ")
+        .replace(/\b\w/g, (l) => l.toUpperCase()),
+      label: actionKey
+        .replace(/_/g, " ")
+        .replace(/\b\w/g, (l) => l.toUpperCase()),
+      variant: undefined,
+      size: "small",
+    };
+
+    // Merge with custom config if exists
+    const customConfig = customActionConfigs[actionKey] || {};
+
+    return {
+      ...defaultConfig,
+      ...customConfig,
+      // Ensure icon is properly formatted
+      icon: React.isValidElement(customConfig.icon)
+        ? customConfig.icon
+        : defaultConfig.icon,
+    };
   };
 
   return (
-    <Box className="flex items-center space-x-1">
+    <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
       {actions.map((actionKey) => {
-        const { icon: IconComponent, label, tooltip } = getConfig(actionKey);
+        const { icon, tooltip, label, variant, ...rest } =
+          getActionConfig(actionKey);
+
         return (
           <Tooltip title={tooltip} key={actionKey}>
-            <IconButton
-              onClick={() => onAction(actionKey, row)}
-              aria-label={label}
-              size="small"
-              className="text-gray-600 hover:text-blue-500" // Tailwind for subtle hover effect
-            >
-              <IconComponent fontSize="small" />
-            </IconButton>
+            {variant ? (
+              <Button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onAction(actionKey, row);
+                }}
+                startIcon={icon}
+                size="small"
+                variant={variant}
+                {...rest}
+              >
+                {label}
+              </Button>
+            ) : (
+              <IconButton
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onAction(actionKey, row);
+                }}
+                aria-label={label}
+                size="small"
+                {...rest}
+              >
+                {icon}
+              </IconButton>
+            )}
           </Tooltip>
         );
       })}
