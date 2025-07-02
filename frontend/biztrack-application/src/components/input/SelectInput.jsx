@@ -1,7 +1,7 @@
-import React, { useState } from "react";
-import { Select, MenuItem } from "@mui/material";
+import React from "react";
+import { Select, MenuItem, Chip, Box } from "@mui/material";
 import ErrorRoundedIcon from "@mui/icons-material/ErrorRounded";
-import { useTheme } from "../theme/ThemeContext";
+import { useTheme } from "../theme/ThemeContext"; // Verify this path is correct for your theme context
 
 export default function SelectInput({
   id,
@@ -16,11 +16,18 @@ export default function SelectInput({
   error = false,
   errorMessage = "",
   returnObject = false,
+  multiple = false,
 }) {
   const { primaryColor } = useTheme();
-  const [isFocused, setIsFocused] = useState(false);
 
-  const isEmpty = value === undefined || value === null || options.length === 0;
+  // Determine the value to pass to MUI Select based on 'multiple' prop
+  const displayValue = multiple ? (value || []) : (value === undefined || value === null ? "" : value);
+
+  // Define common Tailwind color hex codes for consistency (adjust if your Tailwind config uses different values)
+  const tailwindGray300 = '#D1D5DB'; // Equivalent to border-gray-300
+  const tailwindGray400 = '#9CA3AF'; // Slightly darker gray for hover, similar to border-gray-400
+  const tailwindRed500 = '#EF4444';   // Equivalent to border-red-500
+  const tailwindGray100 = '#F3F4F6';  // Equivalent to bg-gray-100
 
   return (
     <div className="mb-4 w-full">
@@ -38,57 +45,123 @@ export default function SelectInput({
           id={id}
           name={name}
           fullWidth
-          displayEmpty
+          displayEmpty // Important for displaying the placeholder when value is empty
           disabled={disabled}
-          value={isEmpty ? "" : value}
+          value={displayValue}
           onChange={onChange}
-          onFocus={() => setIsFocused(true)}
-          onBlur={(e) => {
-            setIsFocused(false);
+          onClose={(e) => {
             onBlur?.(e);
           }}
+          multiple={multiple}
+          variant="outlined"
           className={`
-            w-full pr-10 px-4 py-2 border rounded-lg shadow-sm
-            focus:outline-none h-[40px]
-            ${error ? "border-red-500" : "border-gray-300"}
-            ${disabled ? "bg-gray-100 cursor-not-allowed" : ""}
+            w-full shadow-sm rounded-lg
+            ${disabled ? `bg-[${tailwindGray100}] cursor-not-allowed` : ""}
           `}
-          style={
-            isFocused && !error
-              ? {
-                  borderColor: primaryColor,
-                  boxShadow: `0 0 0 2px ${primaryColor}33`,
-                }
-              : {}
-          }
-          renderValue={(selected) => {
-            if (selected === "") {
-              return <span className="text-[#9ca3af]">Select</span>;
-            }
-
-            const selectedOption = options.find((opt) =>
-              returnObject
-                ? opt === selected
-                : opt.value === selected || opt.name === selected
-            );
-
-            return selectedOption?.label || selectedOption?.name || selected;
+          sx={{
+            height: '40px',
+            '& .MuiOutlinedInput-notchedOutline': {
+              borderColor: error ? tailwindRed500 : tailwindGray300,
+              transition: 'border-color 0.2s ease-in-out',
+            },
+            '&:hover .MuiOutlinedInput-notchedOutline': {
+              borderColor: error ? tailwindRed500 : tailwindGray400,
+            },
+            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+              borderColor: primaryColor,
+              boxShadow: `0 0 0 2px ${primaryColor}33`,
+              outline: 'none',
+            },
+            '&.Mui-focused': {
+                outline: 'none',
+            },
+            '& .MuiSelect-select': {
+              padding: '8px 14px',
+              minHeight: 'unset',
+              ...(multiple && {
+                padding: '8px 32px 8px 14px',
+              }),
+            },
+            '& .MuiInputBase-input': {
+                padding: '5px !important', // Adjusted from 0 to 5px for better visual padding
+                height: '100%',
+                display: 'flex',
+                alignItems: 'center',
+            },
+            '& .MuiSelect-icon': {
+                right: '10px',
+            },
+            '& .MuiInputLabel-root': {
+                display: 'none',
+            },
+            '& .MuiChip-root': {
+                margin: '2px',
+            },
           }}
+          // --- START Placeholder Logic ---
+          renderValue={(selected) => {
+            if (multiple) {
+              // For multiple select, if no items are selected, show placeholder
+              if (selected.length === 0) {
+                return <span className="text-[#9ca3af]">Select {label}</span>;
+              }
+              // Otherwise, render selected chips
+              return (
+                <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
+                  {selected.map((val) => {
+                    const selectedOption = options.find((opt) =>
+                      returnObject
+                        ? opt === val
+                        : opt.value === val || opt.name === val
+                    );
+                    return (
+                      <Chip
+                        key={val}
+                        label={
+                          selectedOption?.label || selectedOption?.name || val
+                        }
+                        size="small"
+                      />
+                    );
+                  })}
+                </Box>
+              );
+            } else {
+              // For single select, if value is empty, show placeholder
+              if (selected === "" || selected === null || selected === undefined) {
+                return <span className="text-[#9ca3af]">Select {label}</span>;
+              }
+              // Otherwise, render the selected option's label
+              const selectedOption = options.find((opt) =>
+                returnObject
+                  ? opt === selected
+                  : opt.value === selected || opt.name === selected
+              );
+              return selectedOption?.label || selectedOption?.name || selected;
+            }
+          }}
+          // --- END Placeholder Logic ---
         >
-          <MenuItem value={""} disabled>
-            Select
-          </MenuItem>
+          {/* We don't need a disabled MenuItem for placeholder if renderValue handles it for displayEmpty */}
+          {/* {!multiple && (
+            <MenuItem value={""} disabled>
+              <span className="text-[#9ca3af]">Select {label}</span>
+            </MenuItem>
+          )} */}
+
           {options.map((option, index) => {
-            const isSelected =
-              (returnObject && option === value) ||
-              option.value === value ||
-              JSON.stringify(option) === JSON.stringify(value) ||
-              option.name === value;
+            const val = returnObject ? option : option.value || option.name;
+            const isSelected = multiple
+              ? (value || []).includes(val)
+              : (returnObject && option === value) ||
+                option.value === value ||
+                JSON.stringify(option) === JSON.stringify(value) ||
+                option.name === value;
 
             return (
               <MenuItem
                 key={index}
-                value={returnObject ? option : option.value || option.name}
+                value={val}
                 sx={{
                   ":hover": { color: primaryColor },
                   color: isSelected ? primaryColor : "inherit",

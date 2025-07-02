@@ -34,6 +34,7 @@ import SuperAdminReports from "../views/main-app/reports/super-admin";
 import ReceptionistPatientRecordsPage from "../views/main-app/patients/patientrecords/receptionist/index.jsx";
 import AdminPatientRecordsPage from "../views/main-app/patients/patientrecords/admin/index.jsx";
 import DoctorView from "../views/main-app/dashboard/hospital/doctor/index.jsx";
+import PatientListPage from "../views/main-app/dashboard/hospital/doctor/patientshistory/PatientListPage.jsx";
 
 export const routes = [
   // Public Routes
@@ -71,7 +72,7 @@ export const routes = [
     isPrivate: true,
     allowedRoles: ["biztrack-admin"],
   },
-    {
+  {
     path: "/reports",
     element: <SuperAdminReports />,
     isPrivate: true,
@@ -245,7 +246,7 @@ export const routes = [
     isPrivate: true,
     allowedRoles: ["hospital-receptionist"],
   },
-    {
+  {
     path: "/patient/records",
     element: <ReceptionistPatientRecordsPage />,
     isPrivate: true,
@@ -255,6 +256,12 @@ export const routes = [
   {
     path: "/dashboard/doctor",
     element: <DoctorView />,
+    isPrivate: true,
+    allowedRoles: ["hospital-doctor"],
+  },
+  {
+    path: "/doctor/patients",
+    element: <PatientListPage />,
     isPrivate: true,
     allowedRoles: ["hospital-doctor"],
   },

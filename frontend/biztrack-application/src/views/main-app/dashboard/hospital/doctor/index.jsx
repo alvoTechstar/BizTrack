@@ -20,7 +20,7 @@ import MedicalInformationIcon from "@mui/icons-material/MedicalInformation";
 // Import the individual components
 import DoctorDashboard from "./DoctorDashboard";
 import ConsultationPage from "./ConsultationPage";
-import PatientHistory from "./PatientHistory";
+import PatientHistory from "./patientshistory/PatientHistoryPage";
 
 // Mock Data - Centralized for easier management (can be moved to a separate file, e.g., 'data.js')
 const mockPatients = [

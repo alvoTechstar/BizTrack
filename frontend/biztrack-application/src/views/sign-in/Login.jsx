@@ -14,9 +14,8 @@ import Cookies from "js-cookie";
 import { useDispatch } from "react-redux";
 import { authActions } from "../../store";
 import ModalFooter from "../../components/footer/ModalFooter";
-import AppFormButton from "../../components/buttons/AppFormButton";
 import { useTheme } from "../../components/theme/ThemeContext";
-
+import Toaster from "../../components/Toaster";
 // Role normalization utility
 const normalizeRole = (role) => {
   if (!role) return "";
@@ -36,11 +35,15 @@ const Login = () => {
   const [isValid, setIsValid] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
+  const [toastOpen, setToastOpen] = useState(false);
+  const [toastState, setToastState] = useState("true");
+  const [toastTitle, setToastTitle] = useState("");
+  const [toastMessage, setToastMessage] = useState("");
+
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { primaryColor: PrimaryColor } = useTheme();
 
-  // Check if inputs are valid
   useEffect(() => {
     const valid =
       validateEmail(email) &&
@@ -50,6 +53,13 @@ const Login = () => {
       validatePassword("characters", password);
     setIsValid(valid);
   }, [email, password]);
+
+  const showToaster = (state, title, message) => {
+    setToastState(state);
+    setToastTitle(title);
+    setToastMessage(message);
+    setToastOpen(true);
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -73,15 +83,17 @@ const Login = () => {
       });
 
       dispatch(authActions.setAuth(userWithNormalizedRole));
-      navigateToDashboard(fullRole);
+
+      showToaster("true", "Login Successful", "Welcome back!");
+      setTimeout(() => navigateToDashboard(fullRole), 1000);
     } else {
       setErrorMessage("Invalid email or password.");
+      showToaster("false", "Login Failed", "Invalid email or password.");
     }
 
     setTimeout(() => setLoading(false), 1000);
   };
 
-  // Navigate user to their specific dashboard
   const navigateToDashboard = (role) => {
     const normalizedRole = normalizeRole(role);
 
@@ -111,6 +123,14 @@ const Login = () => {
 
   return (
     <div className="min-h-screen grid lg:grid-cols-2 bg-gray-100 relative">
+      <Toaster
+        open={toastOpen}
+        state={toastState}
+        title={toastTitle}
+        message={toastMessage}
+        action={setToastOpen}
+        position="right"
+      />
       {/* Left: Form */}
       <div className="flex items-center justify-center p-6 relative z-10">
         <div className="bg-white p-8 rounded-xl shadow-md border border-gray-300 w-full max-w-md mt-3">
@@ -200,6 +220,8 @@ const Login = () => {
           backgroundImage: `url(${loginBg})`,
         }}
       ></div>
+
+      {/* 🔔 Toaster */}
     </div>
   );
 };

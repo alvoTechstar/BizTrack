@@ -15,6 +15,19 @@ import VisibilityIcon from "@mui/icons-material/Visibility";
 import DataTable from "../../../../../components/datatable/index";
 import { useTheme } from "../../../../../components/theme/ThemeContext";
 
+// 🔹 Centralized status mapping
+const statusColorMap = {
+  waiting: { label: "Waiting", color: "warning" },
+  in_progress: { label: "In Consultation", color: "info" },
+  awaiting_lab: { label: "Awaiting Lab", color: "secondary" },
+  return_to_doctor: { label: "Return to Doctor", color: "primary" },
+  to_nurse: { label: "To Nurse", color: "secondary" },
+  to_pharmacy: { label: "To Pharmacy", color: "secondary" },
+  completed: { label: "Completed", color: "success" },
+  cancelled: { label: "Cancelled", color: "error" },
+  draft: { label: "Draft", color: "default" },
+};
+
 const getDoctorQueueData = (allQueuePatients) => {
   return allQueuePatients.filter(
     (p) => p.status === "waiting" || p.status === "in_progress"
@@ -70,17 +83,15 @@ const DoctorDashboard = ({
       label: "Status",
       minWidth: "100px",
       render: (row) => {
-        const colorMap = {
-          waiting: "warning",
-          in_progress: "info",
-          completed: "success",
-          cancelled: "error",
+        const statusInfo = statusColorMap[row.status] || {
+          label: row.status,
+          color: "default",
         };
         return (
           <Chip
-            label={row.status.replace("_", " ")}
+            label={statusInfo.label}
             size="small"
-            color={colorMap[row.status] || "default"}
+            color={statusInfo.color}
             sx={{
               borderRadius: "4px",
               height: "24px",
@@ -101,7 +112,7 @@ const DoctorDashboard = ({
           icon={<VisibilityIcon fontSize="small" />}
           label="View"
           size="small"
-          variant="filled" // Changed to filled for solid background
+          variant="filled"
           onClick={(e) => {
             e.stopPropagation();
             handleDataTableAction("view_patient_details", row);
@@ -111,19 +122,15 @@ const DoctorDashboard = ({
             height: "24px",
             fontSize: "0.75rem",
             cursor: "pointer",
-            // Normal state
-            color: "white", // White text
-            backgroundColor: PrimaryColor, // Primary color background
-            // Icon styling
+            color: "white",
+            backgroundColor: PrimaryColor,
             "& .MuiChip-icon": {
-              color: "grey.800", // Gray icon
+              color: "grey.800",
               fontSize: "16px",
             },
-            // Hover state
             "&:hover": {
               backgroundColor: PrimaryColor,
-              opacity: 0.9, // Slight opacity change on hover
-              // Keep text white and icon gray on hover
+              opacity: 0.9,
               color: "white",
               "& .MuiChip-icon": {
                 color: "grey.800",
@@ -137,7 +144,7 @@ const DoctorDashboard = ({
 
   const customActionConfigs = {
     view_patient_details: {
-      icon: <VisibilityIcon fontSize="small" />, // Must be JSX element
+      icon: <VisibilityIcon fontSize="small" />,
       label: "View",
       tooltip: "View Patient Details",
       variant: "contained",
@@ -229,7 +236,7 @@ const DoctorDashboard = ({
       </div>
 
       {currentPatient && (
-        <div className="bg-blue-100 border-l-4 border-blue-500 text-blue-800 p-4 rounded-md shadow-md mb-6 flex items-center justify-between">
+        <div className="bg-blue-100 border-l-4 border-blue-500 text-blue-800 p-4 rounded-md shadow-md mb-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div>
             <Typography variant="h6" fontWeight="600">
               Currently Seeing:
@@ -237,6 +244,23 @@ const DoctorDashboard = ({
             <Typography variant="body1">
               {currentPatient.patientName} (Queue ID: {currentPatient.queueId})
             </Typography>
+            <Box mt={1}>
+              <Chip
+                label={
+                  statusColorMap[currentPatient.status]?.label ||
+                  currentPatient.status
+                }
+                color={
+                  statusColorMap[currentPatient.status]?.color || "default"
+                }
+                size="small"
+                sx={{
+                  borderRadius: "4px",
+                  fontSize: "0.75rem",
+                  textTransform: "capitalize",
+                }}
+              />
+            </Box>
           </div>
           <Button
             variant="contained"
@@ -261,16 +285,8 @@ const DoctorDashboard = ({
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <Card
-          sx={{ borderRadius: "12px", boxShadow: "0 2px 8px rgba(0,0,0,0.1)" }}
-        >
-          <CardContent
-            sx={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-            }}
-          >
+        <Card sx={{ borderRadius: "12px", boxShadow: "0 2px 8px rgba(0,0,0,0.1)" }}>
+          <CardContent sx={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
             <DashboardIcon color="primary" sx={{ fontSize: "2.5rem", mb: 1 }} />
             <Typography variant="h5" fontWeight="bold">
               {allQueuePatients.length}
@@ -280,16 +296,8 @@ const DoctorDashboard = ({
             </Typography>
           </CardContent>
         </Card>
-        <Card
-          sx={{ borderRadius: "12px", boxShadow: "0 2px 8px rgba(0,0,0,0.1)" }}
-        >
-          <CardContent
-            sx={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-            }}
-          >
+        <Card sx={{ borderRadius: "12px", boxShadow: "0 2px 8px rgba(0,0,0,0.1)" }}>
+          <CardContent sx={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
             <CheckCircle color="success" sx={{ fontSize: "2.5rem", mb: 1 }} />
             <Typography variant="h5" fontWeight="bold">
               {completedPatientsCount}
@@ -299,16 +307,8 @@ const DoctorDashboard = ({
             </Typography>
           </CardContent>
         </Card>
-        <Card
-          sx={{ borderRadius: "12px", boxShadow: "0 2px 8px rgba(0,0,0,0.1)" }}
-        >
-          <CardContent
-            sx={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-            }}
-          >
+        <Card sx={{ borderRadius: "12px", boxShadow: "0 2px 8px rgba(0,0,0,0.1)" }}>
+          <CardContent sx={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
             <HistoryIcon color="warning" sx={{ fontSize: "2.5rem", mb: 1 }} />
             <Typography variant="h5" fontWeight="bold">
               {pendingPatients.length}
