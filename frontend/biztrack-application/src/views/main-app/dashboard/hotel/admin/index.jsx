@@ -1,306 +1,371 @@
-import React, { useState, useEffect } from 'react';
-import {
-  Box,
-  Container,
-  Grid,
-  Paper,
-  Typography,
-  List,
-  ListItem,
-  ListItemText,
-  Divider,
-  Card,
-  CardContent,
-  Button,
-  Stack,
-  Avatar,
-  Chip,
-  IconButton,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow
-} from '@mui/material';
+import React, { useState, useEffect, useMemo } from "react";
+import { Box, Typography, Button } from "@mui/material"; // Added Button to imports
 import {
   ShoppingCart as ShoppingCartIcon,
   AttachMoney as AttachMoneyIcon,
   People as PeopleIcon,
   Restaurant as RestaurantIcon,
   Warning as WarningIcon,
-  Menu as MenuIcon,
-  BarChart as BarChartIcon,
-  PersonAdd as PersonAddIcon,
-  Refresh as RefreshIcon,
-  MoreVert as MoreVertIcon,
-} from '@mui/icons-material';
-import { LineChart, Line, PieChart, Pie, Cell, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
+} from "@mui/icons-material";
 
-// Sample data
-const revenueData = [
-  { name: 'Mon', value: 4200 },
-  { name: 'Tue', value: 3800 },
-  { name: 'Wed', value: 5100 },
-  { name: 'Thu', value: 4700 },
-  { name: 'Fri', value: 6200 },
-  { name: 'Sat', value: 7800 },
-  { name: 'Sun', value: 7200 },
+// Import the new components
+import KpiCard from "./KpiCard";
+import RevenueChartCard from "./RevenueChartCard";
+import OrdersByCategoryChartCard from "./OrdersByCategoryChartCard";
+import RecentOrdersTable from "./recentOrdersTable";
+import DateRangeInput from "../../../../../components/input/DateRangeInput";
+import SearchInput from "../../../../../components/input/SearchInput";
+import dayjs from "dayjs";
+
+// --- Sample Data (updated to include 'date' property) ---
+const revenueDataDaily = [
+  { name: "Mon", value: 4200 },
+  { name: "Tue", value: 3800 },
+  { name: "Wed", value: 5100 },
+  { name: "Thu", value: 4700 },
+  { name: "Fri", value: 6200 },
+  { name: "Sat", value: 7800 },
+  { name: "Sun", value: 7200 },
+];
+
+const revenueDataMonthly = [
+  { name: "Jan", value: 150000 },
+  { name: "Feb", value: 145000 },
+  { name: "Mar", value: 160000 },
+  { name: "Apr", value: 155000 },
+  { name: "May", value: 170000 },
+  { name: "Jun", value: 185000 },
+  { name: "Jul", value: 175000 },
 ];
 
 const ordersByCategoryData = [
-  { name: 'Food', value: 67 },
-  { name: 'Beverage', value: 33 },
+  { name: "Food", value: 67 },
+  { name: "Beverage", value: 33 },
 ];
-
-const COLORS = ['#0088FE', '#00C49F'];
 
 const recentOrders = [
-  { id: 'ORD-5678', waiter: 'John Smith', amount: '$124.50', time: '12:45 PM', status: 'Completed' },
-  { id: 'ORD-5677', waiter: 'Sarah Lee', amount: '$78.25', time: '12:30 PM', status: 'In Progress' },
-  { id: 'ORD-5676', waiter: 'Mike Chen', amount: '$95.00', time: '12:15 PM', status: 'Completed' },
-  { id: 'ORD-5675', waiter: 'Lisa Johnson', amount: '$43.75', time: '11:50 AM', status: 'Completed' },
-  { id: 'ORD-5674', waiter: 'Robert Davis', amount: '$112.80', time: '11:30 AM', status: 'Completed' },
+  {
+    id: "ORD-5678",
+    waiter: "John Smith",
+    amount: 12450, // Changed to number for easier formatting
+    date: "2025-07-24", // Added date
+    time: "12:45:00", // Added seconds for consistency with format
+    status: "Completed",
+    foodItems: ["Ugali & Sukuma", "Chapati & Ndengu"],
+  },
+  {
+    id: "ORD-5677",
+    waiter: "Sarah Lee",
+    amount: 7825,
+    date: "2025-07-24", // Added date
+    time: "12:30:00", // Added seconds
+    status: "In Progress",
+    foodItems: ["Mokimo", "Kienyeji Chicken"],
+  },
+  {
+    id: "ORD-5676",
+    waiter: "Mike Chen",
+    amount: 9500,
+    date: "2025-07-23", // Added date
+    time: "17:15:00", // Added seconds
+    status: "Completed",
+    foodItems: ["Pilau Beef", "Fresh Juice"],
+  },
+  {
+    id: "ORD-5675",
+    waiter: "Lisa Johnson",
+    amount: 4375,
+    date: "2025-07-23", // Added date
+    time: "11:50:00", // Added seconds
+    status: "Completed",
+    foodItems: ["Fish Fry", "Fries"],
+  },
+  {
+    id: "ORD-56776",
+    waiter: "Lisa Johnson",
+    amount: 4375,
+    date: "2025-07-23", // Added date
+    time: "11:50:00", // Added seconds
+    status: "Completed",
+    foodItems: ["Fish Fry", "Fries"],
+  },
+  {
+    id: "ORD-5685",
+    waiter: "Lisa Johnson",
+    amount: 4375,
+    date: "2025-07-23", // Added date
+    time: "11:50:00", // Added seconds
+    status: "Completed",
+    foodItems: ["Fish Fry", "Fries"],
+  },
+  {
+    id: "ORD-5674",
+    waiter: "Robert Davis",
+    amount: 11280,
+    date: "2025-07-22", // Added date
+    time: "09:30:00", // Added seconds
+    status: "Completed",
+    foodItems: ["Nyama Choma", "Samosa"],
+  },
 ];
-
-// KPI Card Component
-const KpiCard = ({ icon, title, value, color }) => (
-  <Card sx={{ height: '100%' }}>
-    <CardContent>
-      <Box display="flex" alignItems="center" justifyContent="space-between">
-        <Box>
-          <Typography variant="body2" color="text.secondary">
-            {title}
-          </Typography>
-          <Typography variant="h4" sx={{ mt: 1, fontWeight: 'bold' }}>
-            {value}
-          </Typography>
-        </Box>
-        <Avatar sx={{ bgcolor: color, width: 56, height: 56 }}>
-          {icon}
-        </Avatar>
-      </Box>
-    </CardContent>
-  </Card>
-);
 
 function HotelAdminDashboard() {
   const [currentTime, setCurrentTime] = useState(new Date());
-  
+  const [revenueChartData, setRevenueChartData] = useState(revenueDataDaily);
+  const [revenueDateRange, setRevenueDateRange] = useState("7_days");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [dateFilter, setDateFilter] = useState(false);
+  const [selectedDates, setSelectedDates] = useState(null); // This will hold { startDate, endDate } from DateInput
+  const [dateAnchorEl, setDateAnchorEl] = useState(null);
+
+  // Filter recent orders based on search and date range
+  const filteredRecentOrders = useMemo(() => {
+    let result = [...recentOrders];
+
+    // Apply search filter
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      result = result.filter(
+        (order) =>
+          order.id.toLowerCase().includes(term) ||
+          order.waiter.toLowerCase().includes(term) ||
+          order.foodItems.some((item) => item.toLowerCase().includes(term)) ||
+          order.status.toLowerCase().includes(term)
+      );
+    }
+
+    // Apply date filter if enabled and selectedDates are available
+    if (
+      dateFilter &&
+      selectedDates &&
+      selectedDates.startDate &&
+      selectedDates.endDate
+    ) {
+      const { startDate, endDate } = selectedDates;
+      result = result.filter((order) => {
+        const orderDateTime = dayjs(`${order.date}T${order.time}`);
+        // Ensure dayjs objects are created correctly for comparison
+        const filterStartDate = dayjs(startDate, "DD-MM-YYYY").startOf("day");
+        const filterEndDate = dayjs(endDate, "DD-MM-YYYY").endOf("day");
+        return (
+          orderDateTime.isAfter(filterStartDate) &&
+          orderDateTime.isBefore(filterEndDate)
+        );
+      });
+    }
+
+    return result;
+  }, [recentOrders, searchTerm, dateFilter, selectedDates]);
+
+  const handleDateClick = (event) => {
+    setDateAnchorEl(event.currentTarget);
+  };
+
+  const handleDateClose = () => {
+    setDateAnchorEl(null);
+  };
+
+  const handleDateFilter = (isFiltered) => {
+    setDateFilter(isFiltered);
+  };
+
+  // This function receives the { startDate, endDate } object from DateInput
+  const handleSelectedDates = (dates) => {
+    setSelectedDates(dates);
+  };
+
+  // For SearchInput component
+  const handleSearchChange = (value) => {
+    setSearchTerm(value);
+  };
+
+  const handleClearSearch = () => {
+    setSearchTerm("");
+  };
+
+  const handleViewAll = () => {
+    setDateFilter(false);
+    setSelectedDates(null); // Reset selected dates
+    setSearchTerm(""); // Clear search term
+  };
+
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentTime(new Date());
     }, 60000); // Update every minute
-    
+
     return () => {
       clearInterval(timer);
     };
   }, []);
 
   const formatDate = (date) => {
-    const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-    return date.toLocaleDateString('en-US', options);
+    const options = {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    };
+    return date.toLocaleDateString("en-US", options);
+  };
+
+  const getGreeting = () => {
+    const hour = currentTime.getHours();
+    if (hour < 12) return "Good Morning";
+    if (hour < 18) return "Good Afternoon";
+    return "Good Evening";
+  };
+
+  const handleRevenueDateRangeChange = (event) => {
+    const selectedRange = event.target.value;
+    setRevenueDateRange(selectedRange);
+    if (selectedRange === "7_days") {
+      setRevenueChartData(revenueDataDaily);
+    } else if (selectedRange === "this_month") {
+      setRevenueChartData(revenueDataMonthly);
+    } else {
+      setRevenueChartData(revenueDataDaily); // Default
+    }
+  };
+
+  const handleOrderAction = (orderId, actionType) => {
+    console.log(`Order ${orderId}: ${actionType} action triggered.`);
+    // You'd typically add logic here to handle 'edit' or 'print'
+    // e.g., if (actionType === 'edit') { openEditModal(orderId); }
+    // else if (actionType === 'print') { initiatePrint(orderId); }
   };
 
   return (
-    <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+    <div className="min-h-screen bg-gray-50 p-2 pb-20 ">
+      {/* Header and Dynamic Greeting */}
+      <Box
+        display="flex"
+        justifyContent="space-between"
+        alignItems="center"
+        mb={3}
+      >
         <Typography variant="h4" fontWeight="bold">
-          Hotel Overview
+          {getGreeting()}, Admin!
         </Typography>
-        <Box>
-          <Typography variant="subtitle1">
-            {formatDate(currentTime)}
-          </Typography>
+        <Box textAlign="right">
+          <Typography variant="subtitle1">{formatDate(currentTime)}</Typography>
           <Typography variant="subtitle2" color="text.secondary">
             Last updated: {currentTime.toLocaleTimeString()}
           </Typography>
         </Box>
       </Box>
 
-      {/* KPI Cards */}
-      <Grid container spacing={3} mb={4}>
-        <Grid item xs={12} sm={6} md={4} lg={2.4}>
-          <KpiCard 
-            icon={<ShoppingCartIcon />} 
-            title="Total Orders Today" 
-            value="142" 
-            color="#3f51b5" 
+      {/* --- KPI Cards - Cover full width --- */}
+      <div className="flex flex-wrap gap-4 mb-8">
+        <div className="w-full sm:w-[calc(50%-1rem)] md:w-[calc(33.33%-1rem)] lg:w-[calc(20%-1rem)]">
+          <KpiCard
+            icon={<ShoppingCartIcon />}
+            title="Total Orders Today"
+            value="142"
+            color="#3f51b5"
+            trend={{ type: "up", value: 7.2 }}
+            onClick={() => console.log("Clicked Total Orders")}
           />
-        </Grid>
-        <Grid item xs={12} sm={6} md={4} lg={2.4}>
-          <KpiCard 
-            icon={<AttachMoneyIcon />} 
-            title="Total Revenue Today" 
-            value="$8,245" 
-            color="#f44336" 
+        </div>
+        <div className="w-full sm:w-[calc(50%-1rem)] md:w-[calc(33.33%-1rem)] lg:w-[calc(20%-1rem)]">
+          <KpiCard
+            icon={<AttachMoneyIcon />}
+            title="Total Revenue Today"
+            value="KSh 8,245"
+            color="#f44336"
+            trend={{ type: "up", value: 5.1 }}
+            onClick={() => console.log("Clicked Total Revenue")}
           />
-        </Grid>
-        <Grid item xs={12} sm={6} md={4} lg={2.4}>
-          <KpiCard 
-            icon={<PeopleIcon />} 
-            title="Active Staff" 
-            value="18" 
-            color="#4caf50" 
+        </div>
+        <div className="w-full sm:w-[calc(50%-1rem)] md:w-[calc(33.33%-1rem)] lg:w-[calc(20%-1rem)]">
+          <KpiCard
+            icon={<PeopleIcon />}
+            title="Active Staff"
+            value="18"
+            color="#4caf50"
+            trend={{ type: "down", value: 1.5 }}
+            onClick={() => console.log("Clicked Active Staff")}
           />
-        </Grid>
-        <Grid item xs={12} sm={6} md={4} lg={2.4}>
-          <KpiCard 
-            icon={<RestaurantIcon />} 
-            title="Menu Items Available" 
-            value="84" 
-            color="#ff9800" 
+        </div>
+        <div className="w-full sm:w-[calc(50%-1rem)] md:w-[calc(33.33%-1rem)] lg:w-[calc(20%-1rem)]">
+          <KpiCard
+            icon={<RestaurantIcon />}
+            title="Menu Items Available"
+            value="84"
+            color="#ff9800"
+            onClick={() => console.log("Clicked Menu Items")}
           />
-        </Grid>
-        <Grid item xs={12} sm={6} md={4} lg={2.4}>
-          <KpiCard 
-            icon={<WarningIcon />} 
-            title="Low Stock Alerts" 
-            value="5" 
-            color="#e91e63" 
+        </div>
+        <div className="w-full sm:w-[calc(50%-1rem)] md:w-[calc(33.33%-1rem)] lg:w-[calc(20%-1rem)]">
+          <KpiCard
+            icon={<WarningIcon />}
+            title="Low Stock Alerts"
+            value="5"
+            color="#e91e63"
+            onClick={() => console.log("Navigating to Manage Inventory...")}
           />
-        </Grid>
-      </Grid>
+        </div>
+      </div>
 
-      {/* Charts */}
-      <Grid container spacing={3} mb={4}>
-        <Grid item xs={12} md={8}>
-          <Paper sx={{ p: 3, height: '100%' }}>
-            <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-              <Typography variant="h6">Revenue (Last 7 Days)</Typography>
-              <IconButton size="small">
-                <RefreshIcon fontSize="small" />
-              </IconButton>
-            </Box>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={revenueData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip formatter={(value) => [`$${value}`, 'Revenue']} />
-                <Legend />
-                <Line type="monotone" dataKey="value" stroke="#8884d8" name="Revenue" strokeWidth={2} activeDot={{ r: 8 }} />
-              </LineChart>
-            </ResponsiveContainer>
-          </Paper>
-        </Grid>
-        
-        <Grid item xs={12} md={4}>
-          <Paper sx={{ p: 3, height: '100%' }}>
-            <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-              <Typography variant="h6">Orders by Category</Typography>
-              <IconButton size="small">
-                <MoreVertIcon fontSize="small" />
-              </IconButton>
-            </Box>
-            <Box display="flex" justifyContent="center" height={300} alignItems="center">
-              <ResponsiveContainer width="100%" height={280}>
-                <PieChart>
-                  <Pie
-                    data={ordersByCategoryData}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    outerRadius={100}
-                    fill="#8884d8"
-                    dataKey="value"
-                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                  >
-                    {ordersByCategoryData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip formatter={(value) => [value, 'Orders']} />
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
-            </Box>
-          </Paper>
-        </Grid>
-      </Grid>
+      <div className="flex flex-col md:flex-row gap-4 mb-8">
+        <div className="w-full md:w-3/4">
+          <RevenueChartCard
+            data={revenueChartData}
+            dateRange={revenueDateRange}
+            onDateRangeChange={handleRevenueDateRangeChange}
+          />
+        </div>
 
-      {/* Recent Orders and Quick Links */}
-      <Grid container spacing={3}>
-        <Grid item xs={12} md={8}>
-          <Paper sx={{ p: 3 }}>
-            <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-              <Typography variant="h6">Recent Orders</Typography>
-              <Button variant="text" size="small">View All</Button>
-            </Box>
-            <TableContainer>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Order ID</TableCell>
-                    <TableCell>Waiter</TableCell>
-                    <TableCell>Amount</TableCell>
-                    <TableCell>Time</TableCell>
-                    <TableCell>Status</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {recentOrders.map((order) => (
-                    <TableRow key={order.id} hover>
-                      <TableCell>{order.id}</TableCell>
-                      <TableCell>{order.waiter}</TableCell>
-                      <TableCell>{order.amount}</TableCell>
-                      <TableCell>{order.time}</TableCell>
-                      <TableCell>
-                        <Chip
-                          label={order.status}
-                          color={order.status === 'Completed' ? 'success' : 'warning'}
-                          size="small"
-                        />
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          </Paper>
-        </Grid>
-        
-        <Grid item xs={12} md={4}>
-          <Paper sx={{ p: 3 }}>
-            <Typography variant="h6" mb={2}>Quick Links</Typography>
-            <Stack spacing={2}>
-              <Button 
-                variant="outlined" 
-                fullWidth 
-                startIcon={<MenuIcon />}
-                sx={{ justifyContent: 'flex-start', py: 1 }}
-              >
-                Manage Menu
-              </Button>
-              <Button 
-                variant="outlined" 
-                fullWidth 
-                startIcon={<BarChartIcon />}
-                sx={{ justifyContent: 'flex-start', py: 1 }}
-              >
-                View Sales
-              </Button>
-              <Button 
-                variant="outlined" 
-                fullWidth 
-                startIcon={<PersonAddIcon />}
-                sx={{ justifyContent: 'flex-start', py: 1 }}
-              >
-                Add Staff
-              </Button>
-              <Button 
-                variant="outlined" 
-                fullWidth 
-                startIcon={<WarningIcon />}
-                sx={{ justifyContent: 'flex-start', py: 1 }}
-              >
-                Manage Inventory
-              </Button>
-            </Stack>
-          </Paper>
-        </Grid>
-      </Grid>
-    </Container>
+        <div className="w-full md:w-1/4">
+          <OrdersByCategoryChartCard data={ordersByCategoryData} />
+        </div>
+      </div>
+
+   <div className="mb-8">
+  <Box
+    sx={{
+      borderRadius: 2,
+      boxShadow: 1,
+      padding: 3,
+      marginBottom: 2,
+    }}
+  >
+    <Box
+      display="flex"
+      alignItems="center"
+      gap={4}
+      mb={2}
+    >
+      <Box display="flex" alignItems="center" gap={4}>
+        <span className="text-xl text-semibold">Recent Orders</span>
+        <SearchInput
+          id="order-search"
+          placeholder="Search orders"
+          input={searchTerm}
+          handleInput={handleSearchChange}
+          handleClear={handleClearSearch}
+        />
+        <DateRangeInput
+          type="orders"
+          color="#4F46E5"
+          selected={selectedDates}
+          dateFilter={dateFilter}
+          anchorEl={dateAnchorEl}
+          selectedAction={handleSelectedDates}
+          handleDateFilter={handleDateFilter}
+          handleClose={handleDateClose}
+          handleClick={handleDateClick}
+        />
+      </Box>
+    </Box>
+
+    <RecentOrdersTable
+      orders={filteredRecentOrders}
+      onActionClick={handleOrderAction}
+    />
+  </Box>
+</div>
+    </div>
   );
 }
 

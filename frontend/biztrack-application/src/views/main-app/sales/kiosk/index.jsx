@@ -1,32 +1,29 @@
-import React, { useState, useMemo } from "react";
-import {
-  Search,
-  Plus,
-  Minus,
-  Trash2,
-  ShoppingCart,
-  DollarSign,
-  Smartphone,
-  FileText,
-  X,
-  CheckCircle,
-  Loader,
-} from "lucide-react";
+import React, { useState, useMemo, useCallback } from "react";
+import { ShoppingCart, DollarSign, Smartphone, FileText } from "lucide-react";
 import SearchInput from "../../../../components/input/SearchInput";
-// Mock data
+
+// Import the new components
+import ProductCard from "./ProductsCard";
+import CartItem from "./CartItem";
+import CashPaymentModal from "./CashPaymentModal";
+import MpesaPaymentModal from "./MpesaPaymentModal";
+import DebtPaymentModal from "./DebtPaymentModal";
+import Toaster from "../../../../components/Toaster";
+
+// Mock data (could be moved to a separate file, e.g., src/data/products.js)
 const mockProducts = [
-  { id: 1, name: "Coca Cola 500ml", price: 80 },
-  { id: 2, name: "Bread (Loaf)", price: 55 },
-  { id: 3, name: "Milk 1L", price: 120 },
-  { id: 4, name: "Rice 2kg", price: 180 },
-  { id: 5, name: "Sugar 1kg", price: 150 },
-  { id: 6, name: "Tea Leaves 250g", price: 95 },
-  { id: 7, name: "Cooking Oil 1L", price: 280 },
-  { id: 8, name: "Eggs (12 pieces)", price: 320 },
-  { id: 9, name: "Bananas 1kg", price: 70 },
-  { id: 10, name: "Tomatoes 1kg", price: 60 },
-  { id: 11, name: "Onions 1kg", price: 85 },
-  { id: 12, name: "Maize Flour 2kg", price: 140 },
+  { id: 1, name: "Coca Cola 500ml", price: 80, availableStock: 10 },
+  { id: 2, name: "Bread (Loaf)", price: 55, availableStock: 5 },
+  { id: 3, name: "Milk 1L", price: 120, availableStock: 8 },
+  { id: 4, name: "Rice 2kg", price: 180, availableStock: 12 },
+  { id: 5, name: "Sugar 1kg", price: 150, availableStock: 7 },
+  { id: 6, name: "Tea Leaves 250g", price: 95, availableStock: 15 },
+  { id: 7, name: "Cooking Oil 1L", price: 280, availableStock: 6 },
+  { id: 8, name: "Eggs (12 pieces)", price: 320, availableStock: 20 },
+  { id: 9, name: "Bananas 1kg", price: 70, availableStock: 9 },
+  { id: 10, name: "Tomatoes 1kg", price: 60, availableStock: 11 },
+  { id: 11, name: "Onions 1kg", price: 85, availableStock: 14 },
+  { id: 12, name: "Maize Flour 2kg", price: 140, availableStock: 4 },
 ];
 
 const SalesPage = () => {
@@ -34,8 +31,9 @@ const SalesPage = () => {
   const [cart, setCart] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [quantities, setQuantities] = useState({});
-  const [mockTransactions, setMockTransactions] = useState([]);
-  const [mockDebts, setMockDebts] = useState([]);
+  const [transactions, setTransactions] = useState([]);
+  const [debts, setDebts] = useState([]);
+  const [productsInStock, setProductsInStock] = useState(mockProducts);
 
   // Modal states
   const [cashModal, setCashModal] = useState(false);
@@ -50,106 +48,293 @@ const SalesPage = () => {
   const [debtPhone, setDebtPhone] = useState("");
   const [debtNotes, setDebtNotes] = useState("");
 
-  // Notification state
+  // Notification state (now configured for Toaster props)
   const [notification, setNotification] = useState({
-    show: false,
+    open: false,
+    title: "",
     message: "",
-    type: "success",
+    type: "success", // Maps to 'state' in Toaster ('success', 'error', 'info')
   });
 
-  // Filter products based on search term
+  // Utility functions
+  const formatCurrency = useCallback((amount) => {
+    return `KSh ${amount.toLocaleString()}`;
+  }, []);
+
+  const showNotification = useCallback((message, type = "success") => {
+    let title = "";
+    let stateValue = "";
+
+    switch (type) {
+      case "success":
+        title = "Success!";
+        stateValue = "true";
+        break;
+      case "error":
+        title = "Error!";
+        stateValue = "false";
+        break;
+      case "info":
+        title = "Heads Up!"; // 'info' maps to the default/warning style
+        stateValue = ""; // Empty string triggers the warning style in Toaster
+        break;
+      default:
+        title = "Notification";
+        stateValue = "";
+    }
+
+    setNotification({ open: true, title, message, type: stateValue }); // Map 'type' to 'state'
+    setTimeout(
+      () => setNotification((prev) => ({ ...prev, open: false })), // Just close it
+      3000
+    );
+  }, []);
+
+  const generateTransactionId = useCallback(() => {
+    return "TXN" + Date.now().toString().slice(-6);
+  }, []);
+
+  // Filter products based on search term and current stock
   const filteredProducts = useMemo(() => {
-    return mockProducts.filter((product) =>
+    return productsInStock.filter((product) =>
       product.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
-  }, [searchTerm]);
+  }, [searchTerm, productsInStock]);
 
-  // Calculate total amount
+  // Calculate total amount in cart
   const totalAmount = useMemo(() => {
     return cart.reduce((total, item) => total + item.price * item.quantity, 0);
   }, [cart]);
 
-  // Format currency
-  const formatCurrency = (amount) => {
-    return `KSh ${amount.toLocaleString()}`;
-  };
+  // --- Handlers for cart and product interactions ---
 
-  // Show notification
-  const showNotification = (message, type = "success") => {
-    setNotification({ show: true, message, type });
-    setTimeout(
-      () => setNotification({ show: false, message: "", type: "success" }),
-      3000
-    );
-  };
+  const handleQuantityChange = useCallback(
+    (productId, value) => {
+      const quantity = Math.max(0, parseInt(value) || 0); // Ensure quantity is non-negative integer
+      const productInStock = productsInStock.find((p) => p.id === productId);
 
-  // Handle quantity change for products
-  const handleQuantityChange = (productId, value) => {
-    const quantity = Math.max(0, parseInt(value) || 0);
-    setQuantities((prev) => ({
-      ...prev,
-      [productId]: quantity,
-    }));
-  };
+      if (productInStock && quantity > productInStock.availableStock) {
+        showNotification(
+          `Only ${productInStock.availableStock} of ${productInStock.name} available.`,
+          "error"
+        );
+        // Cap the quantity at the available stock
+        setQuantities((prev) => ({
+          ...prev,
+          [productId]: productInStock.availableStock,
+        }));
+        return;
+      }
 
-  // Add product to cart
-  const addToCart = (product) => {
-    const quantity = quantities[product.id] || 1;
-    if (quantity <= 0) {
-      showNotification("Please enter a valid quantity", "error");
-      return;
-    }
+      setQuantities((prev) => ({
+        ...prev,
+        [productId]: quantity,
+      }));
+    },
+    [productsInStock, showNotification]
+  );
 
-    const existingItem = cart.find((item) => item.id === product.id);
-    if (existingItem) {
-      setCart((prev) =>
-        prev.map((item) =>
-          item.id === product.id
-            ? { ...item, quantity: item.quantity + quantity }
-            : item
+  const addToCart = useCallback(
+    (product) => {
+      const quantityToAdd = quantities[product.id] || 1;
+      const currentCartItem = cart.find((item) => item.id === product.id);
+      const currentQuantityInCart = currentCartItem
+        ? currentCartItem.quantity
+        : 0;
+
+      const productInActualStock = productsInStock.find(
+        (p) => p.id === product.id
+      );
+
+      if (!productInActualStock || productInActualStock.availableStock <= 0) {
+        showNotification(`${product.name} is out of stock!`, "error");
+        return;
+      }
+
+      if (quantityToAdd <= 0) {
+        showNotification("Please enter a valid quantity", "error");
+        return;
+      }
+
+      // Check if adding this quantity (plus what's already in cart) exceeds total available stock
+      if (
+        currentQuantityInCart + quantityToAdd >
+        productInActualStock.availableStock
+      ) {
+        showNotification(
+          `Cannot add ${quantityToAdd} of ${product.name}. Only ${
+            productInActualStock.availableStock - currentQuantityInCart
+          } more available.`,
+          "error"
+        );
+        // Optionally, reset input quantity to max additional available
+        setQuantities((prev) => ({
+          ...prev,
+          [product.id]:
+            productInActualStock.availableStock - currentQuantityInCart,
+        }));
+        return;
+      }
+
+      setCart((prev) => {
+        if (currentCartItem) {
+          // If item exists in cart, update its quantity
+          return prev.map((item) =>
+            item.id === product.id
+              ? { ...item, quantity: item.quantity + quantityToAdd }
+              : item
+          );
+        } else {
+          // If new item, add to cart
+          return [...prev, { ...product, quantity: quantityToAdd }];
+        }
+      });
+
+      // Crucially, decrement the available stock for the product in `productsInStock`
+      setProductsInStock((prevProducts) =>
+        prevProducts.map((p) =>
+          p.id === product.id
+            ? { ...p, availableStock: p.availableStock - quantityToAdd }
+            : p
         )
       );
-    } else {
-      setCart((prev) => [...prev, { ...product, quantity }]);
-    }
 
-    // Reset quantity input
-    setQuantities((prev) => ({ ...prev, [product.id]: 1 }));
-    showNotification(`${product.name} added to cart`, "success");
-  };
+      // Reset the quantity input for the product after adding to cart
+      setQuantities((prev) => ({ ...prev, [product.id]: 1 }));
+      showNotification(`${product.name} added to cart`, "success");
+    },
+    [cart, quantities, productsInStock, showNotification]
+  );
 
-  // Update cart item quantity
-  const updateCartQuantity = (productId, newQuantity) => {
-    if (newQuantity <= 0) {
-      removeFromCart(productId);
-      return;
-    }
-    setCart((prev) =>
-      prev.map((item) =>
-        item.id === productId ? { ...item, quantity: newQuantity } : item
-      )
-    );
-  };
+  const updateCartQuantity = useCallback(
+    (productId, newQuantity) => {
+      const currentCartItem = cart.find((item) => item.id === productId);
+      if (!currentCartItem) return;
 
-  // Remove item from cart
-  const removeFromCart = (productId) => {
-    setCart((prev) => prev.filter((item) => item.id !== productId));
-    showNotification("Item removed from cart", "info");
-  };
+      const oldQuantity = currentCartItem.quantity;
+      const productInActualStock = productsInStock.find(
+        (p) => p.id === productId
+      );
 
-  // Clear cart
-  const clearCart = () => {
+      if (!productInActualStock) {
+        showNotification("Product stock information not found.", "error");
+        return;
+      }
+
+      // If newQuantity is 0 or less, remove item from cart
+      if (newQuantity <= 0) {
+        setCart((prev) => prev.filter((item) => item.id !== productId));
+        // Return the old quantity to stock
+        setProductsInStock((prevProducts) =>
+          prevProducts.map((p) =>
+            p.id === productId
+              ? { ...p, availableStock: p.availableStock + oldQuantity }
+              : p
+          )
+        );
+        showNotification("Item removed from cart", "info");
+        return;
+      }
+
+      // Calculate how much stock needs to be adjusted
+      // Positive if increasing, negative if decreasing
+      const quantityDifference = newQuantity - oldQuantity;
+
+      // Check if increasing quantity exceeds available stock (stock not yet in cart)
+      if (
+        quantityDifference > 0 &&
+        quantityDifference > productInActualStock.availableStock
+      ) {
+        showNotification(
+          `Cannot add more ${productInActualStock.name}. Only ${productInActualStock.availableStock} more available.`,
+          "error"
+        );
+        // Set the quantity to the maximum allowed (current cart quantity + remaining stock)
+        setCart((prev) =>
+          prev.map((item) =>
+            item.id === productId
+              ? {
+                  ...item,
+                  quantity: oldQuantity + productInActualStock.availableStock,
+                }
+              : item
+          )
+        );
+        // Deduct all remaining available stock as it's now in the cart
+        setProductsInStock((prevProducts) =>
+          prevProducts.map((p) =>
+            p.id === productId ? { ...p, availableStock: 0 } : p
+          )
+        );
+        return;
+      }
+
+      // Update cart item quantity
+      setCart((prev) =>
+        prev.map((item) =>
+          item.id === productId ? { ...item, quantity: newQuantity } : item
+        )
+      );
+
+      // Adjust the actual stock based on the quantity change
+      setProductsInStock((prevProducts) =>
+        prevProducts.map((p) =>
+          p.id === productId
+            ? { ...p, availableStock: p.availableStock - quantityDifference }
+            : p
+        )
+      );
+    },
+    [cart, productsInStock, showNotification]
+  );
+
+  const removeFromCart = useCallback(
+    (productId) => {
+      const itemToRemove = cart.find((item) => item.id === productId);
+      if (itemToRemove) {
+        setCart((prev) => prev.filter((item) => item.id !== productId));
+        // Return the quantity of the removed item to stock
+        setProductsInStock((prevProducts) =>
+          prevProducts.map((p) =>
+            p.id === productId
+              ? {
+                  ...p,
+                  availableStock: p.availableStock + itemToRemove.quantity,
+                }
+              : p
+          )
+        );
+        showNotification("Item removed from cart", "info");
+      }
+    },
+    [cart, productsInStock, showNotification]
+  );
+
+  const clearCart = useCallback(() => {
+    // When clearing the cart, return all items' quantities to the productsInStock
+    setProductsInStock((prevProducts) => {
+      const updatedProducts = [...prevProducts];
+      cart.forEach((cartItem) => {
+        const productIndex = updatedProducts.findIndex(
+          (p) => p.id === cartItem.id
+        );
+        if (productIndex > -1) {
+          updatedProducts[productIndex] = {
+            ...updatedProducts[productIndex],
+            availableStock:
+              updatedProducts[productIndex].availableStock + cartItem.quantity,
+          };
+        }
+      });
+      return updatedProducts;
+    });
     setCart([]);
     setQuantities({});
-  };
+    showNotification("Cart cleared, items returned to stock.", "info");
+  }, [cart, showNotification]);
 
-  // Generate transaction ID
-  const generateTransactionId = () => {
-    return "TXN" + Date.now().toString().slice(-6);
-  };
-
-  // Handle cash payment
-  const handleCashPayment = () => {
+  // --- Payment handlers ---
+  const handleCashPayment = useCallback(() => {
     const paid = parseFloat(amountPaid);
     if (!paid || paid < totalAmount) {
       showNotification("Invalid amount or insufficient payment", "error");
@@ -158,7 +343,7 @@ const SalesPage = () => {
 
     const transaction = {
       id: generateTransactionId(),
-      items: [...cart],
+      items: [...cart], // Capture items at the time of transaction
       total: totalAmount,
       paymentMethod: "Cash",
       status: "Completed",
@@ -167,7 +352,7 @@ const SalesPage = () => {
       timestamp: new Date().toISOString(),
     };
 
-    setMockTransactions((prev) => [...prev, transaction]);
+    setTransactions((prev) => [...prev, transaction]);
     clearCart();
     setCashModal(false);
     setAmountPaid("");
@@ -175,10 +360,18 @@ const SalesPage = () => {
       `Payment successful! Change: ${formatCurrency(paid - totalAmount)}`,
       "success"
     );
-  };
+  }, [
+    amountPaid,
+    totalAmount,
+    cart,
+    generateTransactionId,
+    clearCart,
+    formatCurrency,
+    showNotification,
+    setTransactions,
+  ]);
 
-  // Handle M-PESA payment
-  const handleMpesaPayment = async () => {
+  const handleMpesaPayment = useCallback(async () => {
     if (!mpesaPhone || mpesaPhone.length < 10) {
       showNotification("Please enter a valid phone number", "error");
       return;
@@ -190,7 +383,7 @@ const SalesPage = () => {
     setTimeout(() => {
       const transaction = {
         id: generateTransactionId(),
-        items: [...cart],
+        items: [...cart], // Capture items at the time of transaction
         total: totalAmount,
         paymentMethod: "M-PESA",
         status: "Completed",
@@ -198,17 +391,24 @@ const SalesPage = () => {
         timestamp: new Date().toISOString(),
       };
 
-      setMockTransactions((prev) => [...prev, transaction]);
+      setTransactions((prev) => [...prev, transaction]);
       clearCart();
       setMpesaModal(false);
       setMpesaPhone("");
       setMpesaLoading(false);
       showNotification("M-PESA payment successful!", "success");
     }, 3000);
-  };
+  }, [
+    mpesaPhone,
+    totalAmount,
+    cart,
+    generateTransactionId,
+    clearCart,
+    showNotification,
+    setTransactions,
+  ]);
 
-  // Handle debt payment
-  const handleDebtPayment = () => {
+  const handleDebtPayment = useCallback(() => {
     if (!debtCustomerName.trim()) {
       showNotification("Customer name is required", "error");
       return;
@@ -216,14 +416,14 @@ const SalesPage = () => {
 
     const transaction = {
       id: generateTransactionId(),
-      items: [...cart],
+      items: [...cart], // Capture items at the time of transaction
       total: totalAmount,
       paymentMethod: "Debt",
-      status: "Pending",
+      status: "Pending", // Debt transactions are pending until paid
       timestamp: new Date().toISOString(),
     };
 
-    const debt = {
+    const debtRecord = {
       id: transaction.id,
       customerName: debtCustomerName,
       customerPhone: debtPhone,
@@ -237,41 +437,32 @@ const SalesPage = () => {
       datePaid: null,
     };
 
-    setMockTransactions((prev) => [...prev, transaction]);
-    setMockDebts((prev) => [...prev, debt]);
-    clearCart();
+    setTransactions((prev) => [...prev, transaction]); // Store transaction record
+    setDebts((prev) => [...prev, debtRecord]); // Store debt record
+    clearCart(); // This already handles stock return
     setDebtModal(false);
     setDebtCustomerName("");
     setDebtPhone("");
     setDebtNotes("");
     showNotification("Debt transaction recorded successfully!", "success");
-  };
-
-  // Modal component
-  const Modal = ({ isOpen, onClose, title, children }) => {
-    if (!isOpen) return null;
-
-    return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-96 overflow-y-auto">
-          <div className="flex items-center justify-between p-4 border-b">
-            <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
-            <button
-              onClick={onClose}
-              className="text-gray-400 hover:text-gray-600"
-            >
-              <X className="h-5 w-5" />
-            </button>
-          </div>
-          <div className="p-4">{children}</div>
-        </div>
-      </div>
-    );
-  };
+  }, [
+    debtCustomerName,
+    debtPhone,
+    debtNotes,
+    totalAmount,
+    cart,
+    generateTransactionId,
+    clearCart,
+    showNotification,
+    setTransactions,
+    setDebts,
+  ]);
+  const handleSearch = useCallback((searchValue) => {
+    setSearchTerm(searchValue);
+  }, []);
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-gray-50 p-2 ">
         <h1 className="text-2xl font-bold text-gray-800 mb-6">
           Kiosk Sales System
         </h1>
@@ -280,49 +471,24 @@ const SalesPage = () => {
           {/* Product Selection Area */}
           <div className="lg:col-span-2">
             <div className="bg-white rounded-lg shadow-md p-4 mb-4">
-              <div className="relative">
-                {/* <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" /> */}
-                <SearchInput
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="Search products..."
-                />
-              </div>
+              <SearchInput
+                input={searchTerm} // Your component uses 'input' prop
+                handleInput={handleSearch} // Your component uses 'handleInput' prop
+                placeholder="Search products..."
+                handleClear={() => setSearchTerm("")} // Add clear functionality
+              />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
               {filteredProducts.map((product) => (
-                <div
+                <ProductCard
                   key={product.id}
-                  className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow p-2"
-                >
-                  <h3 className="text-xl font-semibold text-gray-800 mb-2">
-                    {product.name}
-                  </h3>
-                  <p className="text-sm font-bold text-green-600 mb-3">
-                    {formatCurrency(product.price)}
-                  </p>
-
-                  <div className="flex items-center gap-2 mb-3">
-                    <input
-                      type="number"
-                      min="1"
-                      placeholder="Qty"
-                      className="w-15 px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      value={quantities[product.id] || 1}
-                      onChange={(e) =>
-                        handleQuantityChange(product.id, e.target.value)
-                      }
-                    />
-                    <button
-                      onClick={() => addToCart(product)}
-                      className="flex-1 bg-blue-500 text-white w-20 px-2 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 "
-                    >
-                      <Plus className="h-3 w-3" />
-                      Add to Cart
-                    </button>
-                  </div>
-                </div>
+                  product={product}
+                  quantity={quantities[product.id]}
+                  onQuantityChange={handleQuantityChange}
+                  onAddToCart={addToCart}
+                  formatCurrency={formatCurrency}
+                />
               ))}
             </div>
           </div>
@@ -345,51 +511,13 @@ const SalesPage = () => {
                 <>
                   <div className="space-y-3 mb-4 max-h-64 overflow-y-auto">
                     {cart.map((item) => (
-                      <div key={item.id} className="bg-gray-50 rounded-lg p-3">
-                        <div className="flex justify-between items-start mb-2">
-                          <h4 className="font-medium text-gray-800 flex-1">
-                            {item.name}
-                          </h4>
-                          <button
-                            onClick={() => removeFromCart(item.id)}
-                            className="text-red-500 hover:text-red-700 ml-2"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </div>
-
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <button
-                              onClick={() =>
-                                updateCartQuantity(item.id, item.quantity - 1)
-                              }
-                              className="w-6 h-6 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center"
-                            >
-                              <Minus className="h-3 w-3" />
-                            </button>
-                            <span className="font-semibold px-2">
-                              {item.quantity}
-                            </span>
-                            <button
-                              onClick={() =>
-                                updateCartQuantity(item.id, item.quantity + 1)
-                              }
-                              className="w-6 h-6 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center"
-                            >
-                              <Plus className="h-3 w-3" />
-                            </button>
-                          </div>
-                          <div className="text-right">
-                            <p className="text-sm text-gray-600">
-                              {formatCurrency(item.price)} each
-                            </p>
-                            <p className="font-semibold text-green-600">
-                              {formatCurrency(item.price * item.quantity)}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
+                      <CartItem
+                        key={item.id}
+                        item={item}
+                        onUpdateQuantity={updateCartQuantity}
+                        onRemoveFromCart={removeFromCart}
+                        formatCurrency={formatCurrency}
+                      />
                     ))}
                   </div>
 
@@ -405,6 +533,7 @@ const SalesPage = () => {
                       <button
                         onClick={() => setCashModal(true)}
                         className="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
+                        disabled={cart.length === 0} // Disable if cart is empty
                       >
                         <DollarSign className="h-5 w-5" />
                         Pay with Cash
@@ -412,6 +541,7 @@ const SalesPage = () => {
                       <button
                         onClick={() => setMpesaModal(true)}
                         className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+                        disabled={cart.length === 0} // Disable if cart is empty
                       >
                         <Smartphone className="h-5 w-5" />
                         Pay with M-PESA
@@ -419,6 +549,7 @@ const SalesPage = () => {
                       <button
                         onClick={() => setDebtModal(true)}
                         className="w-full bg-orange-600 text-white py-3 rounded-lg hover:bg-orange-700 transition-colors flex items-center justify-center gap-2"
+                        disabled={cart.length === 0} // Disable if cart is empty
                       >
                         <FileText className="h-5 w-5" />
                         Buy on Debt
@@ -431,182 +562,89 @@ const SalesPage = () => {
           </div>
         </div>
 
-        {/* Cash Payment Modal */}
-        <Modal
+        {/* Modals */}
+        <CashPaymentModal
           isOpen={cashModal}
           onClose={() => setCashModal(false)}
-          title="Cash Payment"
-        >
-          <div className="space-y-4">
-            <p className="text-lg font-semibold">
-              Total Amount: {formatCurrency(totalAmount)}
-            </p>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Amount Paid
-              </label>
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                value={amountPaid}
-                onChange={(e) => setAmountPaid(e.target.value)}
-                placeholder="Enter amount paid"
-              />
-            </div>
-            {amountPaid && parseFloat(amountPaid) >= totalAmount && (
-              <p className="text-lg font-semibold text-green-600">
-                Change: {formatCurrency(parseFloat(amountPaid) - totalAmount)}
-              </p>
-            )}
-            <div className="flex gap-3">
-              <button
-                onClick={() => setCashModal(false)}
-                className="flex-1 bg-gray-300 text-gray-700 py-2 rounded-lg hover:bg-gray-400 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleCashPayment}
-                className="flex-1 bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 transition-colors"
-              >
-                Complete Payment
-              </button>
-            </div>
-          </div>
-        </Modal>
+          totalAmount={totalAmount}
+          amountPaid={amountPaid}
+          onAmountPaidChange={setAmountPaid}
+          onConfirmPayment={handleCashPayment}
+          formatCurrency={formatCurrency}
+        />
 
-        {/* M-PESA Payment Modal */}
-        <Modal
+        <MpesaPaymentModal
           isOpen={mpesaModal}
           onClose={() => setMpesaModal(false)}
-          title="M-PESA Payment"
-        >
-          <div className="space-y-4">
-            <p className="text-lg font-semibold">
-              Total Amount: {formatCurrency(totalAmount)}
-            </p>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Customer Phone Number
-              </label>
-              <input
-                type="tel"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                value={mpesaPhone}
-                onChange={(e) => setMpesaPhone(e.target.value)}
-                placeholder="0712345678"
-              />
-            </div>
-            {mpesaLoading && (
-              <div className="flex items-center gap-2 text-blue-600">
-                <Loader className="h-5 w-5 animate-spin" />
-                <span>Sending STK Push...</span>
-              </div>
-            )}
-            <div className="flex gap-3">
-              <button
-                onClick={() => setMpesaModal(false)}
-                disabled={mpesaLoading}
-                className="flex-1 bg-gray-300 text-gray-700 py-2 rounded-lg hover:bg-gray-400 transition-colors disabled:opacity-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleMpesaPayment}
-                disabled={mpesaLoading}
-                className="flex-1 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
-              >
-                Send STK Push
-              </button>
-            </div>
-          </div>
-        </Modal>
+          totalAmount={totalAmount}
+          mpesaPhone={mpesaPhone}
+          onMpesaPhoneChange={setMpesaPhone}
+          onConfirmPayment={handleMpesaPayment}
+          mpesaLoading={mpesaLoading}
+          formatCurrency={formatCurrency}
+        />
 
-        {/* Debt Payment Modal */}
-        <Modal
+        <DebtPaymentModal
           isOpen={debtModal}
           onClose={() => setDebtModal(false)}
-          title="Buy on Debt"
-        >
-          <div className="space-y-4">
-            <p className="text-lg font-semibold">
-              Total Amount: {formatCurrency(totalAmount)}
-            </p>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Customer Name *
-              </label>
-              <input
-                type="text"
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                value={debtCustomerName}
-                onChange={(e) => setDebtCustomerName(e.target.value)}
-                placeholder="Enter customer name"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Phone Number (Optional)
-              </label>
-              <input
-                type="tel"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                value={debtPhone}
-                onChange={(e) => setDebtPhone(e.target.value)}
-                placeholder="0712345678"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Notes (Optional)
-              </label>
-              <textarea
-                rows="3"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                value={debtNotes}
-                onChange={(e) => setDebtNotes(e.target.value)}
-                placeholder="Additional notes..."
-              />
-            </div>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setDebtModal(false)}
-                className="flex-1 bg-gray-300 text-gray-700 py-2 rounded-lg hover:bg-gray-400 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleDebtPayment}
-                className="flex-1 bg-orange-600 text-white py-2 rounded-lg hover:bg-orange-700 transition-colors"
-              >
-                Record Debt
-              </button>
-            </div>
-          </div>
-        </Modal>
+          totalAmount={totalAmount}
+          debtCustomerName={debtCustomerName}
+          onDebtCustomerNameChange={setDebtCustomerName}
+          debtPhone={debtPhone}
+          onDebtPhoneChange={setDebtPhone}
+          debtNotes={debtNotes}
+          onDebtNotesChange={setDebtNotes}
+          onConfirmPayment={handleDebtPayment}
+          formatCurrency={formatCurrency}
+        />
 
-        {/* Notification */}
-        {notification.show && (
-          <div
-            className={`fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 ${
-              notification.type === "success"
-                ? "bg-green-500 text-white"
-                : notification.type === "error"
-                ? "bg-red-500 text-white"
-                : "bg-blue-500 text-white"
-            }`}
-          >
-            <div className="flex items-center gap-2">
-              <CheckCircle className="h-5 w-5" />
-              <span>{notification.message}</span>
+        {/* Toaster Notification */}
+        <Toaster
+          open={notification.open}
+          state={notification.type}
+          title={notification.title}
+          message={notification.message}
+          action={() => setNotification((prev) => ({ ...prev, open: false }))}
+          position="right"
+        />
+
+        {/* --- Debug/Dev Info Section (Optional: Remove in production) --- */}
+        <div className="mt-8 p-4 bg-gray-100 rounded-lg shadow-inner">
+          <h2 className="text-xl font-bold text-gray-700 mb-4">
+            Developer Info (Remove in Production)
+          </h2>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-700 mb-2">
+                Current Product Stock
+              </h3>
+              <pre className="bg-white p-3 rounded text-xs overflow-auto max-h-64">
+                {JSON.stringify(productsInStock, null, 2)}
+              </pre>
+            </div>
+
+            <div>
+              <h3 className="text-lg font-semibold text-gray-700 mb-2">
+                All Transactions
+              </h3>
+              <pre className="bg-white p-3 rounded text-xs overflow-auto max-h-64">
+                {JSON.stringify(transactions, null, 2)}
+              </pre>
+            </div>
+
+            <div>
+              <h3 className="text-lg font-semibold text-gray-700 mb-2">
+                All Debts
+              </h3>
+              <pre className="bg-white p-3 rounded text-xs overflow-auto max-h-64">
+                {JSON.stringify(debts, null, 2)}
+              </pre>
             </div>
           </div>
-        )}
+        </div>
+        {/* --- End Debug/Dev Info Section --- */}
       </div>
-    </div>
   );
 };
 

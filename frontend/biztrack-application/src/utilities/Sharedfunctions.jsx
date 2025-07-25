@@ -1,5 +1,6 @@
 import * as yup from "yup";
 import JSEncrypt from "jsencrypt";
+import moment from "moment/moment";
 import { returnStatusResponse } from "../services/LocalStorageService";
 
 // Accepted Card Patterns
@@ -112,3 +113,8 @@ export function normalizeRole(role) {
   }
 }
 
+export const getDateRange = (range) => {
+  const endDate = moment().format("DD-MM-YYYY");
+  const startDate = moment().subtract(range, "days").format("DD-MM-YYYY");
+  return { startDate: startDate, endDate: endDate };
+};

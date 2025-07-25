@@ -55,7 +55,7 @@ export default function SelectInput({
           multiple={multiple}
           variant="outlined"
           className={`
-            w-full shadow-sm rounded-lg
+            w-full px-4 py-2 shadow-sm rounded-lg
             ${disabled ? `bg-[${tailwindGray100}] cursor-not-allowed` : ""}
           `}
           sx={{

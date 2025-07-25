@@ -161,7 +161,8 @@ export default function DashboardPage() {
       .filter(
         (t) =>
           t.status.toLowerCase() === "completed" &&
-          (t.payment.toLowerCase() === "cash" || t.payment.toLowerCase() === "m-pesa")
+          (t.payment.toLowerCase() === "cash" ||
+            t.payment.toLowerCase() === "m-pesa")
       )
       .reduce((sum, t) => sum + parseAmount(t.amount), 0);
   }, [transactions]);
@@ -223,8 +224,7 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
-      <main className="p-4 md:p-6 w-full max-w-7xl mx-auto">
+    <div className="min-h-screen bg-gray-50 p-2 ">
         {/* Heading */}
         <div className="mb-6">
           <h2 className="text-lg font-medium text-gray-700">Sales Overview</h2>
@@ -334,7 +334,6 @@ export default function DashboardPage() {
             hover
           />
         </div>
-      </main>
     </div>
   );
 }

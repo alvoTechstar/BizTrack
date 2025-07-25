@@ -4,14 +4,12 @@ import StoreIcon from "@mui/icons-material/Store";
 import ListIcon from "@mui/icons-material/List";
 import PeopleIcon from "@mui/icons-material/People";
 import BarChartIcon from "@mui/icons-material/BarChart";
-import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
-import LocalHospitalIcon from '@mui/icons-material/LocalHospital';
-import InventoryIcon from '@mui/icons-material/Inventory';
-import MedicationIcon from '@mui/icons-material/Medication';
-import ScienceIcon from '@mui/icons-material/Science';
-import LocalPharmacyIcon from '@mui/icons-material/LocalPharmacy';
-
-
+import AccountBalanceWalletIcon from "@mui/icons-material/AccountBalanceWallet";
+import LocalHospitalIcon from "@mui/icons-material/LocalHospital";
+import InventoryIcon from "@mui/icons-material/Inventory";
+import MedicationIcon from "@mui/icons-material/Medication";
+import ScienceIcon from "@mui/icons-material/Science";
+import LocalPharmacyIcon from "@mui/icons-material/LocalPharmacy";
 
 export const MENU = [
   // Super Admin
@@ -66,7 +64,7 @@ export const MENU = [
     subitems: [],
     path: "/products/ingredient-management",
   },
-    {
+  {
     key: "inventory",
     title: "Inventory",
     icon: <StoreIcon />,
@@ -82,7 +80,7 @@ export const MENU = [
     subitems: [],
     path: "/staff",
   },
-    {
+  {
     key: "staff-payment",
     title: "Staff Payments",
     icon: <PeopleIcon />,
@@ -90,7 +88,7 @@ export const MENU = [
     subitems: [],
     path: "/staffpayment",
   },
-    {
+  {
     key: "expenses",
     title: "Expenses",
     icon: <AccountBalanceWalletIcon />,
@@ -141,9 +139,8 @@ export const MENU = [
     permissions: ["Waiter"],
     subitems: [],
     path: "/dashboard/waiter",
-
   },
-    {
+  {
     key: "create-order",
     title: "Create Order",
     icon: <ListIcon />,
@@ -186,6 +183,14 @@ export const MENU = [
     path: "/kiosk/user-management",
   },
   {
+    key: "shop-debts",
+    title: " Kiosk Debts",
+    icon: <AccountBalanceWalletIcon />,
+    permissions: ["Kiosk Admin"],
+    subitems: [],
+    path: "/kiosk/debts",
+  },
+  {
     key: "kiosk-reports",
     title: "Reports",
     icon: <BarChartIcon />,
@@ -195,25 +200,25 @@ export const MENU = [
   },
 
   // Shopkeeper
-  {
-    key: "shop-dashboard",
-    title: "Dashboard",
-    icon: <StoreIcon />,
-    permissions: ["Shopkeeper"],
-    subitems: [],
-    path: "/dashboard/shopkeeper",
-  },
+  // {
+  //   key: "shop-dashboard",
+  //   title: "Dashboard",
+  //   icon: <StoreIcon />,
+  //   permissions: ["Shopkeeper"],
+  //   subitems: [],
+  //   path: "/dashboard/shopkeeper",
+  // },
   {
     key: "shop-sales",
-    title: "Sales",
+    title: " Kiosk Sales",
     icon: <ListIcon />,
     permissions: ["Shopkeeper"],
     subitems: [],
     path: "/shopkeeper/sales",
   },
-    {
+  {
     key: "shop-debts",
-    title: "Debts",
+    title: "Kosk Debts",
     icon: <AccountBalanceWalletIcon />,
     permissions: ["Shopkeeper"],
     subitems: [],
@@ -221,13 +226,13 @@ export const MENU = [
   },
   {
     key: "shop-reports",
-    title: "Reports",
+    title: " Reports",
     icon: <BarChartIcon />,
     permissions: ["Shopkeeper"],
     subitems: [],
     path: "/shopkeeper/reports",
   },
-    // Hospital Admin
+  // Hospital Admin
   {
     key: "hospital-dashboard",
     title: "Dashboard",
@@ -252,7 +257,7 @@ export const MENU = [
     subitems: [],
     path: "/hospital/staff",
   },
-    {
+  {
     key: "pharmacy-stock",
     title: "Pharmacy Stock",
     icon: <LocalPharmacyIcon />,
@@ -286,7 +291,6 @@ export const MENU = [
     subitems: [],
     path: "/patient/records",
   },
-
 
   // Doctor
   {
@@ -391,5 +395,4 @@ export const MENU = [
     subitems: [],
     path: "/labtech/results",
   },
-
 ];

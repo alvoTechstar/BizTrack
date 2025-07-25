@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Eye, EyeOff, ArrowLeft, UserPlus, Building2 } from "lucide-react";
 import TextInput from "../../../../components/input/TextInput";
-import PasswordInput from "../../../../components/input/PasswordInput";
+import PasswordInput from "../../../../components/Input/PasswordInput";
 import TextButton from "../../../../components/buttons/TextButton";
 import AppFormButton from "../../../../components/buttons/AppFormButton";
 import { Paper, Avatar } from "@mui/material";

@@ -123,11 +123,11 @@ const DataTable = ({
             />
 
             {filterOptions.length > 0 && (
-              <div className="">
+              <div className="mt-2 w-full sm:w-auto">
                 <SelectInput
                   id="data-table-filter"
                   name="data-table-filter"
-                  options={[{ value: "all", label: "All" }, ...filterOptions]}
+                  options={[{ value: "Select filter", label: "Select filter" }, ...filterOptions]}
                   value={filterValue}
                   onChange={onFilterChange}
                   displayEmpty

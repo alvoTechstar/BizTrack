@@ -10,7 +10,7 @@ export default function AppFormButton({
 }) {
   return (
     <button
-      className={`w-full rounded-lg flex items-center justify-center gap-2 h-[45px] px-6 py-4 text-sm font-semibold transition-all
+      className={`w-full rounded-lg flex items-center justify-center gap-2 h-[42px] px-6 py-4 text-sm font-semibold transition-all
         ${color === "invert" 
           ? "bg-white text-gray-800 border border-gray-400" 
           : "text-white"} 

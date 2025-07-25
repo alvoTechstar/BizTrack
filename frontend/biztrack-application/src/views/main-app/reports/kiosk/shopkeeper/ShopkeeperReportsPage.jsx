@@ -19,7 +19,7 @@ const mockTransactions = [
     amount: 1500,
     paymentMethod: "Cash",
     status: "Completed",
-    date: new Date().toISOString().split('T')[0], // Today's date
+    date: new Date().toISOString().split("T")[0], // Today's date
     time: "09:15",
     products: [{ name: "Rice 2kg", quantity: 2, price: 750 }],
   },
@@ -31,7 +31,7 @@ const mockTransactions = [
     amount: 2300,
     paymentMethod: "M-PESA",
     status: "Completed",
-    date: new Date().toISOString().split('T')[0], // Today's date
+    date: new Date().toISOString().split("T")[0], // Today's date
     time: "10:30",
     products: [
       { name: "Sugar 1kg", quantity: 1, price: 150 },
@@ -46,7 +46,7 @@ const mockTransactions = [
     amount: 850,
     paymentMethod: "Debt",
     status: "Pending",
-    date: new Date().toISOString().split('T')[0], // Today's date
+    date: new Date().toISOString().split("T")[0], // Today's date
     time: "11:45",
     products: [
       { name: "Bread", quantity: 3, price: 80 },
@@ -61,7 +61,7 @@ const mockTransactions = [
     amount: 1200,
     paymentMethod: "Debt",
     status: "Completed",
-    date: new Date().toISOString().split('T')[0], // Today's date
+    date: new Date().toISOString().split("T")[0], // Today's date
     time: "12:20",
     products: [{ name: "Rice 2kg", quantity: 1, price: 750 }],
   },
@@ -73,7 +73,7 @@ const mockTransactions = [
     amount: 650,
     paymentMethod: "Cash",
     status: "Completed",
-    date: new Date().toISOString().split('T')[0], // Today's date
+    date: new Date().toISOString().split("T")[0], // Today's date
     time: "13:15",
     products: [{ name: "Sugar 1kg", quantity: 2, price: 150 }],
   },
@@ -85,7 +85,7 @@ const mockTransactions = [
     amount: 1800,
     paymentMethod: "Debt",
     status: "Pending",
-    date: new Date().toISOString().split('T')[0], // Today's date
+    date: new Date().toISOString().split("T")[0], // Today's date
     time: "14:45",
     products: [{ name: "Cooking Oil 1L", quantity: 2, price: 350 }],
   },
@@ -97,7 +97,7 @@ const mockTransactions = [
     amount: 950,
     paymentMethod: "M-PESA",
     status: "Completed",
-    date: new Date().toISOString().split('T')[0], // Today's date
+    date: new Date().toISOString().split("T")[0], // Today's date
     time: "15:30",
     products: [{ name: "Bread", quantity: 5, price: 80 }],
   },
@@ -109,7 +109,7 @@ const mockTransactions = [
     amount: 2100,
     paymentMethod: "Cash",
     status: "Completed",
-    date: new Date().toISOString().split('T')[0], // Today's date
+    date: new Date().toISOString().split("T")[0], // Today's date
     time: "16:10",
     products: [
       { name: "Rice 2kg", quantity: 2, price: 750 },
@@ -185,22 +185,22 @@ export default function ShopkeeperDailyReports() {
 
   // Get current date information
   const currentDate = new Date();
-  const dateString = currentDate.toLocaleDateString('en-US', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
+  const dateString = currentDate.toLocaleDateString("en-US", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
   });
   const startTime = "08:00 AM";
-  const endTime = currentDate.toLocaleTimeString('en-US', {
-    hour: '2-digit',
-    minute: '2-digit'
+  const endTime = currentDate.toLocaleTimeString("en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
   });
 
   // Filter data for today only
   const todayData = useMemo(() => {
-    const today = new Date().toISOString().split('T')[0];
-    return mockTransactions.filter(transaction => transaction.date === today);
+    const today = new Date().toISOString().split("T")[0];
+    return mockTransactions.filter((transaction) => transaction.date === today);
   }, []);
 
   // Calculate sales report data
@@ -307,109 +307,108 @@ export default function ShopkeeperDailyReports() {
   const tabs = ["Sales Report", "Debt Report", "Product Summary"];
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Daily Reports
-          </h1>
-          <div className="flex items-center gap-4 text-gray-600">
-            <div className="flex items-center gap-2">
-              <Calendar className="w-5 h-5" />
-              <span className="font-medium">{dateString}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Clock className="w-5 h-5" />
-              <span>{startTime} - {endTime}</span>
-            </div>
+    <div className="min-h-screen bg-gray-50 p-2">
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">Daily Reports</h1>
+        <div className="flex items-center gap-4 text-gray-600">
+          <div className="flex items-center gap-2">
+            <Calendar className="w-5 h-5" />
+            <span className="font-medium">{dateString}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Clock className="w-5 h-5" />
+            <span>
+              {startTime} - {endTime}
+            </span>
           </div>
         </div>
+      </div>
 
-        {/* Tabs */}
-        <div className="bg-white rounded-lg shadow-md mb-6 border border-gray-200">
-          <div className="border-b border-gray-200">
-            <nav className="flex space-x-8 px-6">
-              {tabs.map((tab, index) => (
-                <button
-                  key={index}
-                  onClick={() => setActiveTab(index)}
-                  className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-                    activeTab === index
-                      ? "border-blue-500 text-blue-600"
-                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                  }`}
-                >
-                  {tab}
-                </button>
-              ))}
-            </nav>
-          </div>
+      {/* Tabs */}
+      <div className="bg-white rounded-lg shadow-md mb-6 border border-gray-200">
+        <div className="border-b border-gray-200">
+          <nav className="flex space-x-8 px-6">
+            {tabs.map((tab, index) => (
+              <button
+                key={index}
+                onClick={() => setActiveTab(index)}
+                className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                  activeTab === index
+                    ? "border-blue-500 text-blue-600"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                }`}
+              >
+                {tab}
+              </button>
+            ))}
+          </nav>
         </div>
+      </div>
 
-        {/* Sales Report Tab */}
-        {activeTab === 0 && (
-          <div className="space-y-6">
-            {/* Summary Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <SummaryCard
-                title="Today's Revenue"
-                value={formatCurrency(salesData.totalRevenue)}
-                icon={TrendingUp}
-                bgColor="bg-blue-100"
-                iconColor="text-blue-600"
-                description="From completed transactions"
-              />
-              <SummaryCard
-                title="Total Transactions"
-                value={salesData.totalTransactions}
-                icon={ShoppingCart}
-                bgColor="bg-green-100"
-                iconColor="text-green-600"
-                description="Cash & M-PESA payments"
-              />
-              <SummaryCard
-                title="Top Product Today"
-                value={`${salesData.mostSoldProduct.name}`}
-                icon={DollarSign}
-                bgColor="bg-purple-100"
-                iconColor="text-purple-600"
-                description={`${salesData.mostSoldProduct.quantity} units sold`}
-              />
+      {/* Sales Report Tab */}
+      {activeTab === 0 && (
+        <div className="space-y-6">
+          {/* Summary Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <SummaryCard
+              title="Today's Revenue"
+              value={formatCurrency(salesData.totalRevenue)}
+              icon={TrendingUp}
+              bgColor="bg-blue-100"
+              iconColor="text-blue-600"
+              description="From completed transactions"
+            />
+            <SummaryCard
+              title="Total Transactions"
+              value={salesData.totalTransactions}
+              icon={ShoppingCart}
+              bgColor="bg-green-100"
+              iconColor="text-green-600"
+              description="Cash & M-PESA payments"
+            />
+            <SummaryCard
+              title="Top Product Today"
+              value={`${salesData.mostSoldProduct.name}`}
+              icon={DollarSign}
+              bgColor="bg-purple-100"
+              iconColor="text-purple-600"
+              description={`${salesData.mostSoldProduct.quantity} units sold`}
+            />
+          </div>
+
+          {/* Transactions Table */}
+          <div className="bg-white rounded-lg shadow-md border border-gray-200">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-900">
+                Today's Completed Transactions
+              </h3>
             </div>
-
-            {/* Transactions Table */}
-            <div className="bg-white rounded-lg shadow-md border border-gray-200">
-              <div className="px-6 py-4 border-b border-gray-200">
-                <h3 className="text-lg font-semibold text-gray-900">
-                  Today's Completed Transactions
-                </h3>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Time
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Customer
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Amount
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Payment Method
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Products
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {salesData.completedTransactions
-                      .sort((a, b) => b.time.localeCompare(a.time))
-                      .map((transaction) => (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Time
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Customer
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Amount
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Payment Method
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Products
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {salesData.completedTransactions
+                    .sort((a, b) => b.time.localeCompare(a.time))
+                    .map((transaction) => (
                       <tr key={transaction.id} className="hover:bg-gray-50">
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                           {transaction.time}
@@ -438,74 +437,74 @@ export default function ShopkeeperDailyReports() {
                         </td>
                       </tr>
                     ))}
-                  </tbody>
-                </table>
-              </div>
-              {salesData.completedTransactions.length === 0 && (
-                <div className="text-center py-8">
-                  <ShoppingCart className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-500">No completed transactions today</p>
-                </div>
-              )}
+                </tbody>
+              </table>
             </div>
+            {salesData.completedTransactions.length === 0 && (
+              <div className="text-center py-8">
+                <ShoppingCart className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-500">No completed transactions today</p>
+              </div>
+            )}
           </div>
-        )}
+        </div>
+      )}
 
-        {/* Debt Report Tab */}
-        {activeTab === 1 && (
-          <div className="space-y-6">
-            {/* Summary Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <SummaryCard
-                title="Outstanding Debt Today"
-                value={formatCurrency(debtData.totalOutstanding)}
-                icon={Users}
-                bgColor="bg-red-100"
-                iconColor="text-red-600"
-                description="Pending payments"
-              />
-              <SummaryCard
-                title="Recovered Debt Today"
-                value={formatCurrency(debtData.totalRecovered)}
-                icon={TrendingUp}
-                bgColor="bg-green-100"
-                iconColor="text-green-600"
-                description="Completed payments"
-              />
+      {/* Debt Report Tab */}
+      {activeTab === 1 && (
+        <div className="space-y-6">
+          {/* Summary Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <SummaryCard
+              title="Outstanding Debt Today"
+              value={formatCurrency(debtData.totalOutstanding)}
+              icon={Users}
+              bgColor="bg-red-100"
+              iconColor="text-red-600"
+              description="Pending payments"
+            />
+            <SummaryCard
+              title="Recovered Debt Today"
+              value={formatCurrency(debtData.totalRecovered)}
+              icon={TrendingUp}
+              bgColor="bg-green-100"
+              iconColor="text-green-600"
+              description="Completed payments"
+            />
+          </div>
+
+          {/* Debt Transactions Table */}
+          <div className="bg-white rounded-lg shadow-md border border-gray-200">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-900">
+                Today's Debt Transactions
+              </h3>
             </div>
-
-            {/* Debt Transactions Table */}
-            <div className="bg-white rounded-lg shadow-md border border-gray-200">
-              <div className="px-6 py-4 border-b border-gray-200">
-                <h3 className="text-lg font-semibold text-gray-900">
-                  Today's Debt Transactions
-                </h3>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Time
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Customer Name
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Phone Number
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Amount Owed
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Status
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {debtData.debtTransactions
-                      .sort((a, b) => b.time.localeCompare(a.time))
-                      .map((transaction) => (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Time
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Customer Name
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Phone Number
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Amount Owed
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Status
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {debtData.debtTransactions
+                    .sort((a, b) => b.time.localeCompare(a.time))
+                    .map((transaction) => (
                       <tr key={transaction.id} className="hover:bg-gray-50">
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                           {transaction.time}
@@ -524,88 +523,87 @@ export default function ShopkeeperDailyReports() {
                         </td>
                       </tr>
                     ))}
-                  </tbody>
-                </table>
-              </div>
-              {debtData.debtTransactions.length === 0 && (
-                <div className="text-center py-8">
-                  <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-500">No debt transactions today</p>
-                </div>
-              )}
+                </tbody>
+              </table>
             </div>
+            {debtData.debtTransactions.length === 0 && (
+              <div className="text-center py-8">
+                <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-500">No debt transactions today</p>
+              </div>
+            )}
           </div>
-        )}
+        </div>
+      )}
 
-        {/* Product Summary Tab */}
-        {activeTab === 2 && (
-          <div className="space-y-6">
-            <div className="bg-white rounded-lg shadow-md border border-gray-200">
-              <div className="px-6 py-4 border-b border-gray-200">
-                <h3 className="text-lg font-semibold text-gray-900">
-                  Today's Product Sales Summary
-                </h3>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        <button
-                          onClick={() => handleSort("name")}
-                          className="flex items-center gap-1 hover:text-gray-700"
-                        >
-                          Product Name
-                          <ArrowUpDown className="w-3 h-3" />
-                        </button>
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        <button
-                          onClick={() => handleSort("quantity")}
-                          className="flex items-center gap-1 hover:text-gray-700"
-                        >
-                          Quantity Sold
-                          <ArrowUpDown className="w-3 h-3" />
-                        </button>
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        <button
-                          onClick={() => handleSort("revenue")}
-                          className="flex items-center gap-1 hover:text-gray-700"
-                        >
-                          Total Revenue
-                          <ArrowUpDown className="w-3 h-3" />
-                        </button>
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {productSummary.map((product, index) => (
-                      <tr key={index} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          {product.name}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {product.quantity}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
-                          {formatCurrency(product.revenue)}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              {productSummary.length === 0 && (
-                <div className="text-center py-8">
-                  <DollarSign className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-500">No product sales today</p>
-                </div>
-              )}
+      {/* Product Summary Tab */}
+      {activeTab === 2 && (
+        <div className="space-y-6">
+          <div className="bg-white rounded-lg shadow-md border border-gray-200">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-900">
+                Today's Product Sales Summary
+              </h3>
             </div>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <button
+                        onClick={() => handleSort("name")}
+                        className="flex items-center gap-1 hover:text-gray-700"
+                      >
+                        Product Name
+                        <ArrowUpDown className="w-3 h-3" />
+                      </button>
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <button
+                        onClick={() => handleSort("quantity")}
+                        className="flex items-center gap-1 hover:text-gray-700"
+                      >
+                        Quantity Sold
+                        <ArrowUpDown className="w-3 h-3" />
+                      </button>
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <button
+                        onClick={() => handleSort("revenue")}
+                        className="flex items-center gap-1 hover:text-gray-700"
+                      >
+                        Total Revenue
+                        <ArrowUpDown className="w-3 h-3" />
+                      </button>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {productSummary.map((product, index) => (
+                    <tr key={index} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        {product.name}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {product.quantity}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
+                        {formatCurrency(product.revenue)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {productSummary.length === 0 && (
+              <div className="text-center py-8">
+                <DollarSign className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-500">No product sales today</p>
+              </div>
+            )}
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

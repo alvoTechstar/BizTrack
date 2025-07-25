@@ -62,17 +62,11 @@ export default function TextBoxInput({
           maxLength={max}
           rows={3}
           autoComplete="off"
-          className={`
-            w-full p-[14px] px-3 /* Padding: 14px top/bottom, 12px left/right (matches original CSS) */
-            bg-[#f8f8f8] /* Background color from original CSS */
-            border rounded-md /* Base border and border-radius: 4px */
-            font-bold text-[12px] leading-[21px] text-[#353f50] /* Font styling */
-            resize-none /* Prevents manual resizing of the textarea */
-            placeholder:font-bold placeholder:text-[#848f9f] /* Placeholder styling */
-            focus:outline-none /* Removes default browser outline */
-            ${
-              disabled ? "bg-gray-100 cursor-not-allowed" : ""
-            } /* Styling for disabled state */
+         className={`
+            w-full pr-10 px-4 py-2 border rounded-lg shadow-sm
+            focus:outline-none
+            ${error ? "border-red-500" : "border-gray-300"}
+            ${disabled ? "bg-gray-100 cursor-not-allowed" : ""}
           `}
           style={{
             borderColor: getBorderColor(),

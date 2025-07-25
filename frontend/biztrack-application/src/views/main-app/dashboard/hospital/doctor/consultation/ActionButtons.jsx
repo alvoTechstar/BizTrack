@@ -15,7 +15,7 @@ const ActionButtons = ({
 }) => {
   return (
     // Removed sticky bottom-0 z-10
-    <div className="flex justify-between items-center p-4 bg-white border-t border-gray-200">
+    <div className="flex justify-between items-center p-4 bg-white border-t border-gray-200 m-20">
       {/* Left button: Save Progress */}
       <div className="flex-1 mr-2">
         <AppFormButton

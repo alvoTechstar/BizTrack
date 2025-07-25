@@ -3,7 +3,7 @@ import { Box, IconButton, Typography } from '@mui/material'; // Removed TextFiel
 import { Add, Remove } from '@mui/icons-material';
 
 import AppFormButton from '../../../../../../components/buttons/AppFormButton';
-import TextInput from '../../../../../../components/Input/TextInput';
+import TextInput from '../../../../../../components/input/TextInput';
 import { useTheme } from '../../../../../../components/theme/ThemeContext';
 
 const PrescriptionSection = ({ prescriptions, setPrescriptions, disabled }) => {
@@ -34,7 +34,10 @@ const PrescriptionSection = ({ prescriptions, setPrescriptions, disabled }) => {
         </Typography>
       )}
       {prescriptions.map((prescription, index) => (
-        <Box key={index} className="flex flex-col md:flex-row gap-4 mb-4 p-4 border rounded-lg bg-gray-50 items-center">
+<Box
+  key={index}
+  className="flex flex-col md:flex-row gap-4 mb-4 p-4 border border-gray-300 rounded-lg bg-gray-50 items-center transition-all duration-300 hover:shadow-lg hover:-translate-y-px shadow-md"
+>
           <TextInput
             label="Medication Name"
             placeholder="e.g., Amoxicillin"

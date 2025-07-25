@@ -16,7 +16,6 @@ import HotelExpenses from "../views/main-app/expenses/hotel/Hotelexpenses";
 
 import Dashboard from "../views/main-app/dashboard/kiosk/kioskadmin";
 import InventoryPage from "../views/main-app/products/inventory";
-import StockManagementPage from "../views/main-app/products/stock-management";
 import KioskStaffManagement from "../views/main-app/User-Management/kiosk";
 import KioskAdminReportsPage from "../views/main-app/reports/kiosk/kioskadmin/KioskAdminReportsPage";
 import SalesPage from "../views/main-app/sales/kiosk";
@@ -35,6 +34,7 @@ import ReceptionistPatientRecordsPage from "../views/main-app/patients/patientre
 import AdminPatientRecordsPage from "../views/main-app/patients/patientrecords/admin/index.jsx";
 import DoctorView from "../views/main-app/dashboard/hospital/doctor/index.jsx";
 import PatientListPage from "../views/main-app/dashboard/hospital/doctor/patientshistory/PatientListPage.jsx";
+import StockManagementPage from "../views/main-app/products/kiosk/stock-management/index.jsx";
 
 export const routes = [
   // Public Routes
@@ -177,18 +177,25 @@ export const routes = [
     allowedRoles: ["kiosk-admin"],
   },
   {
+    path: "/kiosk/debts",
+    element: <DebtManagement />,
+    isPrivate: true,
+    allowedRoles: ["kiosk-admin"],
+  },
+  {
     path: "/kioskreports",
     element: <KioskAdminReportsPage />,
     isPrivate: true,
     allowedRoles: ["kiosk-admin"],
   },
+  // Shopkeeper routes
 
-  {
-    path: "/dashboard/shopkeeper",
-    element: <Dashboard />,
-    isPrivate: true,
-    allowedRoles: ["kiosk-shopkeeper"],
-  },
+  // {
+  //   path: "/dashboard/shopkeeper",
+  //   element: <Dashboard />,
+  //   isPrivate: true,
+  //   allowedRoles: ["kiosk-shopkeeper"],
+  // },
   {
     path: "/shopkeeper/sales",
     element: <SalesPage />,

@@ -25,9 +25,9 @@ const MainLayout = ({ children, sidebarOpen, toggleSidebar }) => {
           <div
             className="h-full mx-auto"
             style={{
-              marginLeft: "20px",
-              marginRight: "20px",
-              maxWidth: "calc(100% - 40px)" /* Adjusts for the margins */,
+              marginLeft: "10px",
+              marginRight: "10px",
+              maxWidth: "calc(100% - 20px)" /* Adjusts for the margins */,
             }}
           >
             {/* Render the profile view or children */}

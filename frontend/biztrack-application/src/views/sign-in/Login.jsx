@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import TextInput from "../../components/Input/TextInput";
-import PasswordInput from "../../components/Input/PasswordInput";
+import TextInput from "../../components/input/TextInput";
+import PasswordInput from "../../components/input/PasswordInput";
 import FormButton from "../../components/Buttons/FormButton";
 import NaviButton from "../../components/buttons/Navibutton";
 import loginBg from "../../assets/Backgrounds/background.png";
@@ -103,7 +103,7 @@ const Login = () => {
       "hotel-cashier": "/dashboard/cashier",
       "hotel-waiter": "/dashboard/waiter",
       "kiosk-admin": "/dashboard/kiosk",
-      "kiosk-shopkeeper": "/dashboard/shopkeeper",
+      "kiosk-shopkeeper": "/shopkeeper/sales",
       "hospital-admin": "/dashboard/hospital-admin",
       "hospital-receptionist": "/patient/queue",
       "hospital-doctor": "/dashboard/doctor",
@@ -147,7 +147,7 @@ const Login = () => {
           <form onSubmit={handleSubmit}>
             <TextInput
               id="email"
-              label="Username"
+              label="Email"
               placeholder="Enter your email"
               autoComplete="username"
               value={email}

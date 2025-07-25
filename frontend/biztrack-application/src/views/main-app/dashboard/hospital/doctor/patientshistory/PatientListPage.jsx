@@ -1,8 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { Box, IconButton } from "@mui/material";
 import DataTable from "../../../../../../components/datatable";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import PatientHistoryPage from "./PatientHistoryPage";
+
 const mockPatients = [
   {
     id: "PAT-001",
@@ -36,6 +37,19 @@ const mockPatients = [
 const PatientListPage = () => {
   const [selectedPatientId, setSelectedPatientId] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
+
+  // Filter patients based on search term
+  const filteredPatients = useMemo(() => {
+    if (!searchTerm) return mockPatients;
+    
+    const lowercasedSearch = searchTerm.toLowerCase();
+    return mockPatients.filter(patient => 
+      patient.name.toLowerCase().includes(lowercasedSearch) ||
+      patient.id.toLowerCase().includes(lowercasedSearch) ||
+      patient.nationalId.toLowerCase().includes(lowercasedSearch) ||
+      patient.phoneNumber.toLowerCase().includes(lowercasedSearch)
+    );
+  }, [searchTerm]);
 
   const columns = [
     { label: "Patient ID", field: "id" },
@@ -80,7 +94,7 @@ const PatientListPage = () => {
         <DataTable
           title="Patient Records"
           columns={columns}
-          data={mockPatients}
+          data={filteredPatients}  // Use filtered data
           searchTerm={searchTerm}
           onSearchChange={handleSearchChange}
           pagination={true}
