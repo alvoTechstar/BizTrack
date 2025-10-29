@@ -2,7 +2,6 @@ import React from "react";
 import Login from "../views/sign-in/Login";
 import ForgotPassword from "../views/sign-in/ForgotPassword";
 import SuperAdminDashboard from "../views/main-app/dashboard/super-admin";
-import UserManagement from "../views/main-app/User-Management/super-admin";
 import HotelAdminDashboard from "../views/main-app/dashboard/hotel/admin";
 import CashierDashboard from "../views/main-app/dashboard/hotel/cashier";
 import CreateOrder from "../views/main-app/sales/CreateOrder";
@@ -35,6 +34,8 @@ import AdminPatientRecordsPage from "../views/main-app/patients/patientrecords/a
 import DoctorView from "../views/main-app/dashboard/hospital/doctor/index.jsx";
 import PatientListPage from "../views/main-app/dashboard/hospital/doctor/patientshistory/PatientListPage.jsx";
 import StockManagementPage from "../views/main-app/products/kiosk/stock-management/index.jsx";
+import BusinessesPage from "../views/main-app/User-Management/super-admin/businesses/index.jsx";
+import UsersPage from "../views/main-app/User-Management/super-admin/user-management/index.jsx";
 
 export const routes = [
   // Public Routes
@@ -67,8 +68,14 @@ export const routes = [
     allowedRoles: ["biztrack-admin"],
   },
   {
+    path: "/businesses",
+    element: <BusinessesPage />,
+    isPrivate: true,
+    allowedRoles: ["biztrack-admin"],
+  },
+    {
     path: "/user-management",
-    element: <UserManagement />,
+    element: <UsersPage />,
     isPrivate: true,
     allowedRoles: ["biztrack-admin"],
   },

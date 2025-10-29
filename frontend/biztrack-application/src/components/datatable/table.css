@@ -1,0 +1,114 @@
+.table-container {
+  margin-top: 10px;
+}
+
+.table {
+  min-height: 18.5em;
+}
+
+.table-pill {
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  font-size: 12px;
+  min-width: 75px;
+  max-width: 110px;
+  padding: 4px 10px;
+}
+
+.table-pill svg {
+  height: 0.4em;
+  width: 0.4em;
+  margin-right: 10px;
+}
+
+.green {
+  color: #36743d;
+  border: 1px solid #bef2b9;
+  background: #f1fef1;
+}
+
+.green-text {
+  color: #36743d;
+}
+
+.red {
+  color: #dc4437;
+  border: 1px solid #fbe9e9;
+  background: #fbe9e9;
+}
+
+.red-text{
+  color: #dc4437;
+}
+
+.orange {
+  color: #ec9b40;
+  border: 1px solid #fef6cf;
+  background: #fef6cf;
+}
+
+.table-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #353f50;
+}
+
+.table-actions svg {
+  cursor: pointer;
+  height: 0.7em;
+  width: 0.7em;
+  margin-right: 8px;
+}
+
+.table-data-span {
+  color: #353f50;
+  font-family: "Averta-Bolder", sans-serif;
+  font-size: 12px;
+  line-height: 24px;
+}
+
+.table-pagination {
+  margin-top: 10px;
+  /* margin-bottom: 40px; */
+  width: 100%;
+  align-items: flex-end;
+}
+
+.table-modal {
+  font-family: "Averta-Bold", sans-serif !important;
+  color: #353f50 !important;
+}
+
+.table-modal span {
+  display: block;
+  font-size: 14px;
+}
+
+.table-modal-title {
+  font-size: 13px !important;
+  font-family: "Averta-Bolder", sans-serif !important;
+  color: #7f91a8;
+  margin-bottom: 10px !important;
+}
+
+.table-modal hr {
+  border: 0;
+  height: 1px;
+  background: #d9d9d9;
+  margin: 30px 0;
+}
+
+.MuiPaginationItem-root {
+  font-family: "Averta-Bold", sans-serif !important;
+  color: #353f50 !important;
+}
+
+/* .Mui-selected {
+  color: #ffffff !important;
+} */
+
+/* .MuiBox-root {
+  width: 54% !important;
+} */

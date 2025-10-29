@@ -3,9 +3,9 @@ import KeyRoundedIcon from "@mui/icons-material/KeyRounded";
 import "./forgotPassword.css";
 import TitleHeader from "../../../components/Header/TitleHeader";
 import TextInput from "../../../components/Input/TextInput";
-import { validateEmail } from "../../../utilities/Sharedfunctions";
-import FormButton from "../../../components/Buttons/FormButton";
-import TextButton from "../../../components/Buttons/TextButton";
+import { validateEmail } from "../../../utilities/SharedFunctions";
+import FormButton from "../../../components/buttons/FormButton";
+import TextButton from "../../../components/buttons/TextButton";
 
 export default function OTPRequest({
   input,
@@ -29,9 +29,8 @@ export default function OTPRequest({
           input={input}
           handleInput={action}
           disabled={isLoading}
-          error={input ? !validateEmail(input) : false}
+          error={input !== "" && !validateEmail(input)}
           errorMessage={"Invalid email"}
-          
         />
         <FormButton
           text={"Reset Password"}

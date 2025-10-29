@@ -1,58 +1,132 @@
-// src/components/DataTable/TableModal.jsx
-import React from 'react';
-import { Modal, Box, Typography, IconButton } from '@mui/material';
-import CloseIcon from '@mui/icons-material/Close';
+import React, { useEffect, useState } from "react";
+import Box from "@mui/material/Box";
+import Modal from "@mui/material/Modal";
+import CancelRoundedIcon from "@mui/icons-material/CancelRounded";
+import "../../views/MainApp/mainApp.css";
+import "./table.css";
+import {
+  formatDateLogsModal,
+  formatString,
+  formatValue,
+  removeSubstring,
+} from "../../utilities/SharedFunctions";
 
-/**
- * Reusable modal component to display detailed content of a table row.
- * @param {object} props
- * @param {boolean} props.open - Whether the modal is open.
- * @param {function(): void} props.onClose - Callback to close the modal.
- * @param {string} props.title - Title for the modal.
- * @param {object} props.content - The data object to display in the modal.
- */
-const TableModal = ({ open, onClose, title, content }) => {
-  if (!content) {
-    return null; // Don't render if no content is provided
-  }
-
-  return (
-    <Modal
-      open={open}
-      onClose={onClose}
-      aria-labelledby="modal-title"
-      aria-describedby="modal-description"
-      className="flex items-center justify-center p-4" // Tailwind for centering the modal
-    >
-      <Box className="relative bg-white p-6 rounded-lg shadow-xl max-w-lg w-full max-h-[80vh] overflow-y-auto">
-        <IconButton
-          onClick={onClose}
-          className="absolute top-3 right-3 text-gray-500 hover:text-gray-800"
-          aria-label="close"
-        >
-          <CloseIcon />
-        </IconButton>
-        <Typography id="modal-title" variant="h5" component="h2" className="mb-4 text-gray-800">
-          {title}
-        </Typography>
-        <Box id="modal-description" className="space-y-2">
-          {/* Iterates over the content object and displays key-value pairs */}
-          {Object.entries(content).map(([key, value]) => (
-            <Box key={key} className="flex items-start text-sm">
-              <Typography component="span" className="font-semibold w-1/3 text-gray-600 pr-2">
-                {/* Converts camelCase keys to Title Case for better readability */}
-                {key.replace(/([A-Z])/g, ' $1').trim().replace(/\s+/g, ' ').toUpperCase()}:
-              </Typography>
-              <Typography component="span" className="w-2/3 text-gray-800 break-words">
-                {/* Handles object values by stringifying them, otherwise displays as string */}
-                {typeof value === 'object' && value !== null ? JSON.stringify(value) : String(value)}
-              </Typography>
-            </Box>
-          ))}
-        </Box>
-      </Box>
-    </Modal>
-  );
+const style = {
+  position: "absolute",
+  top: "50%",
+  left: "50%",
+  transform: "translate(-50%, -50%)",
+  bgcolor: "background.paper",
+  borderRadius: "6px",
+  boxShadow: "0px 4px 12px 0px rgba(0, 0, 0, 0.02)",
+  p: 4,
 };
 
-export default TableModal;
+export default function TableModal({ color, handleClear, data }) {
+  const [open, setOpen] = useState(false);
+  const handleOpen = () => setOpen(true);
+  const handleClose = () => {
+    handleClear();
+    setOpen(false);
+  };
+
+  useEffect(() => {
+    if (data) {
+      handleOpen();
+    }
+  }, [data]);
+
+  return (
+    <div>
+      <Modal
+        open={open}
+        onClose={handleClose}
+        aria-labelledby="modal-modal-title"
+        aria-describedby="modal-modal-description"
+      >
+        <Box sx={style}>
+          <div className="display-flex-persist">
+            <div>
+              <span className="main-form-title">Audit Log</span>
+            </div>
+            <CancelRoundedIcon
+              className="main-form-close"
+              style={{ fill: color }}
+              onClick={() => handleClose()}
+            />
+          </div>
+          <div className="main-form table-modal">
+            <div className="display-flex">
+              <div className="main-form-flex-triple">
+                <span className="table-modal-title">Timestamp</span>
+                <span>
+                  {data ? formatDateLogsModal(data.dateCreated) : null}
+                </span>
+              </div>
+              <div className="main-form-flex-triple">
+                <span className="table-modal-title">Action</span>
+                <span>
+                  {data
+                    ? data.cashPickUpOrder
+                      ? `${formatValue(data.details)}`
+                      : formatString(data.action)
+                    : null}
+                </span>
+              </div>
+              <div className="main-form-flex-triple">
+                <span className="table-modal-title">Feature Type</span>
+                <span>{data ? removeSubstring(data.itemName) : null}</span>
+              </div>
+            </div>
+            <hr />
+            <div className="display-flex">
+              <div className="main-form-flex-triple">
+                <span className="table-modal-title">Institution Name</span>
+                <span>
+                  {data
+                    ? `${data.actionBy.institution.institutionName} ${
+                        data.actionBy.branch
+                          ? `- ${data.actionBy.branch.name}`
+                          : ""
+                      }`
+                    : null}
+                </span>
+              </div>
+              <div className="main-form-flex-triple">
+                <span className="table-modal-title">Username</span>
+                <span>{data ? data.actionBy.userName : null}</span>
+              </div>
+              <div className="main-form-flex-triple">
+                <span className="table-modal-title">Role</span>
+                <span>
+                  {data ? formatString(data.actionBy.userRole) : null}
+                </span>
+              </div>
+            </div>
+            <hr />
+            <div>
+              <span className="table-modal-title">Details</span>
+              <span>
+                {data
+                  ? data.cashPickUpOrder
+                    ? `${data.details} - PIN: ${
+                        data.cashPickUpOrder.pin
+                          ? data.cashPickUpOrder.pin
+                          : "not captured"
+                      }  ${
+                        formatValue(data.details) === "Pay"
+                          ? data.cashPickUpOrder.beneAmount
+                            ? `- KES ${data.cashPickUpOrder.beneAmount}`
+                            : "- Amount not captured"
+                          : ""
+                      }`
+                    : data.details
+                  : null}{" "}
+              </span>
+            </div>
+          </div>
+        </Box>
+      </Modal>
+    </div>
+  );
+}

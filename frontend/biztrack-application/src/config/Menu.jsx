@@ -22,8 +22,16 @@ export const MENU = [
     path: "/dashboard/super-admin",
   },
   {
+    key: "business",
+    title: "Businesses",
+    icon: <PeopleIcon />,
+    permissions: ["Super Admin"],
+    subitems: [],
+    path: "/businesses",
+  },
+  {
     key: "users",
-    title: "Users",
+    title: "User Management",
     icon: <PeopleIcon />,
     permissions: ["Super Admin"],
     subitems: [],

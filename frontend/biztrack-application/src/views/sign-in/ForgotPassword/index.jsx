@@ -4,49 +4,50 @@ import "./forgotPassword.css";
 import OTPRequest from "./OTPRequest";
 import OTPInput from "./OTPInput";
 import PassReset from "./PassReset";
-import TitleHeader from "../../../components/header/TitleHeader";
 import Toaster from "../../../components/Toaster";
-import { getEncryptValue } from "../../../utilities/Sharedfunctions";
-import { POST_LOGIN, PUT_LOGIN } from "../../../services/DatabaseServiceImp";
-// import URLS from "../../../utilities/Endpoints";
 import Footer from "../../../components/footer";
+import axios from "axios";
+
+const API_URL = "http://localhost:3000/api";
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState("");
   const [otp, setOTP] = useState("");
   const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
+  const [resetToken, setResetToken] = useState("");
   const [showToaster, setShowToaster] = useState(false);
   const [toasterState, setToasterState] = useState("");
   const [toasterTitle, setToasterTitle] = useState("");
   const [toasterMessage, setToasterMessage] = useState("");
-  const [view, setView] = useState(0);
+  const [view, setView] = useState(0); // 0: email, 1: OTP, 2: new password
   const [loading, setLoading] = useState(false);
   const [loadingOTP, setLoadingOTP] = useState(false);
 
   const navigate = useNavigate();
 
   const handleInput = (e) => {
-    if (e.target.id === "email") {
-      setEmail(e.target.value);
-    }
-
-    if (e.target.id === "code") {
-      setOTP(e.target.value);
-    }
-
-    if (e.target.id === "password") {
-      setPassword(e.target.value);
-      setPasswordConfirm("");
-    }
-    if (e.target.id === "passwordConfirm") {
-      setPasswordConfirm(e.target.value);
+    const { id, value } = e.target;
+    
+    switch (id) {
+      case "email":
+        setEmail(value);
+        break;
+      case "code":
+        setOTP(value);
+        break;
+      case "password":
+        setPassword(value);
+        break;
+      case "passwordConfirm":
+        setPasswordConfirm(value);
+        break;
+      default:
+        break;
     }
   };
 
   const handleToaster = (state, title, message) => {
-    setLoading(false);
-    setLoadingOTP(false);
     setShowToaster(true);
     setToasterState(state);
     setToasterTitle(title);
@@ -54,84 +55,121 @@ export default function ForgotPassword() {
   };
 
   const handleSendOTP = async () => {
-    let payload = { email: email };
+    if (!email) {
+      handleToaster("false", "Error", "Please enter your email");
+      return;
+    }
 
     setLoading(true);
-    let request = await POST_LOGIN(
-      "", // Placeholder API endpoint
-      payload
-    );
 
-    if (request.success) {
-      handleToaster("true", "Password Reset", "OTP sent to your email");
-      setTimeout(() => {
-        setView(1);
-      }, 3000);
-    } else {
-      handleToaster(
-        "false",
-        "Password Reset",
-        request.message ? request.message : ""
-      );
+    try {
+      const response = await axios.post(`${API_URL}/auth/forgot-password`, {
+        email: email
+      });
+
+      if (response.data.success) {
+        handleToaster("true", "Success", "OTP sent to your email");
+        setTimeout(() => {
+          setView(1);
+          setLoading(false);
+        }, 2000);
+      }
+    } catch (error) {
+      const errorMsg = error.response?.data?.message || "Failed to send OTP";
+      handleToaster("false", "Error", errorMsg);
+      setLoading(false);
     }
   };
 
   const handleValidateOTP = async () => {
-    let payload = { email: email, secret: getEncryptValue(otp) };
-
+    if (otp.length !== 6) {
+      handleToaster("false", "Invalid OTP", "Please enter a 6-digit OTP");
+      return;
+    }
+  
     setLoading(true);
-    let request = await POST_LOGIN(
-      "", // Placeholder API endpoint
-      payload
-    );
-
-    if (request.success) {
-      handleToaster("true", "Password Reset", "OTP validated successfully");
-      setTimeout(() => {
-        setView(2);
-      }, 4000);
-    } else {
-      handleToaster(
-        "false",
-        "Password Reset",
-        request.message ? request.message : ""
-      );
+  
+    try {
+      const response = await axios.post(`${API_URL}/auth/verify-reset-otp`, {
+        email: email,
+        otp: otp
+      });
+  
+      if (response.data.success) {
+        handleToaster("true", "Success", "OTP verified successfully");
+        setResetToken(response.data.resetToken || otp);
+        setTimeout(() => {
+          setView(2);
+          setLoading(false);
+        }, 2000);
+      }
+    } catch (error) {
+      const errorMsg = error.response?.data?.message || "OTP verification failed";
+      handleToaster("false", "Verification Failed", errorMsg);
+      setLoading(false);
     }
   };
 
   const handleResetPassword = async () => {
-    let payload = {
-      email: email,
-      currentSecret: "",
-      newSecret: getEncryptValue(password),
-    };
+    if (password !== passwordConfirm) {
+      handleToaster("false", "Error", "Passwords do not match");
+      return;
+    }
+
+    if (password.length < 12) {
+      handleToaster("false", "Error", "Password must be at least 12 characters");
+      return;
+    }
 
     setLoading(true);
-    let request = await PUT_LOGIN(
-      "", // Placeholder API endpoint
-      payload
-    );
 
-    if (request.success) {
-      handleToaster(
-        "true",
-        "Password Reset",
-        "Your password was reset successfully"
-      );
-      setTimeout(() => {
-        handleNavigation();
-      }, 4000);
-    } else {
-      handleToaster(
-        "false",
-        "Password Reset",
-        request.message ? request.message : ""
-      );
+    try {
+      const response = await axios.post(`${API_URL}/auth/reset-password`, {
+        email: email,
+        resetToken: resetToken,
+        newPassword: password,
+        confirmPassword: passwordConfirm
+      });
+
+      if (response.data.success) {
+        handleToaster("true", "Success", "Password reset successfully");
+        setTimeout(() => {
+          navigate("/login");
+        }, 2000);
+      }
+    } catch (error) {
+      const errorMsg = error.response?.data?.message || "Password reset failed";
+      handleToaster("false", "Error", errorMsg);
+      setLoading(false);
     }
   };
 
   const handleNavigation = () => {
-    navigate("/");
+    navigate("/login");
+  };
+
+  const handleResendOTP = async () => {
+    setLoadingOTP(true);
+    
+    try {
+      const response = await axios.post(`${API_URL}/auth/forgot-password`, {
+        email: email
+      });
+
+      if (response.data.success) {
+        handleToaster("true", "Success", "A new OTP has been sent to your email");
+      }
+    } catch (error) {
+      const errorMsg = error.response?.data?.message || "Failed to resend OTP";
+      handleToaster("false", "Error", errorMsg);
+    } finally {
+      setLoadingOTP(false);
+    }
+  };
+
+  const handleBackFromOTP = () => {
+    setView(0);
+    setOTP("");
   };
 
   const handleView = (active) => {
@@ -140,12 +178,13 @@ export default function ForgotPassword() {
         return (
           <OTPInput
             input={otp}
+            value={otp}
             isLoading={loading}
             isLoadingResend={loadingOTP}
             action={handleInput}
             buttonAction={handleValidateOTP}
-            buttonAction2={handleSendOTP}
-            back={handleNavigation}
+            buttonAction2={handleResendOTP}
+            back={handleBackFromOTP}
           />
         );
       case 2:
@@ -174,7 +213,6 @@ export default function ForgotPassword() {
 
   return (
     <div className="reset-container">
-      <TitleHeader />
       <Toaster
         open={showToaster}
         state={toasterState}

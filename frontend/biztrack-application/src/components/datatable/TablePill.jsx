@@ -1,29 +1,43 @@
-// src/components/DataTable/TablePill.jsx
-import React from 'react';
-import { Box, Typography } from '@mui/material';
+import React from "react";
+import CircleIcon from "@mui/icons-material/Circle";
+import "./table.css";
+import {
+  formatPill,
+  formatPillOutbound,
+} from "../../utilities/SharedFunctions";
 
-/**
- * Reusable component to display status indicators with customizable colors.
- * @param {object} props
- * @param {string} props.status - The status string to display.
- * @param {object} props.customStyles - An object mapping status values to Tailwind CSS classes for background and text color.
- */
-const TablePill = ({ status, customStyles }) => {
-  // Fallback styles for unknown statuses
-  const defaultStyles = "bg-gray-200 text-gray-800";
-
-  // Determine specific styles based on the status provided by props
-  const statusSpecificStyles = customStyles?.[status] || defaultStyles;
-
+export default function TablePill({ state, page }) {
+  // Ensure state is treated as a string
+  const stateString = String(state || '');
+  
   return (
-    <Box
-      className={`inline-block px-3 py-1 text-xs font-semibold rounded-full ${statusSpecificStyles}`}
+    <div
+      className={
+        stateString === "PENDING" ||
+        stateString === "NEW" ||
+        stateString === "RECEIVED" ||
+        stateString === "Draft" ||
+        stateString === "Processing" ||
+        stateString === "ApprovalPending" ||
+        stateString === "Pending Approval" ||
+        stateString === "Draft/Pending Approval"
+          ? ["table-pill orange"]
+          : stateString === "ACTIVE" ||
+            stateString === "SUCCESS" ||
+            stateString === "PAID" ||
+            stateString === "Paid" ||
+            stateString === "Sent" ||
+            stateString === "APPROVED" ||
+            stateString === "Posted" ||
+            stateString === "ReadyForPayout"
+          ? ["table-pill green"]
+          : ["table-pill red"]
+      }
     >
-      <Typography variant="caption" component="span" className="capitalize">
-        {status}
-      </Typography>
-    </Box>
+      <CircleIcon />
+      {page && page === "outbound"
+        ? formatPillOutbound(stateString)
+        : formatPill(stateString)}
+    </div>
   );
-};
-
-export default TablePill;
+}

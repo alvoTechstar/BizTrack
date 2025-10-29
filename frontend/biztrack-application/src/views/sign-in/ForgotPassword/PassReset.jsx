@@ -1,10 +1,11 @@
 import React from "react";
 import "./forgotPassword.css";
-import TitleHeader from "../../../components/header/TitleHeader";
-import FormButton from "../../../components/Buttons/FormButton";
+import TitleHeader from "../../../components/Header/TitleHeader";
+import FormButton from "../../../components/buttons/FormButton";
 import LockRoundedIcon from "@mui/icons-material/LockRounded";
-import TextButton from "../../../components/Buttons/TextButton";
+import TextButton from "../../../components/buttons/TextButton";
 import PasswordResetInput from "../../../components/Input/PasswordResetInput";
+import { validatePassword } from "../../../utilities/SharedFunctions";
 
 export default function PassReset({
   input,
@@ -14,6 +15,16 @@ export default function PassReset({
   buttonAction,
   back,
 }) {
+  // Check if passwords are valid (all requirements met and matching)
+  const isPasswordValid = 
+    input &&
+    validatePassword("length", input) &&
+    validatePassword("characters", input) &&
+    validatePassword("uppercase", input) &&
+    validatePassword("number", input);
+  
+  const isValid = isPasswordValid && input2 && input === input2;
+
   return (
     <div className="reset-form-container">
       <TitleHeader
@@ -37,7 +48,7 @@ export default function PassReset({
         <FormButton
           text={"Reset Password"}
           isLoading={isLoading}
-          validation={input && input2 && input === input2}
+          validation={isValid}
           action={buttonAction}
         />
       </div>

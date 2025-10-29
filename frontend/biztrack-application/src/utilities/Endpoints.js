@@ -1,73 +1,102 @@
 const URLS = {
-  TAG_BASE_URL: "http://transfer-advise-service.test.kube.iswke",
-  // TAG_BASE_URL: "http://localhost:8080",
-  TAG_BASE_PATH: "/api/v1",
+  // TAG_BASE_URL: "http://transfer-advise-service.test.kube.iswke",
+  TAG_BASE_URL: "http://localhost:3000/api",
+  // TAG_BASE_PATH: "/api",
+    
+  // Authentication Endpoints
+  AUTH: {
+    LOGIN: "/auth/login",
+    VERIFY_OTP: "/auth/verify-otp",
+    FORGOT_PASSWORD: "/auth/forgot-password",
+    VERIFY_RESET_OTP: "/auth/verify-reset-otp",
+    RESET_PASSWORD: "/auth/reset-password",
+    RESEND_OTP: "/auth/resend-otp",
+    RESEND_RESET_OTP: "/auth/resend-reset-otp",
+    TEST_EMAIL: "/auth/test-email" // Optional: for testing email configuration
+  },
 
-  // Authentication
-  TAG_API_AUTH: "/authentication",
-  TAG_API_SIGN_UP: "/sign-up",
-  TAG_API_VALIDATE_OTP: "/validate-otp",
-  TAG_API_PASSWORD_RESET: "/forgot-password",
-  TAG_API_PASSWORD_SET: "/set-secret",
-  TAG_API_VALIDATE_TOKEN: "/auth/validate",
-  TAG_API_VALIDATE_TOKEN_ME: "/auth/validate_me",
-  TAG_API_LOGOUT: "/app/users/log-out",
-  TAG_API_STATUS: "/keys",
+  // User Management Endpoints
+  USER_MANAGEMENT: {
+    // Business endpoints
+    BUSINESSES: "/businesses",
+    BUSINESS_BY_ID: "/businesses/:id",
+    BUSINESS_SETUP: "/business-setup",
+    BUSINESS_ADMINS: "/business/:businessId/admins",
+    
+    // Admin endpoints
+    ADMINS: "/admins",
+    
+    // User endpoints (if you have them)
+    USERS: "/users",
+    USER_BY_ID: "/users/:id"
+  },
 
-  //Users
-  TAG_API_USERS: "/app/users",
-  TAG_API_USER_STATUS: "/app/users/change-status",
-  TAG_API_PROFILE: "/app/user-profile",
-  TAG_API_CHANGE_SECRET: "/app/user-profile/change-secrete",
-  TAG_ROLE_MATRIX: "/app/users/role-matrix",
+  // Business Management Endpoints (Complete from your BusinessRoutes)
+  BUSINESS: {
+    // Main business endpoints
+    CREATE_BUSINESS: "/businesses",
+    GET_ALL_BUSINESSES: "/businesses",
+    GET_BUSINESS_BY_ID: "/businesses/:id",
+    UPDATE_BUSINESS: "/businesses/:id",
+    DELETE_BUSINESS: "/businesses/:id", // Actually archives by setting to inactive
+    TOGGLE_BUSINESS_STATUS: "/businesses/:id/status",
+    
+    // Utility endpoints
+    GET_BUSINESS_BY_REGISTRATION: "/businesses/registration/:registrationNumber",
+    GET_BUSINESS_BY_NAME: "/businesses/name/:name",
+    
+    // Test endpoints
+    TEST_PUBLIC: "/businesses/test/public"
+  },
 
-  // Institutions
-  TAG_API_INSTITUTIONS: "/app/institutions",
-  TAG_API_INSTITUTION_STATUS: "/app/institutions/change-status",
-  TAG_API_INSTITUTION_BRANCHES: "/app/institutions/branches",
+  // User Management Endpoints (if you have user routes)
+  USERS: {
+    CREATE_USER: "/users",
+    GET_ALL_USERS: "/users",
+    GET_USER_BY_ID: "/users/:id",
+    GET_USER_BY_EMAIL: "/users/email/:email",
+    GET_USER_BY_USERNAME: "/users/username/:username",
+    UPDATE_USER: "/users/:id",
+    UPDATE_USER_PASSWORD: "/users/:id/password",
+    DELETE_USER: "/users/:id",
+    TOGGLE_USER_STATUS: "/users/:id/status",
+    
+    // Business-specific user endpoints
+    GET_USERS_BY_BUSINESS: "/users/business/:businessId",
+    GET_USER_BY_BUSINESS_ID: "/users/business/:businessId/user"
+  },
 
-  //Branches
-  TAG_API_BRANCHES: "/app/branches",
-  TAG_API_BRANCH_STATUS: "/app/branches/change-status",
+  // Combined endpoints for easy access (Legacy - consider using the categorized ones above)
+  ENDPOINTS: {
+    // Authentication
+    LOGIN: "/auth/login",
+    VERIFY_OTP: "/auth/verify-otp",
+    FORGOT_PASSWORD: "/auth/forgot-password",
+    VERIFY_RESET_OTP: "/auth/verify-reset-otp",
+    RESET_PASSWORD: "/auth/reset-password",
+    RESEND_OTP: "/auth/resend-otp",
+    RESEND_RESET_OTP: "/auth/resend-reset-otp",
+    
+    // Business Management
+    CREATE_BUSINESS: "/businesses",
+    GET_BUSINESSES: "/businesses",
+    GET_BUSINESS: "/businesses/:id",
+    UPDATE_BUSINESS: "/businesses/:id",
+    DELETE_BUSINESS: "/businesses/:id",
+    TOGGLE_BUSINESS_STATUS: "/businesses/:id/status",
+    
+    // User Management
+    CREATE_USER: "/users",
+    GET_USERS: "/users",
+    GET_USER: "/users/:id",
+    UPDATE_USER: "/users/:id",
+    DELETE_USER: "/users/:id",
+    
+    // Admin Management
+    CREATE_ADMIN: "/admins",
+    GET_ADMINS: "/admins"
+  },
 
-  //Inbound Remittance
-  //Cash Pickup
-  TAG_API_TRANSACTIONS_INBOUND_CASHPICKUP: "/app/ria/cash/report",
-  TAG_API_CASH_PICKUP_SEARCH: "/app/ria/cash",
-  TAG_API_CASH_PICKUP_APPROVAL: "/app/ria/cash/approval",
-  TAG_API_CASH_PAYMENT: "/app/ria/cash/payment",
-  TAG_API_CASH_APPROVE: "/app/ria/cash/approval",
-
-  //Bank Deposit
-  TAG_API_TRANSACTIONS_INBOUND_BANKDEPOSIT: "/app/ria/download/report",
-
-  //OutboundRemittance
-  //Customer and Beneficiary
-  TAG_RIA_CUSTOMER: "/ria/send-money/customer",
-  TAG_RIA_BENEFICIARY: "/ria/send-money/customer/beneficiary",
-
-  //CashPickup
-  TAG_RIA: "/ria/send-money",
-  TAG_RIA_ORDERS: "/send-orders/orders",
-  TAG_RIA_ALLOWED_COUNTRIES: "/master-data/countries",
-  TAG_RIA_ALLOWED_STATES: "/master-data/states",
-  TAG_RIA_ALLOWED_CITIES: "/master-data/cities",
-  TAG_RIA_CURRENCIES: "/master-data/currencies",
-  TAG_RIA_COUNTRY: "/network/get-country",
-  TAG_RIA_DELIVERY_METHODS: "/delivery-methods",
-  TAG_RIA_CASH_PICKUP_PARTNERS: "/network/get-payout-partners?deliveryId=1&",
-  TAG_RIA_BANK_DEPOSIT_PARTNERS: "/network/get-banks",
-  TAG_RIA_RATES: "/send-orders/amount-requirements",
-  TAG_RIA_ORDER_DRAFT: "/send-orders/transaction/create-draft-order",
-  TAG_RIA_ORDER: "/send-orders/order/send",
-  TAG_RIA_ORDER_APPROVE: "/send-orders/order/approve",
-  TAG_RIA_REASONS: "/send-orders/sendorder-transaction-values",
-
-  //Countries
-  TAG_API_COUNTRIES: "/app/countries",
-
-  //Audit
-  TAG_API_SYSTEM_AUDIT: "/app/audit-trail",
-  TAG_API_TRANSACTION_AUDIT: "/app/audit-trail/transactions/POST_RIA",
 };
+
 export default URLS;

@@ -1,12 +1,11 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Avatar,
   Box,
   Chip,
   Tooltip,
   Typography,
-  TextField,
-  // Removed unused Select and MenuItem as DataTable now handles the filter dropdown
+  CircularProgress,
 } from "@mui/material";
 import {
   Visibility as ViewIcon,
@@ -14,306 +13,339 @@ import {
   Delete as DeleteIcon,
   Image as ImageIcon,
 } from "@mui/icons-material";
-// Adjust the import path to your DataTable component as per your project structure
+import axios from "axios";
 import DataTable from "../../../../components/datatable";
+import URLS from "../../../../utilities/Endpoints";
+import { DELETE, PUT } from "../../../../services/DatabaseServiceImp";
+import ContentLoader from "../../../../components/Loader/ContentLoader";
+import AddButton from "../../../../components/buttons/AddButton"
+import SearchInput from "../../../../components/input/SearchInput"
+import TextButton from "../../../../components/buttons/TextButton";
+import FilterInput from "../../../../components/input/FilterInput";
+import { getRowValue } from "../../../../utilities/SharedFunctions";
 
-const initialRows = [
-  {
-    id: 1,
-    businessId: "BIZ-001", // Added businessId
-    logoUrl: "https://via.placeholder.com/40x40.png?text=B1",
-    businessName: "Luxury Grand Hotel",
-    type: "HOTEL",
-    location: "Nairobi, Kenya",
-    primaryColor: "#007BFF",
-    adminName: "Alice Smith",
-  },
-  {
-    id: 2,
-    businessId: "BIZ-002", // Added businessId
-    logoUrl: null,
-    businessName: "City Kiosk Express",
-    type: "KIOSK",
-    location: "Mombasa Rd",
-    primaryColor: "#28A745",
-    adminName: "Bob Johnson",
-  },
-  {
-    id: 3,
-    businessId: "BIZ-003", // Added businessId
-    businessName: "Wellness General Hospital",
-    type: "HOSPITAL",
-    location: "Upper Hill, Nairobi",
-    primaryColor: "#DC3545",
-    adminName: "Carol White",
-    logoUrl: "https://via.placeholder.com/40x40.png?text=HOS",
-  },
-  {
-    id: 4,
-    businessId: "BIZ-004", // Added businessId
-    businessName: "Green Oasis Spa",
-    type: "SPA",
-    location: "Karen, Nairobi",
-    primaryColor: "#FFC107",
-    adminName: "David Lee",
-    logoUrl: null,
-  },
-  {
-    id: 5,
-    businessId: "BIZ-005", // Added businessId
-    businessName: "Mega Electronics",
-    type: "RETAIL",
-    location: "CBD, Nairobi",
-    primaryColor: "#6C757D",
-    adminName: "Eve Davis",
-    logoUrl: "https://via.placeholder.com/40x40.png?text=RET",
-  },
-  {
-    id: 6,
-    businessId: "BIZ-006", // Changed businessId to be unique
-    logoUrl: "https://via.placeholder.com/40x40.png?text=B6",
-    businessName: "Coast Beach Resort",
-    type: "HOTEL",
-    location: "Diani, Kenya",
-    primaryColor: "#FF5733",
-    adminName: "Frank Green",
-  },
-  {
-    id: 7,
-    businessId: "BIZ-007", // Changed businessId to be unique
-    businessName: "Mountain View Clinic",
-    type: "HOSPITAL",
-    location: "Limuru, Kenya",
-    primaryColor: "#33FF57",
-    adminName: "Grace Black",
-    logoUrl: null,
-  },
-  {
-    id: 8,
-    businessId: "BIZ-008", // Changed businessId to be unique
-    businessName: "Urban Fitness Gym",
-    type: "GYM", // Added a new type for variety
-    location: "Westlands, Nairobi",
-    primaryColor: "#5733FF",
-    adminName: "Henry Wilson",
-    logoUrl: "https://via.placeholder.com/40x40.png?text=GYM",
-  },
-  {
-    id: 9,
-    businessId: "BIZ-009", // Changed businessId to be unique
-    businessName: "Quick Bites Cafe",
-    type: "RESTAURANT", // Added a new type for variety
-    location: "Kilimani, Nairobi",
-    primaryColor: "#FF3357",
-    adminName: "Ivy King",
-    logoUrl: null,
-  },
+
+// Define headers similar to BranchHeaders
+const BusinessHeaders = [
+  { key: "all", title: "All" },
+  { key: "businessId", title: "Business ID" },
+  { key: "logo", title: "Logo" },
+  { key: "businessName", title: "Business Name" },
+  { key: "type", title: "Type" },
+  { key: "location", title: "Location" },
+  { key: "primaryColor", title: "Color" },
+  { key: "adminName", title: "Admin" },
+  { key: "status", title: "Status" },
+  { key: "action", title: "Action" },
 ];
 
-const BusinessTable = () => {
-  const [rows, setRows] = useState(initialRows);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [filterType, setFilterType] = useState(""); // State for the filter dropdown
+const BusinessActions = ["View", "Edit", "Delete"];
 
-  const handleAction = (actionKey, row) => {
-    if (actionKey === "view") {
-      console.log("View details for:", row);
-    } else if (actionKey === "edit") {
-      console.log("Edit requested for:", row);
-      alert(`Editing business: ${row.businessName}`);
-    } else if (actionKey === "delete") {
-      console.log("Delete requested for ID:", row.id);
-      if (
-        window.confirm(`Are you sure you want to delete ${row.businessName}?`)
-      ) {
-        setRows((prev) => prev.filter((r) => r.id !== row.id));
-        alert(`${row.businessName} deleted successfully.`);
+const STATUS = [
+  { value: "ACTIVE", label: "Active" },
+  { value: "INACTIVE", label: "Inactive" },
+];
+
+const BusinessTable = ({ refreshKey, triggerRefresh, setSnackbar, color }) => {
+  const [rows, setRows] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [selected, setSelected] = useState([]);
+  const [selectAll, setSelectAll] = useState(false);
+  const [selectedStates, setSelectedStates] = useState([]);
+  const [searchFilter, setSearchFilter] = useState("");
+  const [tableFilter, setTableFilter] = useState("");
+  const [anchorEl, setAnchorEl] = useState(null);
+  const [view, setView] = useState(0);
+  const [state, setState] = useState("");
+  const [actionLoading, setActionLoading] = useState(false);
+  const [loadingState, setLoadingState] = useState(false);
+  const [loadingText, setLoadingText] = useState("");
+  const [loadedText, setLoadedText] = useState("");
+
+  // Function to fetch business data
+  const fetchBusinesses = async () => {
+    setLoading(true);
+    try {
+      const response = await axios.get(
+        `${URLS.TAG_BASE_URL}${URLS.USER_MANAGEMENT.BUSINESSES}`
+      );
+      const businessData = response.data.data || response.data || [];
+      setRows(Array.isArray(businessData) ? businessData : []);
+    } catch (error) {
+      console.error("Error fetching businesses:", error);
+      setSnackbar({
+        open: true,
+        message: "Failed to load businesses.",
+        severity: "error",
+      });
+      setRows([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchBusinesses();
+  }, [refreshKey]);
+
+  const handleClick = (event) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleClose = () => {
+    setAnchorEl(null);
+  };
+
+  const handleInput = (e) => {
+    const id = e.target.id;
+    const value = e.target.value;
+
+    if (id === "search") {
+      setSearchFilter(value);
+    }
+  };
+
+  const handleTableView = (view, action, index) => {
+    if (action === "View") {
+      console.log("View business:", getRowValue(rows, index));
+      // Handle view logic
+    } else if (action === "Edit") {
+      console.log("Edit business:", getRowValue(rows, index));
+      // Handle edit logic
+    } else if (action === "Delete") {
+      setState("DELETE");
+      setView(1);
+      setSelected([getRowValue(rows, index)?.id]);
+    }
+  };
+
+  const handleResponse = (status, text) => {
+    setTimeout(() => {
+      setActionLoading(false);
+      setLoadingState(status);
+      setLoadedText(text);
+    }, 1000);
+    setTimeout(() => {
+      setView(status === true ? 0 : 1);
+    }, 4000);
+  };
+
+  const handleAction = async () => {
+    setActionLoading(true);
+    setLoadingText("Deleting Business");
+    setView(2);
+
+    try {
+      for (const element of selected) {
+        const deleteUrl = `${API_BASE_URL}${URLS.USER_MANAGEMENT.BUSINESS_BY_ID}`.replace(
+          ":id",
+          element
+        );
+        await axios.delete(deleteUrl);
       }
-    } else {
-      console.log(`Unhandled action: ${actionKey} for row:`, row);
+
+      setSelected([]);
+      handleResponse(true, "Business Deleted Successfully");
+      triggerRefresh();
+    } catch (error) {
+      const errorMessage =
+        error.response?.data?.message || "Failed to delete business.";
+      handleResponse(false, errorMessage);
+      console.error("Error deleting business:", error);
     }
   };
 
-  const columns = [
-    {
-      field: "businessId",
-      label: "Business ID", // Added new column for businessId
-      minWidth: "120px",
-      render: (row) => (
-        <Typography variant="body2" className="font-medium text-gray-700">
-          {row.businessId}
-        </Typography>
-      ),
-    },
-    {
-      field: "logoUrl",
-      label: "Logo",
-      minWidth: "60px",
-      render: (row) => (
-        <Box className="flex justify-center">
-          {" "}
-          {/* Center content */}
-          <Avatar
-            src={row.logoUrl}
-            alt={row.businessName}
-            variant="rounded"
-            sx={{
-              width: 40,
-              height: 40,
-              backgroundColor: row.primaryColor || "#e0e0e0",
-            }}
-          >
-            {!row.logoUrl && <ImageIcon sx={{ color: "white" }} />}
-          </Avatar>
-        </Box>
-      ),
-    },
-    {
-      field: "businessName",
-      label: "Business Name",
-      minWidth: "180px",
-      render: (row) => (
-        <Typography
-          variant="body2"
-          className="font-medium text-blue-700 hover:underline cursor-pointer"
+  const handleSelectRecord = (rows) => {
+    setSelected([...rows]);
+  };
+
+  const handleSelectedStates = (rows) => {
+    setSelectedStates([...rows]);
+  };
+
+  const handleAddBusiness = () => {
+    // This would open the create business flow from parent
+    console.log("Add business clicked");
+  };
+
+  // Prepare data for DataTable
+  const tableData = rows.map((row) => ({
+    ...row,
+    id: row.id || row.businessId,
+    logo: (
+      <Box className="flex justify-center">
+        <Avatar
+          src={row.logoUrl}
+          alt={row.businessName}
+          variant="rounded"
+          sx={{
+            width: 40,
+            height: 40,
+            backgroundColor: row.primaryColor || "#e0e0e0",
+          }}
         >
-          {row.businessName}
+          {!row.logoUrl && <ImageIcon sx={{ color: "white" }} />}
+        </Avatar>
+      </Box>
+    ),
+    primaryColor: (
+      <Box className="flex justify-center">
+        <Tooltip title={row.primaryColor || "N/A"} placement="right">
+          <Box
+            sx={{
+              width: 24,
+              height: 24,
+              borderRadius: "50%",
+              backgroundColor: row.primaryColor || "#ccc",
+              border: "1px solid #ddd",
+            }}
+          />
+        </Tooltip>
+      </Box>
+    ),
+    type: (
+      <Chip
+        label={row.type}
+        size="small"
+        variant="outlined"
+        className="capitalize"
+      />
+    ),
+    status: (
+      <Chip
+        label={row.status || "ACTIVE"}
+        size="small"
+        color={row.status === "ACTIVE" ? "success" : "default"}
+        variant="outlined"
+      />
+    ),
+  }));
+
+  if (loading) {
+    return (
+      <Box className="flex justify-center items-center p-8">
+        <CircularProgress size={40} />
+        <Typography variant="body1" className="ml-4 text-gray-600">
+          Loading businesses...
         </Typography>
-      ),
-    },
-    {
-      field: "type",
-      label: "Type",
-      minWidth: "100px",
-      render: (row) => (
-        <Chip
-          label={row.type}
-          size="small"
-          variant="outlined"
-          className="capitalize"
-        />
-      ),
-    },
-    {
-      field: "location",
-      label: "Location",
-      minWidth: "150px",
-      render: (row) => (
-        <Typography variant="body2" className="text-gray-600">
-          {row.location}
-        </Typography>
-      ),
-    },
-    {
-      field: "primaryColor",
-      label: "Color",
-      minWidth: "80px",
-      render: (row) => (
-        <Box className="flex justify-center">
-          {" "}
-          {/* Center content */}
-          <Tooltip title={row.primaryColor || "N/A"} placement="right">
-            <Box
-              sx={{
-                width: 24,
-                height: 24,
-                borderRadius: "50%",
-                backgroundColor: row.primaryColor || "#ccc",
-                border: "1px solid #ddd",
-              }}
-            />
-          </Tooltip>
-        </Box>
-      ),
-    },
-    {
-      field: "adminName",
-      label: "Admin",
-      minWidth: "120px",
-      render: (row) => (
-        <Typography variant="body2" className="text-gray-600">
-          {row.adminName}
-        </Typography>
-      ),
-    },
-    {
-      label: "Actions",
-      isActionColumn: true,
-      minWidth: "120px",
-    },
-  ];
-
-  // Provide custom action button configurations
-  const customActionConfigs = {
-    view: {
-      icon: ViewIcon,
-      label: "View",
-      tooltip: "View Business Details",
-    },
-    edit: {
-      icon: EditIcon,
-      label: "Edit",
-      tooltip: "Edit Business Information",
-    },
-    delete: {
-      icon: DeleteIcon,
-      label: "Delete",
-      tooltip: "Delete Business",
-    },
-  };
-
-  const statusActionMap = {
-    default: ["view", "edit", "delete"],
-  };
-
-  // Extract unique business types for filter options
-  const filterOptions = useMemo(() => {
-    const types = [...new Set(initialRows.map((row) => row.type))];
-    return types.map((type) => ({ value: type, label: type }));
-  }, []);
-
-  // Filter rows based on search term and filter type
-  const filteredRows = useMemo(() => {
-    let currentFilteredRows = rows;
-
-    if (searchTerm) {
-      currentFilteredRows = currentFilteredRows.filter((row) =>
-        Object.values(row).some((value) =>
-          String(value).toLowerCase().includes(searchTerm.toLowerCase())
-        )
-      );
-    }
-
-    if (filterType) {
-      currentFilteredRows = currentFilteredRows.filter(
-        (row) => row.type === filterType
-      );
-    }
-
-    return currentFilteredRows;
-  }, [rows, searchTerm, filterType]);
+      </Box>
+    );
+  }
 
   return (
-    <Box className="p-4">
-      <DataTable
-        title="Managed Businesses"
-        columns={columns}
-        data={filteredRows.map((row) => ({ ...row, status: "default" }))} // Pass filteredRows
-        statusField="status"
-        statusActionMap={statusActionMap}
-        customActionConfigs={customActionConfigs}
-        pagination={true}
-        defaultRowsPerPage={5}
-        rowsPerPageOptions={[5, 10, 25]}
-        onAction={handleAction}
-        showToolbar={true} // Ensure toolbar is visible
-        searchTerm={searchTerm}
-        onSearchChange={setSearchTerm}
-        filterOptions={filterOptions}
-        filterValue={filterType}
-        onFilterChange={setFilterType}
-      />
-    </Box>
+    <>
+      <div className="main-app-content-title">
+        <span>Business Management</span>
+      </div>
+      <div className="main-app-view">
+        {view === 1 ? (
+          <div className="main-app-content-container">
+            <div className="confirmation-dialog">
+              <Typography variant="h6" className="confirmation-title">
+                Confirm Delete
+              </Typography>
+              <Typography variant="body1" className="confirmation-message">
+                Are you sure you want to delete {selected.length} business(es)?
+              </Typography>
+              <div className="confirmation-actions">
+                <button
+                  className="btn-secondary"
+                  onClick={() => setView(0)}
+                  disabled={actionLoading}
+                >
+                  Cancel
+                </button>
+                <button
+                  className="btn-primary"
+                  onClick={handleAction}
+                  disabled={actionLoading}
+                  style={{ backgroundColor: color }}
+                >
+                  {actionLoading ? "Deleting..." : "Delete"}
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : view === 2 ? (
+          <div className="main-app-content-container">
+            <ContentLoader
+              state={loadingState}
+              loadingText={loadingText}
+              loadedText={loadedText}
+              loading={actionLoading}
+              color={color}
+            />
+          </div>
+        ) : (
+          <div className="main-app-table-container">
+            <div className="display-flex main-app-table-controls">
+              <div className="display-flex">
+                <SearchInput
+                  id={"search"}
+                  placeholder={"Search businesses..."}
+                  input={searchFilter}
+                  handleInput={handleInput}
+                  handleClear={() => setSearchFilter("")}
+                />
+                <div className="filter-flex">
+                  <FilterInput
+                    color={color}
+                    label={"Businesses"}
+                    options={["Status"]}
+                    filters={STATUS}
+                    selected={selectedStates}
+                    tableFilter={tableFilter}
+                    anchorEl={anchorEl}
+                    selectedAction={handleSelectedStates}
+                    handleTableFilter={setTableFilter}
+                    handleClick={handleClick}
+                    handleClose={handleClose}
+                  />
+                </div>
+              </div>
+              <AddButton
+                text={"Add Business"}
+                action={handleAddBusiness}
+                color={color}
+              />
+            </div>
+            <div className="display-flex main-app-table-controls">
+              {selected.length > 0 ? (
+                <div className="main-app-table-actions">
+                  <span>Selected {selected.length} businesses:</span>
+                  <TextButton
+                    actionText={"Delete"}
+                    alignment={"center"}
+                    disabled={false}
+                    action={() => {
+                      setState("DELETE");
+                      setView(1);
+                    }}
+                    color={"#d32f2f"}
+                  />
+                </div>
+              ) : null}
+            </div>
+            <DataTable
+              headers={BusinessHeaders}
+              data={tableData}
+              searchFilter={searchFilter}
+              openFilter={Boolean(anchorEl)}
+              columnFilters={["status"]}
+              columnFilter={selectedStates}
+              selected={selected}
+              clickable={true}
+              actions={BusinessActions}
+              all={selectAll}
+              selectAll={setSelectAll}
+              selectedAction={handleSelectRecord}
+              actionSelected={handleTableView}
+              color={color}
+            />
+          </div>
+        )}
+      </div>
+    </>
   );
 };
 

@@ -1,39 +1,31 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import TextInput from "../../components/input/TextInput";
-import PasswordInput from "../../components/input/PasswordInput";
-import FormButton from "../../components/Buttons/FormButton";
+import TextInput from "../../components/Input/TextInput";
+import PasswordInput from "../../components/Input/PasswordInput";
+import FormButton from "../../components/buttons/FormButton";
 import NaviButton from "../../components/buttons/Navibutton";
 import loginBg from "../../assets/Backgrounds/background.png";
-import {
-  validateEmail,
-  validatePassword,
-} from "../../utilities/Sharedfunctions";
-import { MockUsers } from "../../config/Mockusers";
+import { validateEmail, validatePassword } from "../../utilities/SharedFunctions";
 import Cookies from "js-cookie";
 import { useDispatch } from "react-redux";
 import { authActions } from "../../store";
 import ModalFooter from "../../components/footer/ModalFooter";
 import { useTheme } from "../../components/theme/ThemeContext";
 import Toaster from "../../components/Toaster";
-// Role normalization utility
-const normalizeRole = (role) => {
-  if (!role) return "";
-  if (role.includes("-")) return role.toLowerCase();
-  const [institution, roleName] = role.split("_");
-  if (!institution || !roleName) {
-    console.error("Invalid role format for normalization:", role);
-    return "";
-  }
-  return `${institution.toLowerCase()}-${roleName.toLowerCase()}`;
-};
+import axios from "axios";
+import OTPInput from "./ForgotPassword/OTPInput";
+
+const API_URL = "http://localhost:3000/api";
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [otp, setOTP] = useState("");
   const [loading, setLoading] = useState(false);
+  const [loadingResend, setLoadingResend] = useState(false);
   const [isValid, setIsValid] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [view, setView] = useState(0); // 0: login, 1: OTP
 
   const [toastOpen, setToastOpen] = useState(false);
   const [toastState, setToastState] = useState("true");
@@ -61,64 +53,111 @@ const Login = () => {
     setToastOpen(true);
   };
 
-  const handleSubmit = (e) => {
+  const handleInput = (e) => {
+    const { id, value } = e.target;
+    
+    if (id === "email") {
+      setEmail(value);
+    } else if (id === "password") {
+      setPassword(value);
+    } else if (id === "code") {
+      setOTP(value);
+    }
+  };
+
+  const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
     setErrorMessage("");
 
-    const matchedUser = MockUsers.find(
-      (user) => user.email === email && user.password === password
-    );
-
-    if (matchedUser) {
-      const fullRole = normalizeRole(matchedUser.role);
-
-      const userWithNormalizedRole = {
-        ...matchedUser,
-        role: fullRole,
-      };
-
-      Cookies.set("user", JSON.stringify(userWithNormalizedRole), {
-        expires: 1,
+    try {
+      const response = await axios.post(`${API_URL}/auth/login`, {
+        email: email,
+        password: password
       });
 
-      dispatch(authActions.setAuth(userWithNormalizedRole));
-
-      showToaster("true", "Login Successful", "Welcome back!");
-      setTimeout(() => navigateToDashboard(fullRole), 1000);
-    } else {
-      setErrorMessage("Invalid email or password.");
-      showToaster("false", "Login Failed", "Invalid email or password.");
+      if (response.data.success) {
+        showToaster("true", "Login Successful", "OTP sent to your email");
+        setView(1);
+      }
+    } catch (error) {
+      const errorMsg = error.response?.data?.message || "Login failed";
+      setErrorMessage(errorMsg);
+      showToaster("false", "Login Failed", errorMsg);
+    } finally {
+      setLoading(false);
     }
-
-    setTimeout(() => setLoading(false), 1000);
   };
 
-  const navigateToDashboard = (role) => {
-    const normalizedRole = normalizeRole(role);
-
-    const roleMap = {
-      "biztrack-admin": "/dashboard/super-admin",
-      "hotel-admin": "/dashboard/hotel-admin",
-      "hotel-cashier": "/dashboard/cashier",
-      "hotel-waiter": "/dashboard/waiter",
-      "kiosk-admin": "/dashboard/kiosk",
-      "kiosk-shopkeeper": "/shopkeeper/sales",
-      "hospital-admin": "/dashboard/hospital-admin",
-      "hospital-receptionist": "/patient/queue",
-      "hospital-doctor": "/dashboard/doctor",
-      "hospital-nurse": "/dashboard/nurse",
-      "hospital-pharmacist": "/dashboard/pharmacist",
-      "hospital-labtechnician": "/dashboard/labtechnician",
-    };
-
-    const path = roleMap[normalizedRole];
-    if (path) {
-      navigate(path);
-    } else {
-      console.warn("Unrecognized role:", normalizedRole);
-      navigate("/unauthorized");
+  const handleValidateOTP = async () => {
+    if (otp.length !== 6) {
+      showToaster("false", "Invalid OTP", "Please enter a 6-digit OTP");
+      return;
     }
+  
+    setLoading(true);
+  
+    try {
+      const response = await axios.post(`${API_URL}/auth/verify-otp`, {
+        email: email,
+        otp: otp
+      });
+  
+      if (response.data.success) {
+        showToaster("true", "Success", "Login successful!");
+        
+        let userData = response.data.user;
+        const token = response.data.token;
+        
+        if (userData && (userData.$__ || userData._doc)) {
+          userData = userData._doc || userData;
+        }
+        
+        if (!userData || !userData.role) {
+          showToaster("false", "Login Error", "Invalid user data received");
+          return;
+        }
+        
+        localStorage.setItem("token", token);
+        localStorage.setItem("user", JSON.stringify(userData));
+        Cookies.set("user", JSON.stringify(userData), { expires: 1 });
+        Cookies.set("token", token, { expires: 1 });
+        
+        dispatch(authActions.setAuth(userData));
+        
+        setTimeout(() => {
+          if (response.data.redirectTo) {
+            navigate(response.data.redirectTo);
+          } else {
+            navigate("/dashboard");
+          }
+        }, 1500);
+      }
+    } catch (error) {
+      const errorMsg = error.response?.data?.message || "OTP verification failed";
+      showToaster("false", "Verification Failed", errorMsg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendOTP = async () => {
+    setLoadingResend(true);
+    try {
+      await axios.post(`${API_URL}/auth/resend-otp`, { email });
+      showToaster("true", "Success", "A new OTP has been sent to your email.");
+    } catch (error) {
+      const errorMsg = error.response?.data?.message || "Failed to resend OTP";
+      showToaster("false", "Error", errorMsg);
+    } finally {
+      setLoadingResend(false);
+    }
+  };
+
+  const handleBackToLogin = () => {
+    setView(0);
+    setOTP("");
+    setErrorMessage("");
   };
 
   return (
@@ -131,64 +170,80 @@ const Login = () => {
         action={setToastOpen}
         position="right"
       />
-      {/* Left: Form */}
       <div className="flex items-center justify-center p-6 relative z-10">
         <div className="bg-white p-8 rounded-xl shadow-md border border-gray-300 w-full max-w-md mt-3">
-          <h2 className="text-xl font-semibold mb-1 text-left">
-            BizTrack Application
-          </h2>
-          <h1 className="text-3xl font-bold text-gray-700 mb-3 mt-3 text-left">
-            Hello, Welcome
-          </h1>
-          <p className="text-sm text-gray-600 mb-6 text-left">
-            Enter credentials to login
-          </p>
+          {view === 0 && (
+            <>
+              <h2 className="text-xl font-semibold mb-1 text-left">
+                BizTrack Application
+              </h2>
+              <h1 className="text-3xl font-bold text-gray-700 mb-3 mt-3 text-left">
+                Hello, Welcome
+              </h1>
+              <p className="text-sm text-gray-600 mb-6 text-left">
+                Enter credentials to login
+              </p>
 
-          <form onSubmit={handleSubmit}>
-            <TextInput
-              id="email"
-              label="Email"
-              placeholder="Enter your email"
-              autoComplete="username"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              error={email !== "" && !validateEmail(email)}
-              errorMessage="Please enter a valid email address."
+              <form onSubmit={handleLogin}>
+                <TextInput
+                  id="email"
+                  label="Email"
+                  placeholder="Enter your email"
+                  autoComplete="username"
+                  input={email}
+                  handleInput={handleInput}
+                  error={email !== "" && !validateEmail(email)}
+                  errorMessage="Please enter a valid email address."
+                />
+
+                <PasswordInput
+                  id="password"
+                  label="Password"
+                  placeholder="Enter your password"
+                  autoComplete="current-password"
+                  value={password}
+                  onChange={handleInput}
+                  error={password !== "" && !isValid}
+                  errorMessage="Password must be at least 7 characters, contain uppercase, number, and symbol."
+                />
+
+                {errorMessage && (
+                  <div className="text-red-600 text-sm mb-3">{errorMessage}</div>
+                )}
+
+                <div className="mt-10 mb-2">
+                  <FormButton
+                    text="Login"
+                    color={PrimaryColor}
+                    isLoading={loading}
+                    validation={isValid}
+                    type="submit"
+                  />
+                </div>
+
+                <div className="mt-3 mb-4 text-right">
+                  <NaviButton
+                    text="Forgot Password?"
+                    alignment="right"
+                    action={() => navigate("/reset-password")}
+                  />
+                </div>
+              </form>
+            </>
+          )}
+
+          {view === 1 && (
+            <OTPInput
+              input={otp}
+              value={otp}
+              isLoading={loading}
+              isLoadingResend={loadingResend}
+              action={handleInput}
+              buttonAction={handleValidateOTP}
+              buttonAction2={handleResendOTP}
+              back={handleBackToLogin}
             />
-
-            <PasswordInput
-              id="password"
-              label="Password"
-              placeholder="Enter your password"
-              autoComplete="current-password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              error={password !== "" && !isValid}
-              errorMessage="Password must be at least 7 characters, contain uppercase, number, and symbol."
-            />
-
-            {errorMessage && (
-              <div className="text-red-600 text-sm mb-3">{errorMessage}</div>
-            )}
-
-            <div className="mt-10 mb-2">
-              <FormButton
-                text="Login"
-                color={PrimaryColor}
-                isLoading={loading}
-                validation={isValid}
-                type="submit"
-              />
-            </div>
-
-            <div className="mt-3 mb-4 text-right">
-              <NaviButton
-                text="Forgot Password?"
-                alignment="right"
-                action={() => navigate("/reset-password")}
-              />
-            </div>
-          </form>
+          )}
 
           <div className="mt-8 mb-2 text-center">
             <ModalFooter />
@@ -196,7 +251,6 @@ const Login = () => {
         </div>
       </div>
 
-      {/* Right: Background image */}
       <div
         className="hidden lg:flex bg-cover bg-center h-full flex-col justify-end"
         style={{
@@ -213,15 +267,12 @@ const Login = () => {
         </div>
       </div>
 
-      {/* Mobile-only background */}
       <div
         className="lg:hidden sm:block absolute top-0 left-0 w-full h-full bg-cover bg-center"
         style={{
           backgroundImage: `url(${loginBg})`,
         }}
       ></div>
-
-      {/* 🔔 Toaster */}
     </div>
   );
 };

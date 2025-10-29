@@ -1,10 +1,11 @@
 import React from "react";
 import EmailRoundedIcon from "@mui/icons-material/EmailRounded";
 import "./forgotPassword.css";
-import TitleHeader from "../../../components/Header/TitleHeader";
-import TextInput from "../../../components/input/TextInput";
+// import TitleHeader from "../../../components/Header/TitleHeader";
+import TextInput from "../../../components/Input/TextInput";
 import FormButton from "../../../components/buttons/FormButton";
 import TextButton from "../../../components/buttons/TextButton";
+import TitleHeader from "../../../components/Header/TitleHeader";
 export default function OTPInput({
   input,
   action,
