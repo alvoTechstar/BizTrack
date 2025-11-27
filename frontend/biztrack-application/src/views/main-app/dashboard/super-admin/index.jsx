@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { Grid } from "@mui/material";
 import KPICards from "./KPICards";
-import BusinessTable from "../../User-Management/super-admin/BusinessTable";
-import AdminTable from "../../User-Management/super-admin/AdminTable";
+import BusinessTable from "../../User-Management/super-admin/businesses/BusinessTable";
+import AdminTable from "../../User-Management/super-admin/businesses/BusinessTable";
 import TransactionsTable from "./TransactionsTable";
 import RevenueTable from "./RevenueTable";
 import RevenueChart from "./RevenueCharts"; // Corrected import to RevenueChart
@@ -11,7 +11,7 @@ import { businessData, kpiData } from "../../../../utilities/SamplData";
 function SuperAdminDashboard() {
   // State to manage which component is visible below the cards
   // Set default view to null, and let the switch's default handle the char
-  const [activeView, setActiveView] = useState(null); 
+  const [activeView, setActiveView] = useState(null);
 
   // This function will be passed to KPICards to update the state on click
   const handleCardClick = (viewName) => {
@@ -35,7 +35,7 @@ function SuperAdminDashboard() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="min-h-screen bg-white p-8">
       <header className="mb-8">
         <h1 className="text-3xl font-bold text-gray-800">
           Biztrack Super Admin Dashboard

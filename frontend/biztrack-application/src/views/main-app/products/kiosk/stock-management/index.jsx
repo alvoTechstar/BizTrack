@@ -1,5 +1,5 @@
 // StockManagementPage.jsx
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import StockSummaryCards from "./StockSummaryCards";
 import ProductControls from "./ProductControls";
 import ProductsTable from "./ProductsTable";
@@ -7,10 +7,12 @@ import EditProductModal from "./EditProductsModal";
 import RestockProductModal from "./RestockProductModal";
 import DeleteConfirmationModal from "../../../../../components/modal/DeleteConfirmationModal";
 import AddNewProductModal from "./AddNewProductModal";
+import ContentLoader from "../../../../../components/Loader/ContentLoader";
+import { useTheme } from "../../../../../components/theme/ThemeContext";
 
 export default function StockManagementPage() {
+  const { primaryColor } = useTheme();
   const [products, setProducts] = useState([
-    // Added buyingPrice to each product, updated prices to KES equivalent for example
     {
       id: 1,
       name: "Premium Coffee Beans",
@@ -114,6 +116,7 @@ export default function StockManagementPage() {
   const [sortDirection, setSortDirection] = useState("asc");
   const [filterStatus, setFilterStatus] = useState("All");
   const [filterCategory, setFilterCategory] = useState("All");
+  const [selectedItems, setSelectedItems] = useState([]);
 
   const [showEditModal, setShowEditModal] = useState(false);
   const [showRestockModal, setShowRestockModal] = useState(false);
@@ -125,7 +128,42 @@ export default function StockManagementPage() {
 
   const [showAddProductModal, setShowAddProductModal] = useState(false);
 
+  // Content Loader states
+  const [loading, setLoading] = useState(true);
+  const [loadingState, setLoadingState] = useState(true);
+  const [loadingText, setLoadingText] = useState("");
+  const [loadedText, setLoadedText] = useState("");
+
+  // Modal loading states
+  const [modalLoading, setModalLoading] = useState(false);
+  const [modalLoadingText, setModalLoadingText] = useState("");
+
+  // Operation loading states
+  const [operationLoading, setOperationLoading] = useState(false);
+  const [operationLoadingText, setOperationLoadingText] = useState("");
+
   const categories = [...new Set(products.map((product) => product.category))];
+
+  // Simulate initial data loading
+  useEffect(() => {
+    const loadInitialData = async () => {
+      setLoading(true);
+      setLoadingState(true);
+      setLoadingText("Loading products...");
+      
+      // Simulate API call delay
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      setLoadingState(true);
+      setLoadedText("Products loaded successfully");
+      
+      setTimeout(() => {
+        setLoading(false);
+      }, 1000);
+    };
+
+    loadInitialData();
+  }, []);
 
   const handleSort = (field) => {
     if (sortField === field) {
@@ -170,17 +208,34 @@ export default function StockManagementPage() {
     (p) => p.status === "Out of Stock"
   ).length;
 
-  const handleEdit = (product) => {
+  const handleEdit = async (product) => {
+    setModalLoading(true);
+    setModalLoadingText("Loading product details...");
+    
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
     setCurrentProduct({ ...product });
     setShowEditModal(true);
+    setModalLoading(false);
   };
 
-  const handleRestock = (product) => {
+  const handleRestock = async (product) => {
+    setModalLoading(true);
+    setModalLoadingText("Loading restock form...");
+    
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
     setCurrentProduct({ ...product });
     setShowRestockModal(true);
+    setModalLoading(false);
   };
 
-  const saveEditedProduct = (updatedProduct) => {
+  const saveEditedProduct = async (updatedProduct) => {
+    setOperationLoading(true);
+    setOperationLoadingText("Updating product...");
+    
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    
     setProducts(
       products.map((p) =>
         p.id === updatedProduct.id
@@ -197,9 +252,15 @@ export default function StockManagementPage() {
       )
     );
     setShowEditModal(false);
+    setOperationLoading(false);
   };
 
-  const saveRestockedProduct = (updatedProduct) => {
+  const saveRestockedProduct = async (updatedProduct) => {
+    setOperationLoading(true);
+    setOperationLoadingText("Restocking product...");
+    
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    
     setProducts(
       products.map((p) =>
         p.id === updatedProduct.id
@@ -216,6 +277,7 @@ export default function StockManagementPage() {
       )
     );
     setShowRestockModal(false);
+    setOperationLoading(false);
   };
 
   const handleDeleteProductClick = (product) => {
@@ -226,12 +288,18 @@ export default function StockManagementPage() {
   const handleConfirmDelete = async () => {
     if (productToDelete) {
       setIsDeleting(true);
+      setOperationLoading(true);
+      setOperationLoadingText("Deleting product...");
+      
       console.log(`Deleting product with ID: ${productToDelete.id}`);
       await new Promise((resolve) => setTimeout(resolve, 1500));
+      
       setProducts(products.filter((p) => p.id !== productToDelete.id));
       setIsDeleting(false);
       setShowDeleteModal(false);
       setProductToDelete(null);
+      setOperationLoading(false);
+      
       console.log(`Product "${productToDelete.name}" deleted successfully.`);
     }
   };
@@ -247,13 +315,22 @@ export default function StockManagementPage() {
     setCurrentProduct(updatedProduct);
   };
 
-  const handleAddProductClick = () => {
+  const handleAddProductClick = async () => {
+    setModalLoading(true);
+    setModalLoadingText("Loading add product form...");
+    
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
     setShowAddProductModal(true);
+    setModalLoading(false);
   };
 
   const handleSaveNewProduct = async (newProductData) => {
+    setOperationLoading(true);
+    setOperationLoadingText("Adding new product...");
+    
     console.log("Attempting to add new product:", newProductData);
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    await new Promise((resolve) => setTimeout(resolve, 1500));
 
     const productWithId = {
       ...newProductData,
@@ -262,15 +339,138 @@ export default function StockManagementPage() {
 
     setProducts((prevProducts) => [...prevProducts, productWithId]);
     setShowAddProductModal(false);
+    setOperationLoading(false);
+    
     console.log(`Product "${productWithId.name}" added successfully!`);
   };
 
+  // Check if any modal is open
+  const isAnyModalOpen = showEditModal || showRestockModal || showDeleteModal || showAddProductModal;
+
+  // Show content loader during operations
+  if (operationLoading) {
+    return (
+      <div className="min-h-screen bg-white p-8">
+        <div className="max-w-7xl mx-auto">
+          <div className='main-app-view'>
+            <div className="main-app-content-container">
+              <ContentLoader
+                state={true}
+                loading={true}
+                loadingText={operationLoadingText}
+                loadedText=""
+                color={primaryColor}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show content loader during modal loading
+  if (modalLoading) {
+    return (
+      <div className="min-h-screen bg-white p-8">
+        <div className="max-w-7xl mx-auto">
+          <div className='main-app-view'>
+            <div className="main-app-content-container">
+              <ContentLoader
+                state={true}
+                loading={true}
+                loadingText={modalLoadingText}
+                loadedText=""
+                color={primaryColor}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show initial loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-white p-8">
+        <div className="max-w-7xl mx-auto">
+          <div className='main-app-view'>
+            <div className="main-app-content-container">
+              <ContentLoader
+                state={loadingState}
+                loading={loading}
+                loadingText={loadingText}
+                loadedText={loadedText}
+                color={primaryColor}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // If any modal is open, don't render the main content - only render modals
+  if (isAnyModalOpen) {
+    return (
+      <>
+        {/* Only render modals when they're open */}
+        {showEditModal && (
+          <EditProductModal
+            show={showEditModal}
+            product={currentProduct}
+            onClose={() => setShowEditModal(false)}
+            onSave={() => saveEditedProduct(currentProduct)}
+            onProductChange={handleProductChangeInEditModal}
+            categories={categories}
+          />
+        )}
+
+        {showRestockModal && (
+          <RestockProductModal
+            show={showRestockModal}
+            product={currentProduct}
+            onClose={() => setShowRestockModal(false)}
+            onSave={saveRestockedProduct}
+          />
+        )}
+
+        {showDeleteModal && (
+          <DeleteConfirmationModal
+            open={showDeleteModal}
+            onClose={handleCancelDelete}
+            onConfirm={handleConfirmDelete}
+            title="Confirm Product Deletion"
+            message={`Are you sure you want to permanently delete "${
+              productToDelete?.name || "this product"
+            }"? This action cannot be undone.`}
+            confirmText="Delete Permanently"
+            cancelText="No, Keep Product"
+            isLoading={isDeleting}
+            itemName={productToDelete ? productToDelete.name : ""}
+          />
+        )}
+
+        {showAddProductModal && (
+          <AddNewProductModal
+            show={showAddProductModal}
+            onClose={() => setShowAddProductModal(false)}
+            onSave={handleSaveNewProduct}
+            categories={categories}
+          />
+        )}
+      </>
+    );
+  }
+
+  // Render main content only when no modals are open
   return (
-    <div className="min-h-screen bg-gray-50 p-2 ">
+    <div className="min-h-screen bg-white p-2">
       <h1 className="text-2xl font-bold text-gray-800 mb-6 p-2">
         Stock Management Page
       </h1>
-    <div className="min-h-screen bg-gray-50 p-2 ">
+      
+      <div className="min-h-screen bg-white p-2">
         <StockSummaryCards
           totalProducts={products.length}
           lowStockCount={lowStockCount}
@@ -286,6 +486,8 @@ export default function StockManagementPage() {
           setFilterCategory={setFilterCategory}
           categories={categories}
           onAddProduct={handleAddProductClick}
+          selectedItems={selectedItems}
+          setSelectedItems={setSelectedItems}
         />
 
         <ProductsTable
@@ -298,43 +500,6 @@ export default function StockManagementPage() {
           onDeleteProduct={handleDeleteProductClick}
         />
       </div>
-
-      <EditProductModal
-        show={showEditModal}
-        product={currentProduct}
-        onClose={() => setShowEditModal(false)}
-        onSave={() => saveEditedProduct(currentProduct)}
-        onProductChange={handleProductChangeInEditModal}
-        categories={categories}
-      />
-
-      <RestockProductModal
-        show={showRestockModal}
-        product={currentProduct}
-        onClose={() => setShowRestockModal(false)}
-        onSave={saveRestockedProduct}
-      />
-
-      <DeleteConfirmationModal
-        open={showDeleteModal}
-        onClose={handleCancelDelete}
-        onConfirm={handleConfirmDelete}
-        title="Confirm Product Deletion"
-        message={`Are you sure you want to permanently delete "${
-          productToDelete?.name || "this product"
-        }"? This action cannot be undone.`}
-        confirmText="Delete Permanently"
-        cancelText="No, Keep Product"
-        isLoading={isDeleting}
-        itemName={productToDelete ? productToDelete.name : ""}
-      />
-
-      <AddNewProductModal
-        show={showAddProductModal}
-        onClose={() => setShowAddProductModal(false)}
-        onSave={handleSaveNewProduct}
-        categories={categories}
-      />
     </div>
   );
 }

@@ -10,7 +10,7 @@ import {
   styled,
   CircularProgress,
 } from "@mui/material";
-import TextInput from "../../../../../components/input/TextInput";
+import TextInput from "../../../../../components/Input/TextInput";
 import AppFormButton from "../../../../../components/buttons/AppFormButton";
 import Toaster from "../../../../../components/Toaster";
 import { useTheme } from "../../../../../components/theme/ThemeContext";
@@ -71,8 +71,8 @@ export default function RestockProductModal({
         newStock >= product.threshold
           ? "In Stock"
           : newStock > 0
-          ? "Low Stock"
-          : "Out of Stock",
+            ? "Low Stock"
+            : "Out of Stock",
     });
   };
 
@@ -159,13 +159,13 @@ export default function RestockProductModal({
 
                 <div className="mt-0 mb-0">
                   <TextInput
+                    id="restockQuantity" // Add this id prop
                     label="Add Stock Quantity"
                     type="number"
                     value={addQuantity === 0 ? "" : addQuantity}
-                    onChange={handleQuantityChange}
+                    handleInput={(e) => handleQuantityChange(e)} // Use handleInput instead of onChange
                     placeholder="Enter quantity to add"
-                    required
-                    fullWidth
+                    required={true}
                   />
                   <Box sx={{ mt: 1, mb: 2 }}>
                     <p className="text-gray-700">
@@ -181,16 +181,15 @@ export default function RestockProductModal({
                           displayProduct.status === "In Stock"
                             ? "text-green-600"
                             : displayProduct.status === "Low Stock"
-                            ? "text-amber-600"
-                            : "text-red-600"
+                              ? "text-amber-600"
+                              : "text-red-600"
                         }
                       >
                         {displayProduct.status}
                       </span>
                     </p>
                   </Box>
-                </div>
-              </Box>
+                </div>              </Box>
             </DialogContent>
 
             <DialogActions

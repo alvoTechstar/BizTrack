@@ -1,4 +1,3 @@
-// AddNewProductModal.jsx
 import React, { useState, useEffect } from "react";
 import {
   Dialog,
@@ -11,7 +10,7 @@ import {
   styled,
   CircularProgress,
 } from "@mui/material";
-import TextInput from "../../../../../components/input/TextInput";
+import TextInput from "../../../../../components/Input/TextInput";
 import SelectInput from "../../../../../components/input/SelectInput";
 import AppFormButton from "../../../../../components/buttons/AppFormButton";
 import { useTheme } from "../../../../../components/theme/ThemeContext";
@@ -127,6 +126,9 @@ export default function AddNewProductModal({
       });
 
       showToaster("success", "Success", "Product added successfully");
+      setTimeout(() => {
+        onClose();
+      }, 1500);
     } catch (error) {
       showToaster("error", "Error", "Failed to add product");
       console.error("Error adding product:", error);
@@ -195,21 +197,21 @@ export default function AddNewProductModal({
                   }}
                 >
                   <TextInput
+                    id="product-name"
                     label="Product Name"
                     value={newProduct.name}
-                    onChange={(e) => handleChange("name", e.target.value)}
+                    handleInput={(e) => handleChange("name", e.target.value)}
                     placeholder="Enter product name"
                     required
-                    fullWidth
                   />
 
                   <TextInput
+                    id="product-sku"
                     label="SKU"
                     value={newProduct.sku}
-                    onChange={(e) => handleChange("sku", e.target.value)}
+                    handleInput={(e) => handleChange("sku", e.target.value)}
                     placeholder="Enter SKU"
                     required
-                    fullWidth
                   />
                 </Box>
                 <Box
@@ -220,10 +222,11 @@ export default function AddNewProductModal({
                   }}
                 >
                   <TextInput
+                    id="product-stock"
                     label="Current Stock"
                     type="number"
                     value={newProduct.stock}
-                    onChange={(e) =>
+                    handleInput={(e) =>
                       handleChange("stock", parseInt(e.target.value) || 0)
                     }
                     placeholder="0"
@@ -231,9 +234,10 @@ export default function AddNewProductModal({
                   />
 
                   <TextInput
+                    id="product-unit"
                     label="Unit of Measure"
                     value={newProduct.unit}
-                    onChange={(e) => handleChange("unit", e.target.value)}
+                    handleInput={(e) => handleChange("unit", e.target.value)}
                     placeholder="e.g., kg, pcs"
                     required
                   />
@@ -247,11 +251,12 @@ export default function AddNewProductModal({
                   }}
                 >
                   <TextInput
-                    label="Buying Price (KES)" // Updated label
+                    id="product-buying-price"
+                    label="Buying Price (KES)"
                     type="number"
                     step="0.01"
                     value={newProduct.buyingPrice}
-                    onChange={(e) =>
+                    handleInput={(e) =>
                       handleChange(
                         "buyingPrice",
                         parseFloat(e.target.value) || 0
@@ -262,11 +267,12 @@ export default function AddNewProductModal({
                   />
 
                   <TextInput
-                    label="Selling Price (KES)" // Updated label
+                    id="product-selling-price"
+                    label="Selling Price (KES)"
                     type="number"
                     step="0.01"
                     value={newProduct.price}
-                    onChange={(e) =>
+                    handleInput={(e) =>
                       handleChange("price", parseFloat(e.target.value) || 0)
                     }
                     placeholder="0.00"
@@ -281,10 +287,11 @@ export default function AddNewProductModal({
                   }}
                 >
                   <TextInput
+                    id="product-threshold"
                     label="Low Stock Threshold"
                     type="number"
                     value={newProduct.threshold}
-                    onChange={(e) =>
+                    handleInput={(e) =>
                       handleChange("threshold", parseInt(e.target.value) || 0)
                     }
                     placeholder="0"
@@ -308,7 +315,6 @@ export default function AddNewProductModal({
                 paddingBottom: "35px",
                 gap: "12px",               
                 margin: "0 30px 8px",
-
               }}
             >
               <AppFormButton

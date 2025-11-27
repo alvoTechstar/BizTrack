@@ -1,20 +1,22 @@
+// StaffControls.jsx
 import React, { useState } from 'react';
-import SearchInput from '../../../../../components/input/SearchInput';
-import DateRangeInput from '../../../../../components/input/DateRangeInput';
-import FilterInput from '../../../../../components/input/FilterInput';
-import AppFormButton from '../../../../../components/buttons/AppFormButton';
-import { PlusCircle } from 'lucide-react';
-import { useTheme } from '../../../../../components/theme/ThemeContext';
+import SearchInput from '../../../../components/input/SearchInput';
+import DateRangeInput from '../../../../components/input/DateRangeInput';
+import FilterInput from '../../../../components/input/FilterInput';
+import AppFormButton from '../../../../components/buttons/AppFormButton';
+import { Plus } from 'lucide-react';
+import { useTheme } from '../../../../components/theme/ThemeContext';
 
-const ProductControls = ({
+const StaffControls = ({
   searchTerm,
   setSearchTerm,
-  categories,
-  onAddProduct,
+  filters,
+  setFilters,
   selectedItems,
   setSelectedItems,
+  openModal
 }) => {
-  const { primaryColor } = useTheme();
+  const theme = useTheme();
   const [filterAnchorEl, setFilterAnchorEl] = useState(null);
   const [dateFilterAnchorEl, setDateFilterAnchorEl] = useState(null);
   const [tableFilter, setTableFilter] = useState(false);
@@ -43,8 +45,19 @@ const ProductControls = ({
   };
 
   const handleDateSelected = (dateRange) => {
-    // You can implement date filtering for products if needed
-    console.log('Date range selected:', dateRange);
+    if (dateRange) {
+      setFilters(prev => ({
+        ...prev,
+        startDate: dateRange.startDate,
+        endDate: dateRange.endDate
+      }));
+    } else {
+      setFilters(prev => ({
+        ...prev,
+        startDate: null,
+        endDate: null
+      }));
+    }
   };
 
   // Handle advanced filter
@@ -61,18 +74,19 @@ const ProductControls = ({
   };
 
   // Filter options for the FilterInput component
-  const filterOptions = ['Status', 'Category'];
+  const filterOptions = ['Status', 'Role'];
 
   const statusFilters = [
-    { label: 'In Stock', value: 'In Stock' },
-    { label: 'Low Stock', value: 'Low Stock' },
-    { label: 'Out of Stock', value: 'Out of Stock' }
+    { label: 'ACTIVE', value: 'ACTIVE' },
+    { label: 'INACTIVE', value: 'INACTIVE' }
   ];
 
-  const categoryFilters = categories.map(category => ({
-    label: category,
-    value: category
-  }));
+  const roleFilters = [
+    { label: 'Admin', value: 'Admin' },
+    { label: 'Shopkeeper', value: 'Shopkeeper' },
+    { label: 'Manager', value: 'Manager' },
+    { label: 'Staff', value: 'Staff' }
+  ];
 
   return (
     <div className="bg-white p-4 mb-4 ml-2">
@@ -82,8 +96,8 @@ const ProductControls = ({
           {/* Search Input */}
           <div className="min-w-64">
             <SearchInput
-              id="product-search"
-              placeholder="Search by name or SKU..."
+              id="staff-search"
+              placeholder="Search by name, email, or phone..."
               input={searchTerm}
               handleInput={handleSearchInput}
               handleClear={handleSearchClear}
@@ -92,11 +106,14 @@ const ProductControls = ({
             />
           </div>
 
-          {/* Date Range Filter - Optional for products */}
+          {/* Date Range Filter */}
           <DateRangeInput
-            type="products"
-            color={primaryColor}
-            selected={null} // You can implement date filtering if needed
+            type="staff"
+            color={theme.primaryColor}
+            selected={filters.startDate && filters.endDate ? {
+              startDate: filters.startDate,
+              endDate: filters.endDate
+            } : null}
             dateFilter={dateFilter}
             anchorEl={dateFilterAnchorEl}
             selectedAction={handleDateSelected}
@@ -107,10 +124,10 @@ const ProductControls = ({
 
           {/* Advanced Filter Button */}
           <FilterInput
-            color={primaryColor}
+            color={theme.primaryColor}
             label="advanced-filter"
             filters={statusFilters}
-            filters2={categoryFilters}
+            filters2={roleFilters}
             options={filterOptions}
             selected={selectedItems || []}
             selectedAction={setSelectedItems}
@@ -122,19 +139,19 @@ const ProductControls = ({
           />
         </div>
 
-        {/* Right Side: Add Product Button */}
+        {/* Right Side: Add Staff Button */}
         <div className="flex-shrink-0">
           <AppFormButton
             text={
               <div className="flex items-center gap-2">
-                <PlusCircle size={18} />
-                Add Product
+                <Plus size={18} />
+                Add Staff
               </div>
             }
-            color={primaryColor}
+            color={theme.primaryColor}
             isLoading={false}
             validation={true}
-            action={onAddProduct}
+            action={openModal}
           />
         </div>
       </div>
@@ -142,4 +159,4 @@ const ProductControls = ({
   );
 };
 
-export default ProductControls;
+export default StaffControls;

@@ -1,7 +1,6 @@
 import React from "react";
 import { Box, Typography } from "@mui/material";
-import DataTable from "../../../../components/datatable"; // Adjust path as needed
-
+import DataTable from "../../../../components/datatable";
 // ─────────────────────────────────────────────────────────
 // 1️⃣  Mock data for Revenue
 // ─────────────────────────────────────────────────────────
@@ -58,73 +57,14 @@ const mockRevenueData = [
 ];
 
 // ─────────────────────────────────────────────────────────
-// 2️⃣  Columns definition for RevenueTable - NOW MATCHING BusinessTable's structure EXACTLY
+// 2️⃣  Define headers in the format your DataTable expects
 // ─────────────────────────────────────────────────────────
-const columns = [
-  {
-    field: "id",
-    label: "Transaction ID", // Changed to 'label'
-    minWidth: "120px", // Changed to 'minWidth'
-    render: (row) => ( // Changed to 'render' and uses 'row' directly
-      <Typography variant="body2" className="font-medium text-gray-700">
-        {row.id}
-      </Typography>
-    ),
-  },
-  {
-    field: "businessName",
-    label: "Business Name", // Changed to 'label'
-    minWidth: "180px", // Changed to 'minWidth'
-    render: (row) => ( // Changed to 'render'
-      <Typography variant="body2" className="font-medium text-blue-700">
-        {row.businessName}
-      </Typography>
-    ),
-  },
-  {
-    field: "businessType",
-    label: "Business Type", // Changed to 'label'
-    minWidth: "120px", // Changed to 'minWidth'
-    render: (row) => ( // Changed to 'render'
-      <Typography variant="body2" className="text-gray-600">
-        {row.businessType}
-      </Typography>
-    ),
-  },
-  {
-    field: "date",
-    label: "Date", // Changed to 'label'
-    minWidth: "120px", // Changed to 'minWidth'
-    render: (row) => ( // Changed to 'render'
-      <Typography variant="body2" className="text-gray-600">
-        {new Date(row.date).toLocaleDateString("en-KE", {
-          year: "numeric",
-          month: "long",
-          day: "numeric",
-        })}
-      </Typography>
-    ),
-  },
-  {
-    field: "commissionEarned",
-    label: "Commission Earned", // Changed to 'label'
-    minWidth: "150px", // Changed to 'minWidth'
-    render: (row) => ( // Changed to 'render'
-      <Typography
-        variant="body2"
-        className="text-right font-semibold text-green-700"
-      >
-        {typeof row.commissionEarned === "number"
-          ? `KSh ${row.commissionEarned.toLocaleString("en-KE", {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            })}`
-          : "N/A"}
-      </Typography>
-    ),
-    // Removed `align` and `headerAlign` as these are MUI X DataGrid specific.
-    // You might need to handle alignment within the `render` function's Typography component.
-  },
+const headers = [
+  { key: "id", title: "Transaction ID" },
+  { key: "businessName", title: "Business Name" },
+  { key: "businessType", title: "Business Type" },
+  { key: "date", title: "Date" },
+  { key: "commissionEarned", title: "Commission Earned" },
 ];
 
 // ─────────────────────────────────────────────────────────
@@ -132,19 +72,22 @@ const columns = [
 // ─────────────────────────────────────────────────────────
 const RevenueTable = () => {
   return (
-    <div>
+    <Box>
       <DataTable
-        title="Biztrack Revenue Transactions"
         data={mockRevenueData}
-        columns={columns}
-        getRowId={(row) => row.id}
+        headers={headers}
+        type="default"
         pagination={true}
-        defaultRowsPerPage={10}
-        rowsPerPageOptions={[5, 10, 25]}
-        showToolbar={false}
-       
+        searchFilter="" // if you need search functionality
+        actions={["view"]} // if you need action buttons
+        selected={[]} // for row selection
+        selectAll={false}
+        // Callback functions your DataTable needs
+        selectedRow={(e, row) => console.log("Row selected:", row)}
+        selectedAction={(selected) => console.log("Selected actions:", selected)}
+        actionSelected={(action, id) => console.log("Action:", action, "ID:", id)}
       />
-    </div>
+    </Box>
   );
 };
 

@@ -18,7 +18,6 @@ export const MENU = [
     title: "Dashboard",
     icon: <DashboardIcon />,
     permissions: ["Super Admin"],
-    subitems: [],
     path: "/dashboard/super-admin",
   },
   {
@@ -26,7 +25,6 @@ export const MENU = [
     title: "Businesses",
     icon: <PeopleIcon />,
     permissions: ["Super Admin"],
-    subitems: [],
     path: "/businesses",
   },
   {
@@ -34,7 +32,6 @@ export const MENU = [
     title: "User Management",
     icon: <PeopleIcon />,
     permissions: ["Super Admin"],
-    subitems: [],
     path: "/user-management",
   },
   {
@@ -42,7 +39,6 @@ export const MENU = [
     title: "Reports",
     icon: <BarChartIcon />,
     permissions: ["Super Admin"],
-    subitems: [],
     path: "/reports",
   },
 
@@ -52,7 +48,6 @@ export const MENU = [
     title: "Dashboard",
     icon: <DashboardIcon />,
     permissions: ["Hotel Admin"],
-    subitems: [],
     path: "/dashboard/hotel-admin",
   },
   {
@@ -60,32 +55,27 @@ export const MENU = [
     title: "Menu Management",
     icon: <StoreIcon />,
     permissions: ["Hotel Admin"],
-    subitems: [],
     path: "/products",
   },
-
   {
     key: "ingredients",
     title: "Ingredient Management",
     icon: <StoreIcon />,
     permissions: ["Hotel Admin"],
-    subitems: [],
     path: "/products/ingredient-management",
   },
   {
     key: "inventory",
     title: "Inventory",
     icon: <StoreIcon />,
-    permissions: ["Waiter Admin"],
-    subitems: [],
+    permissions: ["Hotel Admin"],
     path: "/inventory",
   },
   {
-    key: "users",
+    key: "hotel-users",
     title: "User Management",
     icon: <PeopleIcon />,
     permissions: ["Hotel Admin"],
-    subitems: [],
     path: "/staff",
   },
   {
@@ -93,7 +83,6 @@ export const MENU = [
     title: "Staff Payments",
     icon: <PeopleIcon />,
     permissions: ["Hotel Admin"],
-    subitems: [],
     path: "/staffpayment",
   },
   {
@@ -101,7 +90,6 @@ export const MENU = [
     title: "Expenses",
     icon: <AccountBalanceWalletIcon />,
     permissions: ["Hotel Admin"],
-    subitems: [],
     path: "/hotel/expenses",
   },
   {
@@ -109,7 +97,6 @@ export const MENU = [
     title: "Reports",
     icon: <BarChartIcon />,
     permissions: ["Hotel Admin"],
-    subitems: [],
     path: "/reports",
   },
 
@@ -119,7 +106,6 @@ export const MENU = [
     title: "Dashboard",
     icon: <DashboardIcon />,
     permissions: ["Cashier"],
-    subitems: [],
     path: "/dashboard/cashier",
   },
   {
@@ -127,7 +113,6 @@ export const MENU = [
     title: "Complete Order",
     icon: <ListIcon />,
     permissions: ["Cashier"],
-    subitems: [],
     path: "/orders/complete",
   },
   {
@@ -135,25 +120,22 @@ export const MENU = [
     title: "Reports",
     icon: <BarChartIcon />,
     permissions: ["Cashier"],
-    subitems: [],
     path: "/sales/reports",
   },
 
   // Waiter
   {
-    key: "create-order",
+    key: "waiter-menu",
     title: "Menu",
     icon: <ListIcon />,
     permissions: ["Waiter"],
-    subitems: [],
     path: "/dashboard/waiter",
   },
   {
-    key: "create-order",
+    key: "waiter-create-order",
     title: "Create Order",
     icon: <ListIcon />,
     permissions: ["Waiter"],
-    subitems: [],
     path: "/dashboard/create-order",
   },
   {
@@ -161,7 +143,6 @@ export const MENU = [
     title: "Reports",
     icon: <BarChartIcon />,
     permissions: ["Waiter"],
-    subitems: [],
     path: "/sales/reports",
   },
 
@@ -171,7 +152,6 @@ export const MENU = [
     title: "Dashboard",
     icon: <DashboardIcon />,
     permissions: ["Kiosk Admin"],
-    subitems: [],
     path: "/dashboard/kiosk",
   },
   {
@@ -179,7 +159,6 @@ export const MENU = [
     title: "Stock Management",
     icon: <StoreIcon />,
     permissions: ["Kiosk Admin"],
-    subitems: [],
     path: "/products/stock-management",
   },
   {
@@ -187,15 +166,13 @@ export const MENU = [
     title: "User Management",
     icon: <PeopleIcon />,
     permissions: ["Kiosk Admin"],
-    subitems: [],
     path: "/kiosk/user-management",
   },
   {
-    key: "shop-debts",
-    title: " Kiosk Debts",
+    key: "kiosk-debts",
+    title: "Kiosk Debts",
     icon: <AccountBalanceWalletIcon />,
     permissions: ["Kiosk Admin"],
-    subitems: [],
     path: "/kiosk/debts",
   },
   {
@@ -203,50 +180,38 @@ export const MENU = [
     title: "Reports",
     icon: <BarChartIcon />,
     permissions: ["Kiosk Admin"],
-    subitems: [],
     path: "/kioskreports",
   },
 
   // Shopkeeper
-  // {
-  //   key: "shop-dashboard",
-  //   title: "Dashboard",
-  //   icon: <StoreIcon />,
-  //   permissions: ["Shopkeeper"],
-  //   subitems: [],
-  //   path: "/dashboard/shopkeeper",
-  // },
   {
-    key: "shop-sales",
-    title: " Kiosk Sales",
+    key: "shopkeeper-sales",
+    title: "Kiosk Sales",
     icon: <ListIcon />,
     permissions: ["Shopkeeper"],
-    subitems: [],
     path: "/shopkeeper/sales",
   },
   {
-    key: "shop-debts",
-    title: "Kosk Debts",
+    key: "shopkeeper-debts",
+    title: "Kiosk Debts",
     icon: <AccountBalanceWalletIcon />,
     permissions: ["Shopkeeper"],
-    subitems: [],
     path: "/shopkeeper/debts",
   },
   {
-    key: "shop-reports",
-    title: " Reports",
+    key: "shopkeeper-reports",
+    title: "Reports",
     icon: <BarChartIcon />,
     permissions: ["Shopkeeper"],
-    subitems: [],
     path: "/shopkeeper/reports",
   },
+
   // Hospital Admin
   {
     key: "hospital-dashboard",
     title: "Dashboard",
     icon: <DashboardIcon />,
     permissions: ["Hospital Admin"],
-    subitems: [],
     path: "/dashboard/hospital-admin",
   },
   {
@@ -254,7 +219,6 @@ export const MENU = [
     title: "Patients",
     icon: <LocalHospitalIcon />,
     permissions: ["Hospital Admin"],
-    subitems: [],
     path: "/hospital/patients",
   },
   {
@@ -262,7 +226,6 @@ export const MENU = [
     title: "Staff Management",
     icon: <PeopleIcon />,
     permissions: ["Hospital Admin"],
-    subitems: [],
     path: "/hospital/staff",
   },
   {
@@ -270,7 +233,6 @@ export const MENU = [
     title: "Pharmacy Stock",
     icon: <LocalPharmacyIcon />,
     permissions: ["Hospital Admin"],
-    subitems: [],
     path: "/pharmacy/stock",
   },
   {
@@ -278,17 +240,15 @@ export const MENU = [
     title: "Reports",
     icon: <BarChartIcon />,
     permissions: ["Hospital Admin"],
-    subitems: [],
     path: "/hospital/admin-reports",
   },
 
   // Receptionist
   {
     key: "receptionist-dashboard",
-    title: "Recepition Queue",
+    title: "Reception Queue",
     icon: <DashboardIcon />,
     permissions: ["Receptionist"],
-    subitems: [],
     path: "/patient/queue",
   },
   {
@@ -296,7 +256,6 @@ export const MENU = [
     title: "Patient Records",
     icon: <LocalHospitalIcon />,
     permissions: ["Receptionist"],
-    subitems: [],
     path: "/patient/records",
   },
 
@@ -306,7 +265,6 @@ export const MENU = [
     title: "Dashboard",
     icon: <DashboardIcon />,
     permissions: ["Doctor"],
-    subitems: [],
     path: "/dashboard/doctor",
   },
   {
@@ -314,7 +272,6 @@ export const MENU = [
     title: "My Patients",
     icon: <LocalHospitalIcon />,
     permissions: ["Doctor"],
-    subitems: [],
     path: "/doctor/patients",
   },
   {
@@ -322,7 +279,6 @@ export const MENU = [
     title: "Appointments",
     icon: <ListIcon />,
     permissions: ["Doctor"],
-    subitems: [],
     path: "/doctor/appointments",
   },
 
@@ -332,7 +288,6 @@ export const MENU = [
     title: "Dashboard",
     icon: <DashboardIcon />,
     permissions: ["Nurse"],
-    subitems: [],
     path: "/dashboard/nurse",
   },
   {
@@ -340,7 +295,6 @@ export const MENU = [
     title: "Patient Care",
     icon: <LocalHospitalIcon />,
     permissions: ["Nurse"],
-    subitems: [],
     path: "/nurse/patients",
   },
   {
@@ -348,7 +302,6 @@ export const MENU = [
     title: "Vitals",
     icon: <InventoryIcon />,
     permissions: ["Nurse"],
-    subitems: [],
     path: "/nurse/vitals",
   },
 
@@ -358,7 +311,6 @@ export const MENU = [
     title: "Dashboard",
     icon: <DashboardIcon />,
     permissions: ["Pharmacist"],
-    subitems: [],
     path: "/dashboard/pharmacist",
   },
   {
@@ -366,7 +318,6 @@ export const MENU = [
     title: "Inventory",
     icon: <MedicationIcon />,
     permissions: ["Pharmacist"],
-    subitems: [],
     path: "/pharmacist/inventory",
   },
   {
@@ -374,7 +325,6 @@ export const MENU = [
     title: "Dispense Drugs",
     icon: <StoreIcon />,
     permissions: ["Pharmacist"],
-    subitems: [],
     path: "/pharmacist/dispense",
   },
 
@@ -384,7 +334,6 @@ export const MENU = [
     title: "Dashboard",
     icon: <DashboardIcon />,
     permissions: ["Lab Technician"],
-    subitems: [],
     path: "/dashboard/labtech",
   },
   {
@@ -392,7 +341,6 @@ export const MENU = [
     title: "Tests",
     icon: <ScienceIcon />,
     permissions: ["Lab Technician"],
-    subitems: [],
     path: "/labtech/tests",
   },
   {
@@ -400,7 +348,6 @@ export const MENU = [
     title: "Results",
     icon: <BarChartIcon />,
     permissions: ["Lab Technician"],
-    subitems: [],
     path: "/labtech/results",
   },
 ];

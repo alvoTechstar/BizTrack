@@ -1,3 +1,4 @@
+import React from "react";
 import * as yup from "yup";
 import JSEncrypt from "jsencrypt";
 import moment from "moment";
@@ -21,7 +22,7 @@ export const cardNumberValidation = yup
   .transform((value) => value.replace(/[^\d]/g, ""))
   .required("Please enter your card number")
   .matches(/^[0-9]{16}$|^[0-9]{19}$/, "The card number must be 16 or 19 digits long")
-  .test("valid-card-type", "Invalid card number", (value) => 
+  .test("valid-card-type", "Invalid card number", (value) =>
     ACCEPTED_CARDS.some((card) => card.pattern.test(value))
   );
 
@@ -46,7 +47,7 @@ export const cvvValidation = yup
   .matches(/^\d{3}$/, "The CVV must be exactly 3 digits");
 
 // Email Validation
-export const validateEmail = (email) => 
+export const validateEmail = (email) =>
   /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$/i.test(String(email).toLowerCase());
 
 export const getEncryptValue = (password) => {
@@ -56,7 +57,7 @@ export const getEncryptValue = (password) => {
 };
 
 // Phone Number Validation
-export const validatePhoneNumber = (phone) => 
+export const validatePhoneNumber = (phone) =>
   /^(254|0)([7]\d|[1][0-1]){1}\d{1}\d{6}$/.test(phone);
 
 // Password Validation
@@ -67,49 +68,35 @@ export const validatePassword = (test, password) => {
     uppercase: /[A-Z]/.test(password),
     number: /\d+/.test(password),
   };
-  
+
   return test in tests ? tests[test] : /^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{7,}$/.test(password);
 };
 
 // Role Normalization
 export const normalizeRole = (role) => {
   if (!role) return "";
-  
-  const roleString = String(role).toLowerCase();
-  
+
+  const roleString = String(role);
+
   const roleMap = {
-    "biztrack_admin": "Super Admin",  // Changed to "Super Admin"
-    "biztrack-admin": "Super Admin",   // Changed to "Super Admin"
-    "super_admin": "Super Admin",
-    "super-admin": "Super Admin",
-    "business_admin": "Business Admin",
-    "business-admin": "Business Admin",
-    "hotel-admin": "Hotel Admin",
-    "hotel_admin": "Hotel Admin",
-    "hotel-cashier": "Cashier",
-    "hotel_cashier": "Cashier",
-    "hotel-waiter": "Waiter",
-    "hotel_waiter": "Waiter",
-    "kiosk-admin": "Kiosk Admin",
-    "kiosk_admin": "Kiosk Admin",
-    "kiosk-shopkeeper": "Shopkeeper",
-    "kiosk_shopkeeper": "Shopkeeper",
-    "hospital-admin": "Hospital Admin",
-    "hospital_admin": "Hospital Admin",
-    "hospital-receptionist": "Receptionist",
-    "hospital_receptionist": "Receptionist",
-    "hospital-doctor": "Doctor",
-    "hospital_doctor": "Doctor",
-    "hospital-nurse": "Nurse",
-    "hospital_nurse": "Nurse",
-    "hospital-pharmacist": "Pharmacist",
-    "hospital_pharmacist": "Pharmacist",
-    "hospital-labtechnician": "Lab Technician",
-    "hospital_labtechnician": "Lab Technician",
+    "Super_Admin": "Super Admin",   
+    "Hotel_Admin": "Hotel Admin",
+    "Hotel_Cashier": "Cashier",
+    "Hotel_Waiter": "Waiter",
+    "Kiosk_Admin": "Kiosk Admin",
+    "Kiosk_Shopkeeper": "Shopkeeper",
+    "Hospital_Admin": "Hospital Admin",
+    "Hospital_Receptionist": "Receptionist",
+    "Hospital_Doctor": "Doctor",
+    "Hospital_Nurse": "Nurse",
+    "Hospital_Pharmacist": "Pharmacist",
+    "Hospital_LabTechnician": "Lab Technician",
+
   };
-  
+
   return roleMap[roleString] || roleString;
 };
+
 export const generateUUID = () => uuid();
 
 export const validatePhoneNumberInternational = (value, country) => {
@@ -129,7 +116,7 @@ export const formatPill = (str) => str ? capitalize(str.replace("_", " ")) : str
 export const formatPillOutbound = (str) => {
   const statusMap = {
     "ApprovalPending": "Pending",
-    "Pending Approval": "Pending", 
+    "Pending Approval": "Pending",
     "Draft/Pending Approval": "Pending",
     "ReadyForPayout": "Ready",
     "Sent": "Sent",
@@ -139,21 +126,28 @@ export const formatPillOutbound = (str) => {
   return statusMap[str] || str;
 };
 
-export const capitalize = (str) => 
+export const capitalize = (str) =>
   str ? str.charAt(0).toUpperCase() + str.slice(1).toLowerCase() : str;
 
-export const initials = (str) => 
+export const initials = (str) =>
   str.toLowerCase().split(".").map(part => part.charAt(0).toUpperCase()).join("");
 
-export const initialsCaps = (str) => 
+export const initialsCaps = (str) =>
   str.split(" ").map(part => part.charAt(0).toUpperCase()).join("");
 
-export const roleFormat = (str) => 
-  str.toLowerCase().split("_").map(part => 
+export const roleFormat = (str) =>
+  str.toLowerCase().split("_").map(part =>
     part.charAt(0).toUpperCase() + part.slice(1)
   ).join(" ");
 
 export const getUsername = (str) => str.substring(0, str.indexOf("@"));
+
+export const getInitials = (firstName, lastName) => {
+  if (!firstName) return "";
+  const firstInitial = firstName.charAt(0);
+  const lastInitial = lastName ? lastName.charAt(0) : "";
+  return `${firstInitial}${lastInitial}`.toUpperCase();
+};
 
 // Date Formatting Functions
 export const formatDate = (date) => date ? moment(date).format("DD/MM/YY") : null;
@@ -164,20 +158,20 @@ export const formatDateLogsModal = (date) => date ? moment(date).format("DD-MMM-
 export const formatPhoneNumber = (phonenumber) => {
   // Handle null, undefined, empty strings
   if (!phonenumber) return "N/A";
-  
+
   // Convert to string and remove any whitespace
   const phoneString = String(phonenumber).trim();
-  
+
   // If it's empty after trimming, return N/A
   if (!phoneString) return "N/A";
-  
+
   // Handle the phone number formatting
   if (phoneString.startsWith("254")) {
     return `0${phoneString.slice(3)}`;
   } else if (phoneString.startsWith("+254")) {
     return `0${phoneString.slice(4)}`;
   }
-  
+
   // Return the original string if it doesn't match expected formats
   return phoneString;
 };
@@ -193,31 +187,31 @@ export const formatAmount = (amount) => (
 
 export const formatValue = (str) => {
   if (typeof str !== "string") return str;
-  
+
   if (str.includes("Pay")) return "Pay";
   if (str.includes("Search")) return "Search";
   if (str.includes("_")) return formatString(str);
-  
+
   return str;
 };
 
 export const formatString = (str) => {
   if (!str) return "";
-  
+
   const words = str.split("_");
   if (words.length === 1) {
     return words[0].charAt(0).toUpperCase() + words[0].slice(1).toLowerCase();
   }
-  
+
   if (words.length >= 2) {
     const [firstWord, secondWord] = words;
-    const formattedSecondWord = secondWord.length > 3 
+    const formattedSecondWord = secondWord.length > 3
       ? secondWord.charAt(0).toUpperCase() + secondWord.slice(1).toLowerCase()
       : secondWord.toUpperCase();
-    
+
     return `${firstWord.charAt(0).toUpperCase() + firstWord.slice(1).toLowerCase()} ${formattedSecondWord}`;
   }
-  
+
   return str;
 };
 
@@ -225,49 +219,49 @@ export const removeSubstring = (str) => camelCaseToSpace(str.replace(/Isw|Ria/g,
 export const camelCaseToSpace = (str) => str.replace(/([a-z])([A-Z])/g, "$1 $2");
 
 // Search and Filter Functions
-export const searchObject = (obj, searchKey) => 
-  Object.keys(obj).some(key => 
+export const searchObject = (obj, searchKey) =>
+  Object.keys(obj).some(key =>
     obj[key].toString().toLowerCase().includes(searchKey.toLowerCase())
   );
 
 export const searchFunction = (arr, searchKey) => {
   if (!searchKey || !arr) return arr;
-  
-  return arr.filter(obj => 
-    Object.keys(obj).some(key => 
-      typeof obj[key] === "object" 
+
+  return arr.filter(obj =>
+    Object.keys(obj).some(key =>
+      typeof obj[key] === "object"
         ? searchObject(obj[key], searchKey)
         : obj[key].toString().toLowerCase().includes(searchKey.toLowerCase())
     )
   );
 };
 
-export const sortArray = (arr, column) => 
+export const sortArray = (arr, column) =>
   [...arr].sort((a, b) => new Date(b[column]) - new Date(a[column]));
 
 export const filterArray = (arr, key, value) => arr.filter(obj => obj[key] === value);
 
 export const getValues = (obj, key, title) => {
   const dataKey = key.split(".");
-  
+
   if (dataKey.length === 1) return obj[key];
-  
+
   const firstLevel = obj[dataKey[0]];
   if (!firstLevel) return "";
-  
+
   if (dataKey.length === 2) {
     if (key.includes("Name") && !key.includes("userName") && title !== "Transaction" && !key.includes("institution")) {
-      return firstLevel.firstName 
+      return firstLevel.firstName
         ? `${firstLevel.firstName} ${firstLevel.middleName || firstLevel.thirdName || firstLevel.lastName || ""}`
         : "";
     }
     return firstLevel[dataKey[1]] || "";
   }
-  
+
   if (dataKey.length === 3) {
     return firstLevel[dataKey[1]]?.[dataKey[2]] || "";
   }
-  
+
   return "";
 };
 
@@ -276,7 +270,7 @@ export const getRowValue = (arr, index, key) => {
   return key ? item?.[key] : item;
 };
 
-export const getSelectArray = (arr, label, value, optional) => 
+export const getSelectArray = (arr, label, value, optional) =>
   arr ? arr.map(element => ({
     label: element[label],
     value: element[value],
@@ -290,30 +284,30 @@ export const getDateRange = (range) => ({
   endDate: moment().format("DD-MM-YYYY")
 });
 
-export const formatBene = (str) => 
+export const formatBene = (str) =>
   str.replace(/([A-Z]+)/g, " $1").replace(/([A-Z][a-z])/g, " $1").replace("Bene", "Beneficiary");
 
 export const getFilteredTable = (data, arr, arr2, columns, type) => {
   if (!data) return [];
-  
+
   return data.filter(item => {
-    const columnValue = columns[0] === "institution" 
-      ? type === "logs" 
-        ? item.actionBy?.institution?.institutionName 
+    const columnValue = columns[0] === "institution"
+      ? type === "logs"
+        ? item.actionBy?.institution?.institutionName
         : item[columns[0]]?.institutionName
       : item[columns[0]];
-    
+
     const hasFirstFilter = arr.length === 0 || arr.includes(columnValue);
     const hasSecondFilter = !arr2 || arr2.length === 0 || arr2.includes(item[columns[1]]);
-    
+
     return hasFirstFilter && hasSecondFilter;
   });
 };
 
 export const getCustomOptionsArray = (arr, arr2, col, col2) => {
   if (!arr2) return arr;
-  
-  return arr.filter(item => 
+
+  return arr.filter(item =>
     arr2.some(item2 => item[col] === item2[col2])
   );
 };
@@ -322,19 +316,19 @@ export const getFilters = (arr) => arr.join(", ");
 
 export const formatPaidDate = (dateString) => {
   if (!dateString) return "";
-  
+
   const date = new Date(dateString);
   if (isNaN(date.getTime())) return dateString;
-  
+
   return date.toLocaleString("en-US", {
-    weekday: "short",  
-    year: "numeric",  
-    month: "2-digit",  
-    day: "2-digit",    
-    hour: "2-digit",   
-    minute: "2-digit", 
-    second: "2-digit", 
-    hour12: false,     
+    weekday: "short",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
   }).replace(/,/, '');
 };
 

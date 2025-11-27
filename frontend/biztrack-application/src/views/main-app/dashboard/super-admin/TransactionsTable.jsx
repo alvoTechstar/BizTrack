@@ -1,9 +1,6 @@
 import React from "react";
 import { Box, Typography } from "@mui/material";
-import DataTable from "../../../../components/datatable"; // Adjust path as needed
-// Assuming TablePill is also correctly imported within your DataTable or available globally if needed by DataTable
-// For now, TablePill is handled by DataTable based on `statusField` and `customStatusStyles`.
-
+import DataTable from "../../../../components/datatable";
 // ─────────────────────────────────────────────────────────
 // 1️⃣  Mock data for Transactions
 // ─────────────────────────────────────────────────────────
@@ -48,145 +45,42 @@ const mockTransactionsData = [
     date: "2025-06-08",
     status: "Completed",
   },
-  {
-    id: "TRX006",
-    businessName: "Kona Mbaya Bar",
-    businessType: "Bar",
-    paymentMethod: "Debt",
-    date: "2025-06-08",
-    status: "Pending",
-  },
-  {
-    id: "TRX007",
-    businessName: "Jambo Supermarket",
-    businessType: "Supermarket",
-    paymentMethod: "M-PESA",
-    date: "2025-06-09",
-    status: "Failed",
-  },
-  {
-    id: "TRX008",
-    businessName: "Biashara Hardware",
-    businessType: "Retail",
-    paymentMethod: "Cash",
-    date: "2025-06-09",
-    status: "Completed",
-  },
-  {
-    id: "TRX009",
-    businessName: "Swift Courier Services",
-    businessType: "Logistics",
-    paymentMethod: "M-PESA",
-    date: "2025-06-10",
-    status: "Pending",
-  },
-  {
-    id: "TRX010",
-    businessName: "Afya Pharmacy",
-    businessType: "Pharmacy",
-    paymentMethod: "Debt",
-    date: "2025-06-10",
-    status: "Completed",
-  },
 ];
 
 // ─────────────────────────────────────────────────────────
-// 2️⃣  Columns definition for TransactionsTable - Matches DataTable's expected structure
+// 2️⃣  Define headers in the format your DataTable expects
 // ─────────────────────────────────────────────────────────
-const columns = [
-  {
-    field: "id",
-    label: "Transaction ID", // Use 'label' for header text
-    minWidth: "120px", // Use 'minWidth' for column width
-    render: (
-      row // Use 'render' for custom cell content
-    ) => (
-      <Typography variant="body2" className="font-medium text-gray-700">
-        {row.id}
-      </Typography>
-    ),
-  },
-  {
-    field: "businessName",
-    label: "Business Name",
-    minWidth: "180px",
-    render: (row) => (
-      <Typography variant="body2" className="font-medium text-blue-700">
-        {row.businessName}
-      </Typography>
-    ),
-  },
-  {
-    field: "businessType",
-    label: "Business Type",
-    minWidth: "120px",
-    render: (row) => (
-      <Typography variant="body2" className="text-gray-600">
-        {row.businessType}
-      </Typography>
-    ),
-  },
-  {
-    field: "paymentMethod",
-    label: "Payment Method",
-    minWidth: "120px",
-    render: (row) => (
-      <Typography variant="body2" className="text-gray-600 capitalize">
-        {row.paymentMethod}
-      </Typography>
-    ),
-  },
-  {
-    field: "date",
-    label: "Date",
-    minWidth: "120px",
-    render: (row) => (
-      <Typography variant="body2" className="text-gray-600">
-        {new Date(row.date).toLocaleDateString("en-KE", {
-          year: "numeric",
-          month: "long",
-          day: "numeric",
-        })}
-      </Typography>
-    ),
-  },
-  {
-    field: "status", // This field will be handled by DataTable's TablePill logic
-    label: "Status",
-    minWidth: "100px",
-    render: (row) => (
-      <Typography variant="body2" className="text-gray-800">
-        {row.status} {/* Fallback text if TablePill doesn't render */}
-      </Typography>
-    ),
-  },
+const headers = [
+  { key: "id", title: "Transaction ID" },
+  { key: "businessName", title: "Business Name" },
+  { key: "businessType", title: "Business Type" },
+  { key: "paymentMethod", title: "Payment Method" },
+  { key: "date", title: "Date" },
+  { key: "status", title: "Status" },
 ];
 
-const customStatusStyles = {
-  Completed: { backgroundColor: "bg-green-100", textColor: "text-green-800" },
-  Pending: { backgroundColor: "bg-yellow-100", textColor: "text-yellow-800" },
-  Failed: { backgroundColor: "bg-red-100", textColor: "text-red-800" },
-};
-
 // ─────────────────────────────────────────────────────────
-// 4️⃣  TransactionsTable Component
+// 3️⃣  TransactionsTable Component
 // ─────────────────────────────────────────────────────────
 const TransactionsTable = () => {
   return (
-    <div>
+    <Box>
       <DataTable
-        title="All Biztrack Transactions"
         data={mockTransactionsData}
-        columns={columns}
-        getRowId={(row) => row.id}
+        headers={headers}
+        type="default" // or whatever type your DataTable supports
         pagination={true}
-        defaultRowsPerPage={10}
-        rowsPerPageOptions={[5, 10, 25, 50]}
-        showToolbar={false}
-        statusField="status"
-        customStatusStyles={customStatusStyles}
+        // Add any other props your DataTable component expects
+        searchFilter="" // if you need search functionality
+        actions={["view", "edit"]} // if you need action buttons
+        selected={[]} // for row selection
+        selectAll={false}
+        // Callback functions your DataTable might need
+        selectedRow={(e, row) => console.log("Row selected:", row)}
+        selectedAction={(selected) => console.log("Selected actions:", selected)}
+        actionSelected={(action, id) => console.log("Action:", action, "ID:", id)}
       />
-    </div>
+    </Box>
   );
 };
 

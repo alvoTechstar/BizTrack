@@ -1,39 +1,37 @@
-// BusinessesPage.jsx
-
 import React, { useState, useEffect, useCallback } from 'react';
-import { Building2, Plus, Search, Edit, Power, Trash2, X } from 'lucide-react';
-import BusinessHeader from './BusinessHeader';
-import BusinessListControls from './BusinessControls';
-import BusinessTable from '../BusinessTable';
-import ContentLoader from '../../../../../components/Loader/ContentLoader';
+import { Building2, Plus } from 'lucide-react';
+import { useTheme } from '../../../../../components/theme/ThemeContext';
+import BusinessControls from "./BusinessControls";
+import BusinessTable from './BusinessTable';
 import CreateBusinessForm from './CreateBusinessForm';
-// Import API helper functions and URLs
+import { useActionModal } from '../../../../../hooks/useActionModal';
+import ContentLoader from "../../../../../components/Loader/ContentLoader";
 import { GET, POST, PUT, DELETE } from "../../../../../services/DatabaseServiceImp";
 import URLS from '../../../../../utilities/Endpoints';
+import "../../../../../App.css";
+import ActionModal from '../../../../../components/modal/ActionModal';
 
-// --- Data and Constants ---
+const businessTypes = ['Hotel', 'Kiosk', 'Hospital'];
 
-const businessTypes = ['Hotel', 'Kiosk', 'Hospital', 'Retail', 'Other'];
-
-// Update initialFormData with correct keys: 'phone', 'owner', AND 'description'
+// Update initialFormData with correct keys
 const initialFormData = {
     businessName: '',
     registrationNumber: '',
     address: '',
     businessType: '',
     email: '',
-    phone: '', 
+    phone: '',
     website: '',
-    description: '', // <-- Added 'description' (optional in schema)
+    description: '',
     primaryColor: '#1976d2',
     status: 'NEW',
-    logoFile: null, 
-    logoUrl: null, 
-    id: null, 
-    owner: '', 
+    logoFile: null,
+    logoUrl: null,
+    id: null,
+    owner: '',
 };
 
-// ... Helper Functions (getStatusColor) ...
+// Helper Functions
 const getStatusColor = (status) => {
     switch (status) {
         case 'NEW': return 'text-orange-600';
@@ -43,51 +41,144 @@ const getStatusColor = (status) => {
     }
 };
 
+// Safe date handling function
+const safeDateToString = (dateValue) => {
+    if (!dateValue) return 'Never';
+    
+    try {
+        const date = new Date(dateValue);
+        if (isNaN(date.getTime())) {
+            return 'Never';
+        }
+        return date.toISOString().split('T')[0];
+    } catch (error) {
+        console.warn('Invalid date value:', dateValue, error);
+        return 'Never';
+    }
+};
+
 // --- Main Component ---
 
 const BusinessesPage = () => {
+    const theme = useTheme();
+
+    // Data states
     const [businesses, setBusinesses] = useState([]);
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
-    const [showModal, setShowModal] = useState(false);
     const [selectedItems, setSelectedItems] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
-    const [filters, setFilters] = useState({ status: '', type: '' });
-    const [formData, setFormData] = useState(initialFormData);
-    const [isEditing, setIsEditing] = useState(false);
     const [errorMessage, setErrorMessage] = useState(null);
+    const [filters, setFilters] = useState({
+        status: '',
+        type: '',
+        startDate: null,
+        endDate: null
+    });
+
+    // Modal states
+    const [showCreateForm, setShowCreateForm] = useState(false);
+    const [formMode, setFormMode] = useState('create');
+    const [selectedBusiness, setSelectedBusiness] = useState(null);
+
+    // Loading states
+    const [modalLoading, setModalLoading] = useState(false);
+    const [modalLoadingText, setModalLoadingText] = useState('');
+    const [createLoading, setCreateLoading] = useState(false);
+    const [createLoadingText, setCreateLoadingText] = useState("");
+
+    // Content Loader states
+    const [loadingState, setLoadingState] = useState(true);
+    const [loadingText, setLoadingText] = useState("");
+    const [loadedText, setLoadedText] = useState("");
+
+    // Reusable action modal hook
+    const { modalState, openModal, closeModal, setReason, handleSubmit } = useActionModal();
+
+    // Helper function to safely extract data from API response
+    const extractDataFromResponse = (response) => {
+        if (!response) return [];
+        
+        if (response.data !== undefined) {
+            return Array.isArray(response.data) ? response.data : [response.data];
+        }
+        
+        if (Array.isArray(response)) {
+            return response;
+        }
+        
+        if (response._doc) {
+            return [response._doc];
+        }
+        
+        if (typeof response === 'object' && response !== null) {
+            return [response];
+        }
+        
+        return [];
+    };
 
     // --- API Handlers ---
 
     const fetchBusinesses = useCallback(async () => {
         setLoading(true);
+        setLoadingState(true);
+        setLoadingText("Fetching businesses...");
         setErrorMessage(null);
+
         try {
-            const response = await GET(URLS.BUSINESS.GET_ALL_BUSINESSES);
+            console.log('📋 Fetching businesses from:', URLS.BUSINESS.GET_ALL_BUSINESSES);
+            const result = await GET(URLS.BUSINESS.GET_ALL_BUSINESSES);
 
-            const fetchedBusinesses = response.data.map(b => ({
-                id: b.id,
-                name: b.businessName, 
-                registrationNumber: b.registrationNumber,
-                address: b.address,
-                type: b.businessType, 
-                email: b.email,
-                phone: b.phone, 
-                website: b.website,
-                primaryColor: b.primaryColor,
-                description: b.description || '', // Map description
-                status: b.status.toUpperCase(),
-                createdAt: new Date(b.createdAt).toISOString().split('T')[0],
-                logoUrl: b.logoUrl,
-                owner: b.owner || '', 
-            }));
+            // Handle response format using the helper function
+            let businessData = extractDataFromResponse(result);
 
+            console.log('✅ Raw business API response:', result);
+            console.log('📦 Extracted business data:', businessData);
+
+            // Transform businesses for display
+            const fetchedBusinesses = businessData.map(business => {
+                // Handle different response structures
+                const businessObj = business._doc || business;
+                
+                return {
+                    id: businessObj.id || businessObj._id?.toString(),
+                    businessId: businessObj.businessID || businessObj.businessId || '',
+                    name: businessObj.businessName || businessObj.name || '',
+                    registrationNumber: businessObj.registrationNumber || '',
+                    address: businessObj.address || '',
+                    type: businessObj.businessType || businessObj.type || '',
+                    email: businessObj.email || '',
+                    phone: businessObj.phone || '',
+                    website: businessObj.website || '',
+                    primaryColor: businessObj.primaryColor || '#1976d2',
+                    description: businessObj.description || '',
+                    status: (businessObj.status || 'NEW').toUpperCase(),
+                    createdAt: safeDateToString(businessObj.createdAt),
+                    logoUrl: businessObj.logoUrl || businessObj.logo || null,
+                    owner: businessObj.owner || '',
+                };
+            });
+
+            console.log('✅ Transformed businesses:', fetchedBusinesses);
             setBusinesses(fetchedBusinesses);
+
+            setLoadingState(true);
+            setLoadedText("Businesses loaded successfully");
+            setTimeout(() => {
+                setLoading(false);
+            }, 1000);
+
         } catch (error) {
-            console.error('Error fetching businesses:', error);
-            setErrorMessage('Failed to load businesses.');
-        } finally {
-            setLoading(false);
+            console.error('❌ Error fetching businesses:', error);
+            setErrorMessage('Failed to load businesses. Please try again.');
+            setBusinesses([]);
+
+            setLoadingState(false);
+            setLoadedText("Failed to load businesses");
+            setTimeout(() => {
+                setLoading(false);
+            }, 1000);
         }
     }, []);
 
@@ -95,109 +186,243 @@ const BusinessesPage = () => {
         fetchBusinesses();
     }, [fetchBusinesses]);
 
-    // --- CRUD Modal/Form Handlers ---
+    // --- Modal Handlers with Loading ---
 
-    const openModalForNew = () => {
-        setFormData(initialFormData);
-        setIsEditing(false);
-        setErrorMessage(null);
-        setShowModal(true);
-    };
+    const openModalWithLoader = async (modalType, business = null) => {
+        setModalLoading(true);
 
-    const openModalForEdit = (business) => {
-        setFormData({
-            id: business.id,
-            businessName: business.name,
-            registrationNumber: business.registrationNumber,
-            address: business.address,
-            businessType: business.type,
-            email: business.email,
-            phone: business.phone, 
-            website: business.website || '',
-            description: business.description || '', // Use mapped description
-            primaryColor: business.primaryColor,
-            status: business.status,
-            logoFile: null,
-            logoUrl: business.logoUrl,
-            owner: business.owner || '', 
-        });
-        setIsEditing(true);
-        setErrorMessage(null);
-        setShowModal(true);
-    };
-
-    const closeModal = () => {
-        setShowModal(false);
-        setFormData(initialFormData);
-        setErrorMessage(null);
-    }
-
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setSubmitting(true);
-        setErrorMessage(null);
-
-        // Prepare data for API - using FormData for file upload
-        const payload = new FormData();
-        Object.keys(formData).forEach(key => {
-            if (key !== 'logoFile' && key !== 'logoUrl' && key !== 'id') {
-                // Use || '' to ensure optional fields like description are sent as empty string if null
-                payload.append(key, formData[key] || ''); 
-            }
-        });
-
-        if (formData.logoFile) {
-            // 'logo' must match the key expected by your server's file upload middleware (e.g., Multer)
-            payload.append('logo', formData.logoFile);
+        switch (modalType) {
+            case 'create':
+                setModalLoadingText("Loading create form...");
+                break;
+            case 'edit':
+                setModalLoadingText("Loading edit form...");
+                break;
+            case 'view':
+                setModalLoadingText("Loading business details...");
+                break;
+            default:
+                setModalLoadingText("Loading...");
         }
 
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        if (business) {
+            const businessData = {
+                id: business.id || null,
+                businessName: business.name || '',
+                registrationNumber: business.registrationNumber || '',
+                address: business.address || '',
+                businessType: business.type || '',
+                email: business.email || '',
+                phone: business.phone || '',
+                website: business.website || '',
+                description: business.description || '',
+                primaryColor: business.primaryColor || '#1976d2',
+                status: business.status || 'NEW',
+                logoFile: null,
+                logoUrl: business.logoUrl || null,
+                owner: business.owner || '',
+            };
+            setSelectedBusiness(businessData);
+        } else {
+            setSelectedBusiness(null);
+        }
+
+        setModalLoading(false);
+
+        // Set form mode and open modal
+        setFormMode(modalType);
+        setShowCreateForm(true);
+    };
+
+    const openActionModalWithLoader = async (actionType, business) => {
+        setModalLoading(true);
+
+        switch (actionType) {
+            case 'enable':
+                setModalLoadingText("Preparing to enable business...");
+                break;
+            case 'disable':
+                setModalLoadingText("Preparing to disable business...");
+                break;
+            case 'delete':
+                setModalLoadingText("Preparing to delete business...");
+                break;
+            default:
+                setModalLoadingText("Loading...");
+        }
+
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        const businessName = business.name || 'this business';
+
+        switch (actionType) {
+            case 'enable':
+                openModal(
+                    'enable',
+                    business.id,
+                    businessName,
+                    'business',
+                    (id, reason) => handleToggleStatus(id, 'active', reason),
+                    `You are about to enable "${businessName}". By enabling, all the users for that business will regain access to the BizTrack application.`
+                );
+                break;
+            case 'disable':
+                openModal(
+                    'disable',
+                    business.id,
+                    businessName,
+                    'business',
+                    (id, reason) => handleToggleStatus(id, 'inactive', reason),
+                    `You are about to disable "${businessName}". By disabling, all the users for that business will no longer have access to the BizTrack application.`
+                );
+                break;
+            case 'delete':
+                openModal(
+                    'delete',
+                    business.id,
+                    businessName,
+                    'business',
+                    (id, reason) => handleDeleteBusiness(id, reason),
+                    `You are about to delete "${businessName}". By deleting, all the users for that business will no longer have access to the BizTrack application and all data will be permanently removed.`
+                );
+                break;
+            default:
+                console.warn('Unknown action type:', actionType);
+        }
+
+        setModalLoading(false);
+    };
+
+    // Modal openers
+    const openCreateModal = () => openModalWithLoader('create');
+    const openEditModal = (business) => openModalWithLoader('edit', business);
+    const openEnableView = (business) => openModalWithLoader('view', business);
+    const openEnableModal = (business) => openActionModalWithLoader('enable', business);
+    const openDisableModal = (business) => openActionModalWithLoader('disable', business);
+    const openDeleteModal = (business) => openActionModalWithLoader('delete', business);
+
+    const closeAllModals = () => {
+        setShowCreateForm(false);
+        setSelectedBusiness(null);
+        setErrorMessage(null);
+        closeModal();
+    };
+
+    // --- Form Submission with Content Loader ---
+
+    const handleFormSubmit = async (values) => {
+        setSubmitting(true);
+        setCreateLoading(true);
+        setCreateLoadingText(formMode === 'edit' ? "Updating business..." : "Creating business...");
+        setErrorMessage(null);
+
         try {
-            if (isEditing) {
-                const url = URLS.BUSINESS.UPDATE_BUSINESS.replace(':id', formData.id);
-                await PUT(url, payload);
-            } else {
-                await POST(URLS.BUSINESS.CREATE_BUSINESS, payload);
+            console.log('📤 Submitting business data:', values);
+
+            // Create FormData object
+            const formData = new FormData();
+
+            // Append all form fields to FormData
+            Object.keys(values).forEach(key => {
+                if (key !== 'logoFile' && key !== 'logoUrl' && key !== 'id') {
+                    let value = values[key];
+
+                    // Convert status to lowercase for backend validation
+                    if (key === 'status') {
+                        value = value.toLowerCase();
+                        if (value === 'new') {
+                            value = 'active';
+                        }
+                    }
+
+                    if (value !== null && value !== undefined) {
+                        formData.append(key, value);
+                    }
+                }
+            });
+
+            // Append logo file if exists
+            if (values.logoFile instanceof File) {
+                formData.append('logo', values.logoFile);
+                console.log('📎 Logo file appended:', values.logoFile.name);
             }
 
+            let response;
+
+            if (formMode === 'edit' && values.id) {
+                console.log(`🔄 Updating business with ID: ${values.id}`);
+                response = await PUT(URLS.BUSINESS.UPDATE_BUSINESS.replace(':id', values.id), formData, {
+                    headers: {
+                        'Content-Type': 'multipart/form-data',
+                    },
+                });
+                console.log('✅ Update response:', response);
+            } else {
+                console.log('➕ Creating new business');
+                response = await POST(URLS.BUSINESS.CREATE_BUSINESS, formData, {
+                    headers: {
+                        'Content-Type': 'multipart/form-data',
+                    },
+                });
+                console.log('✅ Create response:', response);
+            }
+
+            // Show success state briefly before refreshing
+            setCreateLoadingText(formMode === 'edit' ? "Business updated successfully!" : "Business created successfully!");
+            await new Promise(resolve => setTimeout(resolve, 1500));
+
+            // Refresh data
             await fetchBusinesses();
-            closeModal();
+            closeAllModals();
 
         } catch (error) {
-            console.error(isEditing ? 'Error updating business:' : 'Error creating business:', error);
-            const serverError = error.message || (error.data && error.data.error) || 'A server error occurred. Check backend logs.';
+            console.error('❌ Error submitting business form:', error);
+            let serverError = 'A server error occurred. Please try again.';
+
+            if (error.response?.data?.message) {
+                serverError = error.response.data.message;
+            } else if (error.message) {
+                serverError = error.message;
+            }
+
             setErrorMessage(`Failed: ${serverError}`);
+            setCreateLoading(false);
         } finally {
             setSubmitting(false);
+            setCreateLoading(false);
         }
     };
 
-    // --- Other CRUD Handlers (unchanged) ---
-    const handleDelete = async (id) => {
-        if (window.confirm('Are you sure you want to delete this business? This will archive the business and all associated users.')) {
-            try {
-                const url = URLS.BUSINESS.DELETE_BUSINESS.replace(':id', id);
-                await DELETE(url);
-                await fetchBusinesses();
-            } catch (error) {
-                console.error('Error deleting business:', error);
-            }
-        }
-    };
+    // --- Action Handlers ---
 
-    const handleToggleStatus = async (id) => {
-        const business = businesses.find(b => b.id === id);
-        if (!business) return;
-
-        const newStatus = business.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
-
+    const handleDeleteBusiness = async (businessId, reason) => {
         try {
-            const url = URLS.BUSINESS.TOGGLE_BUSINESS_STATUS.replace(':id', id);
-            await PUT(url, { status: newStatus.toLowerCase() });
-            await fetchBusinesses();
+            console.log('🗑️ Deleting business with ID:', businessId);
+            const response = await DELETE(URLS.BUSINESS.DELETE_BUSINESS.replace(':id', businessId), { reason });
+            console.log('✅ Delete response:', response);
+        } catch (error) {
+            console.error('Error deleting business:', error);
+            throw error;
+        }
+    };
+
+    const handleToggleStatus = async (businessId, newStatus, reason) => {
+        try {
+            console.log('🔄 Toggling business status:', businessId, 'New status:', newStatus);
+            const response = await PUT(URLS.BUSINESS.TOGGLE_BUSINESS_STATUS.replace(':id', businessId), { 
+                status: newStatus,
+                reason: reason 
+            });
+            console.log('✅ Toggle status response:', response);
         } catch (error) {
             console.error('Error toggling status:', error);
+            throw error;
         }
     };
+
+    // --- Selection Handlers ---
 
     const toggleSelectAll = (filteredList) => {
         if (selectedItems.length === filteredList.length && filteredList.length > 0) {
@@ -213,7 +438,8 @@ const BusinessesPage = () => {
         );
     };
 
-    // filteredBusinesses MUST be defined before the return statement
+    // --- Filtering ---
+
     const filteredBusinesses = businesses.filter(b => {
         const matchesSearch = b.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
             b.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -223,77 +449,163 @@ const BusinessesPage = () => {
         return matchesSearch && matchesStatus && matchesType;
     });
 
-    // --- Render Logic (Fixed) ---
+    // --- Render Logic ---
+
+    // Show content loader during create/update operations
+    if (createLoading) {
+        return (
+            <div className="min-h-screen bg-white p-8">
+                <div className="max-w-7xl mx-auto">
+                    <div className='main-app-view'>
+                        <div className="main-app-content-container">
+                            <ContentLoader
+                                state={true}
+                                loading={true}
+                                loadingText={createLoadingText}
+                                loadedText=""
+                                color={theme.primaryColor}
+                            />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // Show loading state for initial page load
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-white p-8">
+                <div className="max-w-7xl mx-auto">
+                    <div className='main-app-view'>
+                        <div className="main-app-content-container">
+                            <ContentLoader
+                                state={loadingState}
+                                loading={loading}
+                                loadingText={loadingText}
+                                loadedText={loadedText}
+                                color="#1976d2"
+                            />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // Show loading state for modal loading
+    if (modalLoading) {
+        return (
+            <div className="min-h-screen bg-white p-8">
+                <div className="max-w-7xl mx-auto">
+                    <div className='main-app-view'>
+                        <div className="main-app-content-container">
+                            <ContentLoader
+                                state={true}
+                                loading={true}
+                                loadingText={modalLoadingText}
+                                loadedText=""
+                                color={theme.primaryColor}
+                            />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
-        <div className="min-h-screen bg-gray-50 p-8">
+        <div className="bg-white p-3">
             <div className="max-w-7xl mx-auto">
-                <BusinessHeader
-                    filteredCount={filteredBusinesses.length}
-                    openModal={openModalForNew}
-                />
-                
-                {errorMessage && (
-                    <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative my-4" role="alert">
-                        <strong className="font-bold">Error!</strong>
-                        <span className="block sm:inline ml-2">{errorMessage}</span>
-                        <span className="absolute top-0 bottom-0 right-0 px-4 py-3 cursor-pointer" onClick={() => setErrorMessage(null)}>
-                            <X size={18} />
-                        </span>
-                    </div>
+                {/* Action Modal for enable/disable/delete */}
+                {modalState.isOpen && (
+                    <ActionModal
+                        isOpen={modalState.isOpen}
+                        onClose={closeModal}
+                        entityName={modalState.entityName}
+                        actionType={modalState.actionType}
+                        reason={modalState.reason}
+                        setReason={setReason}
+                        onSubmit={handleSubmit}
+                        submitting={submitting}
+                        customDescription={modalState.customDescription}
+                    />
                 )}
 
-                {loading ? (
-                    <ContentLoader />
-                ) : (
-                    // Render Empty State only if there are NO businesses AND no active search/filters
-                    businesses.length === 0 && filteredBusinesses.length === 0 && !searchTerm ? (
-                        <div className="flex flex-col items-center justify-center h-96 bg-white rounded-lg border-2 border-dashed border-gray-300">
-                            <Building2 size={64} className="text-gray-400 mb-4" />
-                            <h3 className="text-xl font-semibold text-gray-700 mb-2">Oops! No Business</h3>
-                            <p className="text-gray-500 mb-6">Get started by adding your first business</p>
-                            <button
-                                onClick={openModalForNew}
-                                className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium"
-                            >
-                                <Plus size={20} />
-                                Add Business
-                            </button>
-                        </div>
-                    ) : (
-                        // Render Controls and Table if there is data OR an active search/filter
-                        <>
-                            {/* <BusinessListControls ... /> (uncomment when ready) */}
-                            
-                            <BusinessTable
-                                filteredBusinesses={filteredBusinesses}
-                                selectedItems={selectedItems}
-                                toggleSelectAll={() => toggleSelectAll(filteredBusinesses)}
-                                toggleSelectItem={toggleSelectItem}
-                                openModalForEdit={openModalForEdit}
-                                handleToggleStatus={handleToggleStatus}
-                                handleDelete={handleDelete}
-                                getStatusColor={getStatusColor}
-                                EditIcon={Edit}
-                                PowerIcon={Power}
-                                TrashIcon={Trash2}
-                            />
-                        </>
-                    )
+                {/* Create/Edit Business Form Modal */}
+                {showCreateForm && (
+                    <CreateBusinessForm
+                        showModal={showCreateForm}
+                        setShowModal={closeAllModals}
+                        initialFormData={selectedBusiness || initialFormData}
+                        handleSubmit={handleFormSubmit}
+                        businessTypes={businessTypes}
+                        isEditing={formMode === 'edit'}
+                        currentLogoUrl={selectedBusiness?.logoUrl || null}
+                        submitting={submitting}
+                        readOnly={formMode === 'view'}
+                    />
                 )}
 
-                {/* Modal is conditionally rendered */}
-                <CreateBusinessForm
-                    showModal={showModal}
-                    setShowModal={closeModal}
-                    formData={formData}
-                    setFormData={setFormData}
-                    handleSubmit={handleSubmit}
-                    businessTypes={businessTypes}
-                    isEditing={isEditing}
-                    currentLogoUrl={formData.logoUrl}
-                    submitting={submitting}
-                />
+                {/* Main Table View */}
+                {!showCreateForm && !modalState.isOpen && !modalLoading && !createLoading && (
+                    <>
+                        {businesses.length === 0 && filteredBusinesses.length === 0 && !searchTerm ? (
+                            <div className="flex flex-col items-center justify-center h-96 bg-white rounded-lg border-2 border-dashed border-gray-300">
+                                <Building2 size={64} className="text-gray-400 mb-4" />
+                                <h3 className="text-xl font-semibold text-gray-700 mb-2">Oops! No Businesses</h3>
+                                <p className="text-gray-500 mb-6">Get started by adding your first business</p>
+                                <button
+                                    onClick={openCreateModal}
+                                    className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium"
+                                >
+                                    <Plus size={20} />
+                                    Add Business
+                                </button>
+                            </div>
+                        ) : (
+                            <>
+                                <div className="space-y-4">
+                                    <span className="text-m font-bold text-gray-900">Businesses</span>
+                                    {errorMessage && (
+                                        <div className="bg-red-50 border border-red-200 rounded-md p-4">
+                                            <p className="text-red-800">{errorMessage}</p>
+                                        </div>
+                                    )}
+                                    <BusinessControls
+                                        searchTerm={searchTerm}
+                                        setSearchTerm={setSearchTerm}
+                                        filters={filters}
+                                        setFilters={setFilters}
+                                        businessTypes={businessTypes}
+                                        selectedItems={selectedItems}
+                                        setSelectedItems={setSelectedItems}
+                                        openModal={openCreateModal}
+                                    />
+
+                                    <BusinessTable
+                                        filteredBusinesses={filteredBusinesses}
+                                        selectedItems={selectedItems}
+                                        setSelectedItems={setSelectedItems}
+                                        toggleSelectAll={() => toggleSelectAll(filteredBusinesses)}
+                                        toggleSelectItem={toggleSelectItem}
+                                        openModalForEdit={openEditModal}
+                                        openEnableView={openEnableView}
+                                        openEnableModal={openEnableModal}
+                                        openDisableModal={openDisableModal}
+                                        openDeleteModal={openDeleteModal}
+                                        getStatusColor={getStatusColor}
+                                        searchTerm={searchTerm}
+                                        setSearchTerm={setSearchTerm}
+                                        filters={filters}
+                                        setFilters={setFilters}
+                                        submitting={submitting}
+                                    />
+                                </div>
+                            </>
+                        )}
+                    </>
+                )}
             </div>
         </div>
     );

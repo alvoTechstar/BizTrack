@@ -1,47 +1,160 @@
-// src/components/business/BusinessListControls.jsx
-import React from 'react';
-import { Search } from 'lucide-react';
+// src/components/business/BusinessControls.jsx
+import React, { useState } from 'react';
+import SearchInput from '../../../../../components/input/SearchInput';
+import DateRangeInput from '../../../../../components/input/DateRangeInput';
+import FilterInput from '../../../../../components/input/FilterInput';
+import AppFormButton from '../../../../../components/buttons/AppFormButton';
+import { Plus } from 'lucide-react';
 
-const BusinessListControls = ({ searchTerm, setSearchTerm, filters, setFilters, businessTypes }) => {
+const BusinessControls = ({
+  searchTerm,
+  setSearchTerm,
+  filters,
+  setFilters,
+  businessTypes,
+  selectedItems,
+  setSelectedItems,
+  openModal
+}) => {
+  const [filterAnchorEl, setFilterAnchorEl] = useState(null);
+  const [dateFilterAnchorEl, setDateFilterAnchorEl] = useState(null);
+  const [tableFilter, setTableFilter] = useState(false);
+  const [dateFilter, setDateFilter] = useState(false);
+
+  // Handle search input
+  const handleSearchInput = (value) => {
+    setSearchTerm(value);
+  };
+
+  const handleSearchClear = () => {
+    setSearchTerm('');
+  };
+
+  // Handle date filter
+  const handleDateFilterClick = (event) => {
+    setDateFilterAnchorEl(event.currentTarget);
+  };
+
+  const handleDateFilterClose = () => {
+    setDateFilterAnchorEl(null);
+  };
+
+  const handleDateFilter = (isFiltered) => {
+    setDateFilter(isFiltered);
+  };
+
+  const handleDateSelected = (dateRange) => {
+    if (dateRange) {
+      setFilters(prev => ({
+        ...prev,
+        startDate: dateRange.startDate,
+        endDate: dateRange.endDate
+      }));
+    } else {
+      setFilters(prev => ({
+        ...prev,
+        startDate: null,
+        endDate: null
+      }));
+    }
+  };
+
+  // Handle advanced filter
+  const handleFilterClick = (event) => {
+    setFilterAnchorEl(event.currentTarget);
+  };
+
+  const handleFilterClose = () => {
+    setFilterAnchorEl(null);
+  };
+
+  const handleTableFilter = (isFiltered) => {
+    setTableFilter(isFiltered);
+  };
+
+  // Filter options for the FilterInput component
+  const filterOptions = ['Status', 'Business Type'];
+
+  const statusFilters = [
+    { label: 'NEW', value: 'NEW' },
+    { label: 'ACTIVE', value: 'ACTIVE' },
+    { label: 'INACTIVE', value: 'INACTIVE' }
+  ];
+
+  const typeFilters = businessTypes.map(type => ({
+    label: type,
+    value: type
+  }));
+
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-4 mb-4 flex gap-4 flex-wrap">
-      {/* Search Input */}
-      <div className="flex-1 min-w-64 relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-        <input
-          type="text"
-          placeholder="Search by name, email, or registration number..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-        />
-      </div>
-      
-      {/* Status Filter */}
-      <select
-        value={filters.status}
-        onChange={(e) => setFilters(prev => ({...prev, status: e.target.value}))}
-        className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-      >
-        <option value="">All Status</option>
-        <option value="NEW">NEW</option>
-        <option value="ACTIVE">ACTIVE</option>
-        <option value="INACTIVE">INACTIVE</option>
-      </select>
+    <div className="bg-white  p-4 mb-4 ml-2">
+      <div className="flex gap-4 flex-wrap items-center justify-between">
+        {/* Left Side: Search and Filters */}
+        <div className="flex gap-4 flex-wrap items-center flex-1 ">
+          {/* Search Input */}
+          <div className="min-w-64">
+            <SearchInput
+              id="business-search"
+              placeholder="Search by name, email, or registration number..."
+              input={searchTerm}
+              handleInput={handleSearchInput}
+              handleClear={handleSearchClear}
+              error={false}
+              disabled={false}
+            />
+          </div>
 
-      {/* Type Filter */}
-      <select
-        value={filters.type}
-        onChange={(e) => setFilters(prev => ({...prev, type: e.target.value}))}
-        className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-      >
-        <option value="">All Types</option>
-        {businessTypes.map(type => (
-          <option key={type} value={type}>{type}</option>
-        ))}
-      </select>
+          {/* Date Range Filter */}
+          <DateRangeInput
+            type="business"
+            color="#2563eb"
+            selected={filters.startDate && filters.endDate ? {
+              startDate: filters.startDate,
+              endDate: filters.endDate
+            } : null}
+            dateFilter={dateFilter}
+            anchorEl={dateFilterAnchorEl}
+            selectedAction={handleDateSelected}
+            handleDateFilter={handleDateFilter}
+            handleClose={handleDateFilterClose}
+            handleClick={handleDateFilterClick}
+          />
+
+          {/* Advanced Filter Button */}
+          <FilterInput
+            color="#2563eb"
+            label="advanced-filter"
+            filters={statusFilters}
+            filters2={typeFilters}
+            options={filterOptions}
+            selected={selectedItems || []}
+            selectedAction={setSelectedItems}
+            tableFilter={tableFilter}
+            handleTableFilter={handleTableFilter}
+            anchorEl={filterAnchorEl}
+            handleClose={handleFilterClose}
+            handleClick={handleFilterClick}
+          />
+        </div>
+
+        {/* Right Side: Create Business Button */}
+        <div className="flex-shrink-0">
+          <AppFormButton
+            text={
+              <div className="flex items-center gap-2">
+                <Plus size={18} />
+                Add Business
+              </div>
+            }
+            color="#2563eb"
+            isLoading={false}
+            validation={true}
+            action={openModal}
+          />
+        </div>
+      </div>
     </div>
   );
 };
 
-export default BusinessListControls;
+export default BusinessControls;

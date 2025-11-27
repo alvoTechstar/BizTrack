@@ -8,6 +8,7 @@ export default function TextInput({
   placeholder,
   input,
   handleInput,
+  handleBlur,
   error,
   errorMessage,
   type,
@@ -50,6 +51,7 @@ export default function TextInput({
         value={input}
         pattern={type === "number" ? `\d*` : null}
         onChange={(e) => handleInput(e)}
+        onBlur={handleBlur}
         maxLength={max}
         minLength={min}
         className={

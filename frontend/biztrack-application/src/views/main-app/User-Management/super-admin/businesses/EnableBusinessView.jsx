@@ -1,4 +1,4 @@
-// CreateBusinessForm.jsx - Updated with themes and proper validation
+// CreateBusinessForm.jsx - Fixed validation for required fields only
 import React from 'react';
 import { useFormik } from 'formik';
 import CancelRoundedIcon from '@mui/icons-material/CancelRounded';
@@ -10,7 +10,7 @@ import FileInput from '../../../../../components/input/FileInput';
 import TextBoxInput from '../../../../../components/input/TextBoxInput';
 import AppFormButton from '../../../../../components/buttons/AppFormButton';
 import ColorInput from '../../../../../components/input/ColorInput';
-import { businessValidationSchema } from '../../../../../utilities/validationSchemas';
+import { businessValidationSchema, businessRequiredFieldsSchema } from '../../../../../utilities/validationSchemas';
 
 const CreateBusinessForm = ({
     showModal,
@@ -46,15 +46,33 @@ const CreateBusinessForm = ({
 
     const formik = useFormik({
         initialValues: safeInitialData,
-        validationSchema: businessValidationSchema,
+        validationSchema: businessValidationSchema, // Use full schema for field validation
         onSubmit: (values) => {
             console.log('Formik submit values:', values);
             handleSubmit(values);
         },
         enableReinitialize: true,
         validateOnBlur: true, // Validate when field loses focus
-        validateOnChange: true, // Validate on every change
+        validateOnChange: false, // Only validate on blur to prevent constant validation
     });
+
+    // Check if required fields are valid
+    const areRequiredFieldsValid = () => {
+        const requiredFields = ['businessName', 'registrationNumber', 'owner', 'businessType', 'address', 'email', 'phone'];
+        
+        // Check if all required fields have values
+        const hasValues = requiredFields.every(field => {
+            const value = formik.values[field];
+            return value && value.toString().trim().length > 0;
+        });
+
+        if (!hasValues) return false;
+
+        // Check if required fields don't have validation errors
+        const hasNoErrors = requiredFields.every(field => !formik.errors[field]);
+        
+        return hasNoErrors;
+    };
 
     const handleFileDelete = () => {
         formik.setFieldValue('logoFile', null);
@@ -77,30 +95,27 @@ const CreateBusinessForm = ({
     const handleSelectChange = (event) => {
         const { name, value } = event.target;
         formik.setFieldValue(name, value);
-        formik.setFieldTouched(name, true, false); // Mark as touched without validation
     };
 
     const handleSelectBlur = (event) => {
         const { name } = event.target;
-        formik.setFieldTouched(name, true, true); // Mark as touched with validation
+        formik.setFieldTouched(name, true);
     };
 
     // Enhanced input handlers with proper touch tracking
     const handleInputChange = (event) => {
         formik.handleChange(event);
-        // Don't automatically mark as touched on change, only on blur
     };
 
     const handleInputBlur = (event) => {
         formik.handleBlur(event);
-        formik.setFieldTouched(event.target.name, true, true);
     };
 
     // Handle file input with proper validation
     const handleFileInput = (event) => {
         const file = event.target.files[0];
         formik.setFieldValue('logoFile', file);
-        formik.setFieldTouched('logoFile', true, true);
+        formik.setFieldTouched('logoFile', true);
     };
 
     // Check if field should show error (touched AND has error)
@@ -111,6 +126,11 @@ const CreateBusinessForm = ({
     // Get error message for field
     const getErrorMessage = (fieldName) => {
         return shouldShowError(fieldName) ? formik.errors[fieldName] : '';
+    };
+
+    // Check if form can be submitted
+    const canSubmit = () => {
+        return areRequiredFieldsValid() && !submitting;
     };
 
     return (
@@ -345,7 +365,7 @@ const CreateBusinessForm = ({
                         text={submitting ? 'Saving...' : (isEditing ? 'Save Changes' : 'Add Business')}
                         color={theme.primaryColor || '#2563eb'}
                         isLoading={submitting}
-                        validation={formik.isValid && formik.dirty && !submitting}
+                        validation={canSubmit()} // Only check required fields
                         action={formik.handleSubmit}
                         type="submit"
                     />

@@ -110,26 +110,38 @@ const SalesPage = () => {
 
   const handleQuantityChange = useCallback(
     (productId, value) => {
-      const quantity = Math.max(0, parseInt(value) || 0); // Ensure quantity is non-negative integer
-      const productInStock = productsInStock.find((p) => p.id === productId);
-
-      if (productInStock && quantity > productInStock.availableStock) {
-        showNotification(
-          `Only ${productInStock.availableStock} of ${productInStock.name} available.`,
-          "error"
-        );
-        // Cap the quantity at the available stock
+      // Allow empty input for better UX when typing
+      if (value === "") {
         setQuantities((prev) => ({
           ...prev,
-          [productId]: productInStock.availableStock,
+          [productId]: "",
         }));
         return;
       }
 
-      setQuantities((prev) => ({
-        ...prev,
-        [productId]: quantity,
-      }));
+      // Convert to number and validate it's a positive number
+      const numValue = parseFloat(value);
+      if (!isNaN(numValue) && numValue > 0) {
+        const productInStock = productsInStock.find((p) => p.id === productId);
+
+        if (productInStock && numValue > productInStock.availableStock) {
+          showNotification(
+            `Only ${productInStock.availableStock} of ${productInStock.name} available.`,
+            "error"
+          );
+          // Cap the quantity at the available stock
+          setQuantities((prev) => ({
+            ...prev,
+            [productId]: productInStock.availableStock,
+          }));
+          return;
+        }
+
+        setQuantities((prev) => ({
+          ...prev,
+          [productId]: numValue,
+        }));
+      }
     },
     [productsInStock, showNotification]
   );
@@ -162,9 +174,7 @@ const SalesPage = () => {
         productInActualStock.availableStock
       ) {
         showNotification(
-          `Cannot add ${quantityToAdd} of ${product.name}. Only ${
-            productInActualStock.availableStock - currentQuantityInCart
-          } more available.`,
+          `Cannot add ${quantityToAdd} of ${product.name}. Only ${(productInActualStock.availableStock - currentQuantityInCart).toFixed(2)} more available.`,
           "error"
         );
         // Optionally, reset input quantity to max additional available
@@ -201,7 +211,7 @@ const SalesPage = () => {
 
       // Reset the quantity input for the product after adding to cart
       setQuantities((prev) => ({ ...prev, [product.id]: 1 }));
-      showNotification(`${product.name} added to cart`, "success");
+      showNotification(`${quantityToAdd} ${product.name} added to cart`, "success");
     },
     [cart, quantities, productsInStock, showNotification]
   );
@@ -254,9 +264,9 @@ const SalesPage = () => {
           prev.map((item) =>
             item.id === productId
               ? {
-                  ...item,
-                  quantity: oldQuantity + productInActualStock.availableStock,
-                }
+                ...item,
+                quantity: oldQuantity + productInActualStock.availableStock,
+              }
               : item
           )
         );
@@ -298,9 +308,9 @@ const SalesPage = () => {
           prevProducts.map((p) =>
             p.id === productId
               ? {
-                  ...p,
-                  availableStock: p.availableStock + itemToRemove.quantity,
-                }
+                ...p,
+                availableStock: p.availableStock + itemToRemove.quantity,
+              }
               : p
           )
         );
@@ -457,194 +467,158 @@ const SalesPage = () => {
     setTransactions,
     setDebts,
   ]);
+
   const handleSearch = useCallback((searchValue) => {
     setSearchTerm(searchValue);
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-50 p-2 ">
-        <h1 className="text-2xl font-bold text-gray-800 mb-6">
-          Kiosk Sales System
-        </h1>
+    <div className="min-h-screen bg-gray-50 p-2 mb-6">
+      <h1 className="text-2xl font-bold text-gray-800 mb-6">
+        Kiosk Sales System
+      </h1>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Product Selection Area */}
-          <div className="lg:col-span-2">
-            <div className="bg-white rounded-lg shadow-md p-4 mb-4">
-              <SearchInput
-                input={searchTerm} // Your component uses 'input' prop
-                handleInput={handleSearch} // Your component uses 'handleInput' prop
-                placeholder="Search products..."
-                handleClear={() => setSearchTerm("")} // Add clear functionality
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Product Selection Area */}
+        <div className="lg:col-span-2">
+          <div className="bg-white rounded-lg shadow-md p-4 mb-4">
+            <SearchInput
+              input={searchTerm} // Your component uses 'input' prop
+              handleInput={handleSearch} // Your component uses 'handleInput' prop
+              placeholder="Search products..."
+              handleClear={() => setSearchTerm("")} // Add clear functionality
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 mb-6">
+            {filteredProducts.map((product) => (
+              <ProductCard
+                key={product.id}
+                product={product}
+                quantity={quantities[product.id]}
+                onQuantityChange={handleQuantityChange}
+                onAddToCart={addToCart}
+                formatCurrency={formatCurrency}
               />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-              {filteredProducts.map((product) => (
-                <ProductCard
-                  key={product.id}
-                  product={product}
-                  quantity={quantities[product.id]}
-                  onQuantityChange={handleQuantityChange}
-                  onAddToCart={addToCart}
-                  formatCurrency={formatCurrency}
-                />
-              ))}
-            </div>
-          </div>
-
-          {/* Cart Area */}
-          <div className="lg:col-span-1">
-            <div className="bg-white rounded-lg shadow-md p-4 sticky top-4">
-              <div className="flex items-center gap-2 mb-4">
-                <ShoppingCart className="h-6 w-6 text-gray-600" />
-                <h2 className="text-xl font-bold text-gray-800">
-                  Shopping Cart
-                </h2>
-              </div>
-
-              {cart.length === 0 ? (
-                <p className="text-gray-500 text-center py-8">
-                  Your cart is empty
-                </p>
-              ) : (
-                <>
-                  <div className="space-y-3 mb-4 max-h-64 overflow-y-auto">
-                    {cart.map((item) => (
-                      <CartItem
-                        key={item.id}
-                        item={item}
-                        onUpdateQuantity={updateCartQuantity}
-                        onRemoveFromCart={removeFromCart}
-                        formatCurrency={formatCurrency}
-                      />
-                    ))}
-                  </div>
-
-                  <div className="border-t pt-4">
-                    <div className="text-right mb-4">
-                      <p className="text-2xl font-bold text-green-600">
-                        Total: {formatCurrency(totalAmount)}
-                      </p>
-                    </div>
-
-                    {/* Payment Options */}
-                    <div className="space-y-2">
-                      <button
-                        onClick={() => setCashModal(true)}
-                        className="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
-                        disabled={cart.length === 0} // Disable if cart is empty
-                      >
-                        <DollarSign className="h-5 w-5" />
-                        Pay with Cash
-                      </button>
-                      <button
-                        onClick={() => setMpesaModal(true)}
-                        className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
-                        disabled={cart.length === 0} // Disable if cart is empty
-                      >
-                        <Smartphone className="h-5 w-5" />
-                        Pay with M-PESA
-                      </button>
-                      <button
-                        onClick={() => setDebtModal(true)}
-                        className="w-full bg-orange-600 text-white py-3 rounded-lg hover:bg-orange-700 transition-colors flex items-center justify-center gap-2"
-                        disabled={cart.length === 0} // Disable if cart is empty
-                      >
-                        <FileText className="h-5 w-5" />
-                        Buy on Debt
-                      </button>
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
+            ))}
           </div>
         </div>
 
-        {/* Modals */}
-        <CashPaymentModal
-          isOpen={cashModal}
-          onClose={() => setCashModal(false)}
-          totalAmount={totalAmount}
-          amountPaid={amountPaid}
-          onAmountPaidChange={setAmountPaid}
-          onConfirmPayment={handleCashPayment}
-          formatCurrency={formatCurrency}
-        />
-
-        <MpesaPaymentModal
-          isOpen={mpesaModal}
-          onClose={() => setMpesaModal(false)}
-          totalAmount={totalAmount}
-          mpesaPhone={mpesaPhone}
-          onMpesaPhoneChange={setMpesaPhone}
-          onConfirmPayment={handleMpesaPayment}
-          mpesaLoading={mpesaLoading}
-          formatCurrency={formatCurrency}
-        />
-
-        <DebtPaymentModal
-          isOpen={debtModal}
-          onClose={() => setDebtModal(false)}
-          totalAmount={totalAmount}
-          debtCustomerName={debtCustomerName}
-          onDebtCustomerNameChange={setDebtCustomerName}
-          debtPhone={debtPhone}
-          onDebtPhoneChange={setDebtPhone}
-          debtNotes={debtNotes}
-          onDebtNotesChange={setDebtNotes}
-          onConfirmPayment={handleDebtPayment}
-          formatCurrency={formatCurrency}
-        />
-
-        {/* Toaster Notification */}
-        <Toaster
-          open={notification.open}
-          state={notification.type}
-          title={notification.title}
-          message={notification.message}
-          action={() => setNotification((prev) => ({ ...prev, open: false }))}
-          position="right"
-        />
-
-        {/* --- Debug/Dev Info Section (Optional: Remove in production) --- */}
-        <div className="mt-8 p-4 bg-gray-100 rounded-lg shadow-inner">
-          <h2 className="text-xl font-bold text-gray-700 mb-4">
-            Developer Info (Remove in Production)
-          </h2>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div>
-              <h3 className="text-lg font-semibold text-gray-700 mb-2">
-                Current Product Stock
-              </h3>
-              <pre className="bg-white p-3 rounded text-xs overflow-auto max-h-64">
-                {JSON.stringify(productsInStock, null, 2)}
-              </pre>
+        {/* Cart Area */}
+        <div className="lg:col-span-1">
+          <div className="bg-white rounded-lg shadow-md p-4 sticky top-4">
+            <div className="flex items-center gap-2 mb-4">
+              <ShoppingCart className="h-6 w-6 text-gray-600" />
+              <h2 className="text-xl font-bold text-gray-800">
+                Shopping Cart
+              </h2>
             </div>
 
-            <div>
-              <h3 className="text-lg font-semibold text-gray-700 mb-2">
-                All Transactions
-              </h3>
-              <pre className="bg-white p-3 rounded text-xs overflow-auto max-h-64">
-                {JSON.stringify(transactions, null, 2)}
-              </pre>
-            </div>
+            {cart.length === 0 ? (
+              <p className="text-gray-500 text-center py-8">
+                Your cart is empty
+              </p>
+            ) : (
+              <>
+                <div className="space-y-3 mb-4 max-h-64 overflow-y-auto">
+                  {cart.map((item) => (
+                    <CartItem
+                      key={item.id}
+                      item={item}
+                      onUpdateQuantity={updateCartQuantity}
+                      onRemoveFromCart={removeFromCart}
+                      formatCurrency={formatCurrency}
+                    />
+                  ))}
+                </div>
 
-            <div>
-              <h3 className="text-lg font-semibold text-gray-700 mb-2">
-                All Debts
-              </h3>
-              <pre className="bg-white p-3 rounded text-xs overflow-auto max-h-64">
-                {JSON.stringify(debts, null, 2)}
-              </pre>
-            </div>
+                <div className="border-t pt-4">
+                  <div className="text-right mb-4">
+                    <p className="text-2xl font-bold text-green-600">
+                      Total: {formatCurrency(totalAmount)}
+                    </p>
+                  </div>
+
+                  {/* Payment Options */}
+                  <div className="space-y-2">
+                    <button
+                      onClick={() => setCashModal(true)}
+                      className="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
+                      disabled={cart.length === 0} // Disable if cart is empty
+                    >
+                      <DollarSign className="h-5 w-5" />
+                      Pay with Cash
+                    </button>
+                    <button
+                      onClick={() => setMpesaModal(true)}
+                      className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+                      disabled={cart.length === 0} // Disable if cart is empty
+                    >
+                      <Smartphone className="h-5 w-5" />
+                      Pay with M-PESA
+                    </button>
+                    <button
+                      onClick={() => setDebtModal(true)}
+                      className="w-full bg-orange-600 text-white py-3 rounded-lg hover:bg-orange-700 transition-colors flex items-center justify-center gap-2"
+                      disabled={cart.length === 0} // Disable if cart is empty
+                    >
+                      <FileText className="h-5 w-5" />
+                      Buy on Debt
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </div>
-        {/* --- End Debug/Dev Info Section --- */}
       </div>
+
+      {/* Modals */}
+      <CashPaymentModal
+        isOpen={cashModal}
+        onClose={() => setCashModal(false)}
+        totalAmount={totalAmount}
+        amountPaid={amountPaid}
+        onAmountPaidChange={setAmountPaid}
+        onConfirmPayment={handleCashPayment}
+        formatCurrency={formatCurrency}
+      />
+
+      <MpesaPaymentModal
+        isOpen={mpesaModal}
+        onClose={() => setMpesaModal(false)}
+        totalAmount={totalAmount}
+        mpesaPhone={mpesaPhone}
+        onMpesaPhoneChange={setMpesaPhone}
+        onConfirmPayment={handleMpesaPayment}
+        mpesaLoading={mpesaLoading}
+        formatCurrency={formatCurrency}
+      />
+
+      <DebtPaymentModal
+        isOpen={debtModal}
+        onClose={() => setDebtModal(false)}
+        totalAmount={totalAmount}
+        debtCustomerName={debtCustomerName}
+        onDebtCustomerNameChange={setDebtCustomerName}
+        debtPhone={debtPhone}
+        onDebtPhoneChange={setDebtPhone}
+        debtNotes={debtNotes}
+        onDebtNotesChange={setDebtNotes}
+        onConfirmPayment={handleDebtPayment}
+        formatCurrency={formatCurrency}
+      />
+
+      {/* Toaster Notification */}
+      <Toaster
+        open={notification.open}
+        state={notification.type}
+        title={notification.title}
+        message={notification.message}
+        action={() => setNotification((prev) => ({ ...prev, open: false }))}
+        position="right"
+      />
+    </div>
   );
 };
 

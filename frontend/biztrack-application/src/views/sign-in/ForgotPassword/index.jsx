@@ -7,8 +7,7 @@ import PassReset from "./PassReset";
 import Toaster from "../../../components/Toaster";
 import Footer from "../../../components/footer";
 import axios from "axios";
-
-const API_URL = "http://localhost:3000/api";
+import URLS from "../../../utilities/Endpoints";
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState("");
@@ -63,9 +62,11 @@ export default function ForgotPassword() {
     setLoading(true);
 
     try {
-      const response = await axios.post(`${API_URL}/auth/forgot-password`, {
+      const response = await axios.post(`${URLS.TAG_BASE_URL}${URLS.AUTH.FORGOT_PASSWORD}`, {
         email: email
       });
+
+      console.log("📧 Forgot password response:", response.data);
 
       if (response.data.success) {
         handleToaster("true", "Success", "OTP sent to your email");
@@ -75,6 +76,7 @@ export default function ForgotPassword() {
         }, 2000);
       }
     } catch (error) {
+      console.error("❌ Forgot password error:", error.response?.data);
       const errorMsg = error.response?.data?.message || "Failed to send OTP";
       handleToaster("false", "Error", errorMsg);
       setLoading(false);
@@ -90,20 +92,23 @@ export default function ForgotPassword() {
     setLoading(true);
   
     try {
-      const response = await axios.post(`${API_URL}/auth/verify-reset-otp`, {
+      const response = await axios.post(`${URLS.TAG_BASE_URL}${URLS.AUTH.VERIFY_RESET_OTP}`, {
         email: email,
         otp: otp
       });
+
+      console.log("✅ OTP verification response:", response.data);
   
       if (response.data.success) {
         handleToaster("true", "Success", "OTP verified successfully");
-        setResetToken(response.data.resetToken || otp);
+        setResetToken(response.data.resetToken);
         setTimeout(() => {
           setView(2);
           setLoading(false);
         }, 2000);
       }
     } catch (error) {
+      console.error("❌ OTP verification error:", error.response?.data);
       const errorMsg = error.response?.data?.message || "OTP verification failed";
       handleToaster("false", "Verification Failed", errorMsg);
       setLoading(false);
@@ -116,28 +121,50 @@ export default function ForgotPassword() {
       return;
     }
 
-    if (password.length < 12) {
-      handleToaster("false", "Error", "Password must be at least 12 characters");
+    if (password.length < 7) {
+      handleToaster("false", "Error", "Password must be at least 7 characters");
+      return;
+    }
+
+    // Check password requirements (same as login)
+    const hasUppercase = /[A-Z]/.test(password);
+    const hasNumber = /[0-9]/.test(password);
+    const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+
+    if (!hasUppercase || !hasNumber || !hasSpecialChar) {
+      handleToaster("false", "Error", "Password must contain uppercase, number, and special character");
       return;
     }
 
     setLoading(true);
 
     try {
-      const response = await axios.post(`${API_URL}/auth/reset-password`, {
+      console.log("🔄 Resetting password with:", { 
+        resetToken: resetToken ? "***" : "missing",
         email: email,
+        passwordLength: password.length 
+      });
+
+      const response = await axios.post(`${URLS.TAG_BASE_URL}${URLS.AUTH.RESET_PASSWORD}`, {
         resetToken: resetToken,
-        newPassword: password,
+        newPassword: password, // Send plain text - backend should handle hashing
         confirmPassword: passwordConfirm
       });
 
+      console.log("✅ Password reset response:", response.data);
+
       if (response.data.success) {
-        handleToaster("true", "Success", "Password reset successfully");
+        handleToaster("true", "Success", "Password reset successfully! You can now login with your new password.");
         setTimeout(() => {
-          navigate("/login");
-        }, 2000);
+          navigate("/"); // Redirect to login page
+        }, 3000);
       }
     } catch (error) {
+      console.error("❌ Password reset error:", {
+        status: error.response?.status,
+        data: error.response?.data,
+        message: error.message
+      });
       const errorMsg = error.response?.data?.message || "Password reset failed";
       handleToaster("false", "Error", errorMsg);
       setLoading(false);
@@ -152,7 +179,7 @@ export default function ForgotPassword() {
     setLoadingOTP(true);
     
     try {
-      const response = await axios.post(`${API_URL}/auth/forgot-password`, {
+      const response = await axios.post(`${URLS.TAG_BASE_URL}${URLS.AUTH.RESEND_RESET_OTP}`, {
         email: email
       });
 

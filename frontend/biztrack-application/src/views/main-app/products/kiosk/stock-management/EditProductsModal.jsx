@@ -5,13 +5,12 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  Backdrop,
   Fade,
   Box,
   styled,
   CircularProgress,
 } from "@mui/material";
-import TextInput from "../../../../../components/input/TextInput";
+import TextInput from "../../../../../components/Input/TextInput";
 import SelectInput from "../../../../../components/input/SelectInput";
 import AppFormButton from "../../../../../components/buttons/AppFormButton";
 import { useTheme } from "../../../../../components/theme/ThemeContext";
@@ -24,18 +23,30 @@ const StyledDialog = styled(Dialog)(() => ({
     overflow: "hidden",
     maxWidth: "500px",
     width: "100%",
+    margin: 0,
+    height: "auto",
+    maxHeight: "90vh",
+    backgroundColor: "white",
+  },
+  "& .MuiDialog-container": {
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
   },
   "& .MuiBackdrop-root": {
-    backdropFilter: "blur(1px)",
     backgroundColor: "rgba(0, 0, 0, 0.5)",
   },
 }));
 
-const AnimatedBackdrop = styled(Backdrop)({
-  zIndex: -1,
+const ModalOverlay = styled(Box)({
   position: "fixed",
-  backdropFilter: "blur(1px)",
-  backgroundColor: "rgba(0, 0, 0, 0.7)",
+  top: 0,
+  left: 0,
+  right: 0,
+  bottom: 0,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  backgroundColor: "rgba(0, 0, 0, 0.5)",
+  zIndex: 1300,
 });
 
 export default function EditProductModal({
@@ -115,225 +126,240 @@ export default function EditProductModal({
 
   return (
     <>
-      <AnimatedBackdrop open={show} transitionDuration={300} />
-
-      <StyledDialog
-        open={show}
-        onClose={onClose}
-        closeAfterTransition
-        BackdropComponent={Backdrop}
-        BackdropProps={{
-          timeout: 500,
-        }}
-        sx={{
-          "& .MuiDialog-container": {
-            backdropFilter: "blur(2px)",
-          },
-        }}
-      >
+      <ModalOverlay>
         <Fade in={show} timeout={300}>
           <Box>
-            <DialogTitle
-              sx={{
-                backgroundColor: "#f8f9fa",
-                borderBottom: "1px solid #e0e0e0",
-                padding: "20px 24px",
-                fontSize: "1.25rem",
-                fontWeight: "600",
-              }}
-            >
-              Edit Product
-            </DialogTitle>
-
-            <DialogContent sx={{ padding: "24px", paddingBottom: "0" }}>
-              <Box
-                sx={{ display: "flex", flexDirection: "column", gap: "20px" }}
-              >
-                <Box
-                  sx={{
-                    display: "grid",
-                    gridTemplateColumns: "1fr 1fr",
-                    gap: "16px",
-                  }}
-                >
-                  <TextInput
-                    label="Product Name"
-                    value={product.name}
-                    onChange={(e) =>
-                      onProductChange({ ...product, name: e.target.value })
-                    }
-                    placeholder="Enter product name"
-                    required
-                    fullWidth
-                  />
-
-                  <TextInput
-                    label="SKU"
-                    value={product.sku}
-                    onChange={(e) =>
-                      onProductChange({ ...product, sku: e.target.value })
-                    }
-                    placeholder="Enter SKU"
-                    required
-                    fullWidth
-                  />
-                </Box>
-
-                <Box
-                  sx={{
-                    display: "grid",
-                    gridTemplateColumns: "1fr 1fr",
-                    gap: "16px",
-                  }}
-                >
-                  <TextInput
-                    label="Current Stock"
-                    type="number"
-                    value={product.stock}
-                    onChange={(e) => {
-                      const newStock = parseInt(e.target.value) || 0;
-                      onProductChange({
-                        ...product,
-                        stock: newStock,
-                        status:
-                          newStock >= product.threshold
-                            ? "In Stock"
-                            : newStock > 0
-                            ? "Low Stock"
-                            : "Out of Stock",
-                      });
-                    }}
-                    placeholder="0"
-                    required
-                  />
-
-                  <TextInput
-                    label="Unit of Measure"
-                    value={product.unit}
-                    onChange={(e) =>
-                      onProductChange({ ...product, unit: e.target.value })
-                    }
-                    placeholder="e.g., kg, pcs"
-                    required
-                  />
-                </Box>
-
-                <Box
-                  sx={{
-                    display: "grid",
-                    gridTemplateColumns: "1fr 1fr",
-                    gap: "16px",
-                  }}
-                >
-                  <TextInput
-                    label="Buying Price (KES)" // Updated label
-                    type="number"
-                    step="0.01"
-                    value={product.buyingPrice}
-                    onChange={(e) =>
-                      onProductChange({
-                        ...product,
-                        buyingPrice: parseFloat(e.target.value) || 0,
-                      })
-                    }
-                    placeholder="0.00"
-                    required
-                  />
-
-                  <TextInput
-                    label="Selling Price (KES)" // Updated label
-                    type="number"
-                    step="0.01"
-                    value={product.price}
-                    onChange={(e) =>
-                      onProductChange({
-                        ...product,
-                        price: parseFloat(e.target.value) || 0,
-                      })
-                    }
-                    placeholder="0.00"
-                    required
-                  />
-                </Box>
-                <Box
-                  sx={{
-                    display: "grid",
-                    gridTemplateColumns: "1fr 1fr",
-                    gap: "16px",
-                  }}
-                >
-                  <TextInput
-                    label="Low Stock Threshold"
-                    type="number"
-                    value={product.threshold}
-                    onChange={(e) => {
-                      const newThreshold = parseInt(e.target.value) || 0;
-                      onProductChange({
-                        ...product,
-                        threshold: newThreshold,
-                        status:
-                          product.stock >= newThreshold
-                            ? "In Stock"
-                            : product.stock > 0
-                            ? "Low Stock"
-                            : "Out of Stock",
-                      });
-                    }}
-                    placeholder="0"
-                    required
-                  />
-
-                  <SelectInput
-                    label="Category"
-                    options={categoryOptions}
-                    value={product.category}
-                    onChange={(e) =>
-                      onProductChange({ ...product, category: e.target.value })
-                    }
-                    required
-                    fullWidth
-                  />
-                </Box>
-              </Box>
-            </DialogContent>
-
-            <DialogActions
-              sx={{
-             paddingBottom: "35px",
-                gap: "12px",               
-                margin: "0 30px 8px",
-              }}
-            >
-              <AppFormButton
-                text="Cancel"
-                color="invert"
-                action={onClose}
-                validation={true}
-                disabled={isLoading}
-              />
-
-              <AppFormButton
-                text={
-                  isLoading ? (
-                    <Box
-                      sx={{ display: "flex", alignItems: "center", gap: "8px" }}
-                    >
-                      <CircularProgress size={16} color="inherit" />
-                      Saving...
-                    </Box>
-                  ) : (
-                    "Save Changes"
-                  )
+            <StyledDialog
+              open={show}
+              onClose={onClose}
+              closeAfterTransition
+              BackdropProps={{
+                style: {
+                  backgroundColor: "rgba(0, 0, 0, 0.5)",
                 }
-                color={primaryColor}
-                validation={true}
-                action={handleSave}
-                disabled={isLoading}
-              />
-            </DialogActions>
+              }}
+            >
+              {/* Dialog content with white background */}
+              <Box sx={{ backgroundColor: "white" }}>
+                <DialogTitle
+                  sx={{
+                    backgroundColor: "#f8f9fa",
+                    borderBottom: "1px solid #e0e0e0",
+                    padding: "20px 24px",
+                    fontSize: "1.25rem",
+                    fontWeight: "600",
+                    color: "#353F50",
+                  }}
+                >
+                  Edit Product
+                </DialogTitle>
+
+                <DialogContent sx={{ 
+                  padding: "24px", 
+                  paddingBottom: "0",
+                  backgroundColor: "white" 
+                }}>
+                  <Box
+                    sx={{ 
+                      display: "flex", 
+                      flexDirection: "column", 
+                      gap: "20px",
+                      backgroundColor: "white"
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        display: "grid",
+                        gridTemplateColumns: "1fr 1fr",
+                        gap: "16px",
+                      }}
+                    >
+                      <TextInput
+                        id="edit-product-name"
+                        label="Product Name"
+                        value={product.name}
+                        handleInput={(e) =>
+                          onProductChange({ ...product, name: e.target.value })
+                        }
+                        placeholder="Enter product name"
+                        required
+                      />
+
+                      <TextInput
+                        id="edit-product-sku"
+                        label="SKU"
+                        value={product.sku}
+                        handleInput={(e) =>
+                          onProductChange({ ...product, sku: e.target.value })
+                        }
+                        placeholder="Enter SKU"
+                        required
+                      />
+                    </Box>
+
+                    <Box
+                      sx={{
+                        display: "grid",
+                        gridTemplateColumns: "1fr 1fr",
+                        gap: "16px",
+                      }}
+                    >
+                      <TextInput
+                        id="edit-product-stock"
+                        label="Current Stock"
+                        type="number"
+                        value={product.stock}
+                        handleInput={(e) => {
+                          const newStock = parseInt(e.target.value) || 0;
+                          onProductChange({
+                            ...product,
+                            stock: newStock,
+                            status:
+                              newStock >= product.threshold
+                                ? "In Stock"
+                                : newStock > 0
+                                  ? "Low Stock"
+                                  : "Out of Stock",
+                          });
+                        }}
+                        placeholder="0"
+                        required
+                      />
+
+                      <TextInput
+                        id="edit-product-unit"
+                        label="Unit of Measure"
+                        value={product.unit}
+                        handleInput={(e) =>
+                          onProductChange({ ...product, unit: e.target.value })
+                        }
+                        placeholder="e.g., kg, pcs"
+                        required
+                      />
+                    </Box>
+
+                    <Box
+                      sx={{
+                        display: "grid",
+                        gridTemplateColumns: "1fr 1fr",
+                        gap: "16px",
+                      }}
+                    >
+                      <TextInput
+                        id="edit-product-buying-price"
+                        label="Buying Price (KES)"
+                        type="number"
+                        step="0.01"
+                        value={product.buyingPrice}
+                        handleInput={(e) =>
+                          onProductChange({
+                            ...product,
+                            buyingPrice: parseFloat(e.target.value) || 0,
+                          })
+                        }
+                        placeholder="0.00"
+                        required
+                      />
+
+                      <TextInput
+                        id="edit-product-selling-price"
+                        label="Selling Price (KES)"
+                        type="number"
+                        step="0.01"
+                        value={product.price}
+                        handleInput={(e) =>
+                          onProductChange({
+                            ...product,
+                            price: parseFloat(e.target.value) || 0,
+                          })
+                        }
+                        placeholder="0.00"
+                        required
+                      />
+                    </Box>
+                    <Box
+                      sx={{
+                        display: "grid",
+                        gridTemplateColumns: "1fr 1fr",
+                        gap: "16px",
+                      }}
+                    >
+                      <TextInput
+                        id="edit-product-threshold"
+                        label="Low Stock Threshold"
+                        type="number"
+                        value={product.threshold}
+                        handleInput={(e) => {
+                          const newThreshold = parseInt(e.target.value) || 0;
+                          onProductChange({
+                            ...product,
+                            threshold: newThreshold,
+                            status:
+                              product.stock >= newThreshold
+                                ? "In Stock"
+                                : product.stock > 0
+                                  ? "Low Stock"
+                                  : "Out of Stock",
+                          });
+                        }}
+                        placeholder="0"
+                        required
+                      />
+
+                      <SelectInput
+                        label="Category"
+                        options={categoryOptions}
+                        value={product.category}
+                        onChange={(e) =>
+                          onProductChange({ ...product, category: e.target.value })
+                        }
+                        required
+                        fullWidth
+                      />
+                    </Box>
+                  </Box>
+                </DialogContent>
+
+                <DialogActions
+                  sx={{
+                    paddingBottom: "35px",
+                    gap: "12px",
+                    margin: "0 30px 8px",
+                    backgroundColor: "white",
+                  }}
+                >
+                  <AppFormButton
+                    text="Cancel"
+                    color="invert"
+                    action={onClose}
+                    validation={true}
+                    disabled={isLoading}
+                  />
+
+                  <AppFormButton
+                    text={
+                      isLoading ? (
+                        <Box
+                          sx={{ display: "flex", alignItems: "center", gap: "8px" }}
+                        >
+                          <CircularProgress size={16} color="inherit" />
+                          Saving...
+                        </Box>
+                      ) : (
+                        "Save Changes"
+                      )
+                    }
+                    color={primaryColor}
+                    validation={true}
+                    action={handleSave}
+                    disabled={isLoading}
+                  />
+                </DialogActions>
+              </Box>
+            </StyledDialog>
           </Box>
         </Fade>
-      </StyledDialog>
+      </ModalOverlay>
 
       <Toaster
         open={toaster.open}

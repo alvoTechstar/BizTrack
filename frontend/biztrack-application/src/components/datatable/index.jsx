@@ -36,6 +36,8 @@ const StyledTableCell = styled(TableCell)(({ theme }) => ({
     fontSize: 12,
     lineHeight: "14px",
     padding: "10px 9px",
+    fontWeight: "bold",
+
   },
   [`&.${tableCellClasses.body}`]: {
     fontSize: 12,
@@ -78,17 +80,31 @@ export default function DataTable({
         : columnFilter
       : [];
 
+  // FIX: Add safe default functions for missing props
+  const safeActionSelected = actionSelected || ((...args) => {
+    console.warn('actionSelected function not provided', args);
+  });
+
+  const safeSelectedRow = selectedRow || ((...args) => {
+    console.warn('selectedRow function not provided', args);
+  });
+
+  const safeSelectedAction = selectedAction || ((...args) => {
+    console.warn('selectedAction function not provided', args);
+  });
+
+  const safeSelectAll = selectAll || ((...args) => {
+    console.warn('selectAll function not provided', args);
+  });
+
   const handleAction = (action, id) => {
-    if (selectedAction) {
-      selectedAction([id]);
-    }
-    actionSelected(1, action, id);
+    safeActionSelected(action, id);
   };
 
   const handleCheck = (event) => {
     const id = JSON.parse(event.target.id);
     const state = event.target.checked;
-    selectAll(false);
+    safeSelectAll(false);
 
     if (id === "all") {
       const temp = [];
@@ -98,16 +114,16 @@ export default function DataTable({
             temp.push(elem.id);
           }
         });
-        selectAll(true);
+        safeSelectAll(true);
       }
-      selectedAction(temp);
+      safeSelectedAction(temp);
     } else {
       const index = selected.indexOf(id);
       if (index !== -1) {
         selected.splice(index, 1);
-        selectedAction([...selected]);
+        safeSelectedAction([...selected]);
       } else {
-        selectedAction([...selected, id]);
+        safeSelectedAction([...selected, id]);
       }
     }
   };
@@ -197,8 +213,10 @@ export default function DataTable({
                         ? { cursor: "pointer" }
                         : null
                     }
-                    onClick={(e) =>
-                      column.status === "PAID" ||
+                    onClick={(e) => {
+                      // FIX: Only call if conditions are met and prevent default behavior
+                      if (
+                        column.status === "PAID" ||
                         column.status === "PENDING" ||
                         column.status === "APPROVED" ||
                         column.status === "NOT_APPROVED" ||
@@ -207,9 +225,12 @@ export default function DataTable({
                             column.amount ||
                             type === "logs" ||
                             type === "bank deposit"))
-                        ? selectedRow(e, column)
-                        : null
-                    }
+                      ) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        safeSelectedRow(e, column);
+                      }
+                    }}
                   >
                     {Array.isArray(headers) && headers.map((header, index) =>
                       index === 0 && header.key === "all" ? (
@@ -293,7 +314,7 @@ export default function DataTable({
                                     column.status === "Processing" ||
                                     column.orderStatus === "Processing"
                                     ? actions
-                                    : [actions[0]]
+                                    : [actions?.[0] || "View"] // FIX: Safe array access
                                 }
                                 id={column.id}
                                 action={handleAction}
@@ -338,7 +359,7 @@ export default function DataTable({
                           ) : header.key === "action" ? (
                             <TableActions
                               status={column.status}
-                              actions={actions}
+                              actions={actions || []} // FIX: Provide empty array as default
                               id={column.id}
                               action={handleAction}
                             />

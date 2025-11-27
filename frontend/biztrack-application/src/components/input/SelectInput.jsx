@@ -49,9 +49,7 @@ export default function SelectInput({
           disabled={disabled}
           value={displayValue}
           onChange={onChange}
-          onClose={(e) => {
-            onBlur?.(e);
-          }}
+          onBlur={onBlur}
           multiple={multiple}
           variant="outlined"
           className={`

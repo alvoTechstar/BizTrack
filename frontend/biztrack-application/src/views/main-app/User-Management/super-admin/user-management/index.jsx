@@ -1,13 +1,60 @@
-import React, { useState, useEffect } from 'react';
-import { Users, Plus, Search, Edit, Power, Trash2, X, Building2 } from 'lucide-react';
-
+// src/components/users/UsersPage.jsx
+import React, { useState, useEffect, useCallback } from 'react';
+import { Users, Plus } from 'lucide-react';
+import UsersTable from './UsersTable';
+import CreateUserForm from './CreateUserForm';
+import EnableUserView from './EnableUserView';
+import { useTheme } from '../../../../../components/theme/ThemeContext';
+import ContentLoader from '../../../../../components/Loader/ContentLoader';
+import UsersControls from './UserControls';
+import { useActionModal } from '../../../../../hooks/useActionModal';
+import ActionModal from '../../../../../components/modal/ActionModal';
+import { GET, POST, PUT, DELETE } from "../../../../../services/DatabaseServiceImp";
+import URLS from '../../../../../utilities/Endpoints';
+import { formatDate, getInitials } from '../../../../../utilities/SharedFunctions'; 
 const UsersPage = () => {
+  const theme = useTheme();
+
+  // Data states
   const [users, setUsers] = useState([]);
   const [businesses, setBusinesses] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showModal, setShowModal] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [selectedItems, setSelectedItems] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [editingUser, setEditingUser] = useState(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [errorMessage, setErrorMessage] = useState(null);
+  const [filters, setFilters] = useState({
+    startDate: null,
+    endDate: null,
+    status: null,
+    role: null,
+    business: null
+  });
+
+  // View state
+  const [currentView, setCurrentView] = useState('table');
+
+  // Action modal loading states
+  const [actionModalLoading, setActionModalLoading] = useState(false);
+  const [actionLoadingText, setActionLoadingText] = useState('');
+
+  // Form modal loading states
+  const [formModalLoading, setFormModalLoading] = useState(false);
+  const [formLoadingText, setFormLoadingText] = useState('');
+
+  // Content Loader states
+  const [loadingState, setLoadingState] = useState(true);
+  const [loadingText, setLoadingText] = useState("");
+  const [loadedText, setLoadedText] = useState("");
+
+  // Create operation loading state
+  const [createLoading, setCreateLoading] = useState(false);
+  const [createLoadingText, setCreateLoadingText] = useState("");
+
+  // Reusable action modal hook
+  const { modalState, openModal, closeModal, setReason, handleSubmit } = useActionModal();
 
   // Role-based access control mapping
   const rolesByType = {
@@ -15,544 +62,642 @@ const UsersPage = () => {
     'Kiosk': ['Kiosk Admin', 'Kiosk Shopkeeper'],
     'Hospital': ['Hospital Admin', 'Doctor', 'Nurse', 'Lab Technician', 'Receptionist', 'Pharmacist'],
     'Retail': ['Retail Admin', 'Cashier', 'Sales Associate'],
+    'System': ['System Admin', 'Support Staff'],
     'Other': ['Admin', 'Manager', 'Staff']
   };
 
-  const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
-    institutionId: '',
-    role: '',
-    username: '',
-    phoneNumber: ''
-  });
-
-  useEffect(() => {
-    setLoading(true);
-    setTimeout(() => {
-      // Mock businesses data (ACTIVE only)
-      setBusinesses([
-        { id: 1, name: 'Grand Hotel Plaza', type: 'Hotel', status: 'ACTIVE' },
-        { id: 3, name: 'City Medical Center', type: 'Hospital', status: 'ACTIVE' },
-        { id: 5, name: 'SuperMart Retail', type: 'Retail', status: 'ACTIVE' },
-        { id: 6, name: 'Downtown Kiosk', type: 'Kiosk', status: 'ACTIVE' }
-      ]);
-
-      // Mock users data
-      setUsers([
-        {
-          id: 1,
-          firstName: 'John',
-          lastName: 'Doe',
-          email: 'john.doe@grandhotel.com',
-          institutionId: 1,
-          institutionName: 'Grand Hotel Plaza',
-          role: 'Hotel Admin',
-          username: 'johndoe',
-          phoneNumber: '+1-234-567-8910',
-          status: 'ACTIVE',
-          lastLogin: '2024-09-28'
-        },
-        {
-          id: 2,
-          firstName: 'Jane',
-          lastName: 'Smith',
-          email: 'jane.smith@citymedical.com',
-          institutionId: 3,
-          institutionName: 'City Medical Center',
-          role: 'Doctor',
-          username: 'janesmith',
-          phoneNumber: '+1-234-567-8911',
-          status: 'ACTIVE',
-          lastLogin: '2024-09-30'
-        },
-        {
-          id: 3,
-          firstName: 'Michael',
-          lastName: 'Johnson',
-          email: 'michael.j@citymedical.com',
-          institutionId: 3,
-          institutionName: 'City Medical Center',
-          role: 'Nurse',
-          username: 'mjohnson',
-          phoneNumber: '+1-234-567-8912',
-          status: 'ACTIVE',
-          lastLogin: '2024-09-29'
-        },
-        {
-          id: 4,
-          firstName: 'Sarah',
-          lastName: 'Williams',
-          email: 'sarah.w@grandhotel.com',
-          institutionId: 1,
-          institutionName: 'Grand Hotel Plaza',
-          role: 'Hotel Waiter',
-          username: 'swilliams',
-          phoneNumber: '+1-234-567-8913',
-          status: 'INACTIVE',
-          lastLogin: '2024-09-15'
-        },
-        {
-          id: 5,
-          firstName: 'Robert',
-          lastName: 'Brown',
-          email: 'robert.b@supermart.com',
-          institutionId: 5,
-          institutionName: 'SuperMart Retail',
-          role: 'Retail Admin',
-          username: 'rbrown',
-          phoneNumber: '+1-234-567-8914',
-          status: 'ACTIVE',
-          lastLogin: '2024-09-30'
-        }
-      ]);
+  // Safe date handling function
+  const safeDateToString = (dateValue) => {
+    if (!dateValue) return 'Never';
+    
+    // Handle various invalid date representations
+    if (dateValue === 'Invalid Date' || dateValue === 'null' || dateValue === 'undefined') {
+      return 'Never';
+    }
+    
+    try {
+      const date = new Date(dateValue);
       
-      setLoading(false);
-    }, 1500);
+      // Check if the date is valid
+      if (isNaN(date.getTime())) {
+        return 'Never';
+      }
+      
+      // Check if date is within reasonable range
+      const year = date.getFullYear();
+      if (year < 1970 || year > 2100) {
+        return 'Never';
+      }
+      
+      return date.toISOString().split('T')[0];
+    } catch (error) {
+      console.warn('Invalid date value:', dateValue, error);
+      return 'Never';
+    }
+  };
+
+  // Helper function to safely extract data from API response
+  const extractDataFromResponse = (response) => {
+    if (!response) return [];
+    
+    if (response.data !== undefined) {
+      return Array.isArray(response.data) ? response.data : [response.data];
+    }
+    
+    if (Array.isArray(response)) {
+      return response;
+    }
+    
+    if (response._doc) {
+      return [response._doc];
+    }
+    
+    if (typeof response === 'object' && response !== null) {
+      return [response];
+    }
+    
+    return [];
+  };
+
+  // Helper function to extract business data from MongoDB/Mongoose structure
+  const extractBusinessData = (business) => {
+    if (!business) return null;
+
+    if (business._doc) {
+      return {
+        id: business._doc.id || business._doc._id?.toString(),
+        _id: business._doc._id?.toString(),
+        businessId: business._doc.businessId,
+        businessName: business._doc.businessName,
+        businessType: business._doc.businessType,
+        status: business._doc.status,
+        owner: business._doc.owner,
+        email: business._doc.email,
+        phone: business._doc.phone,
+        address: business._doc.address,
+        registrationNumber: business._doc.registrationNumber,
+        logoUrl: business._doc.logoUrl,
+        primaryColor: business._doc.primaryColor,
+        website: business._doc.website,
+        description: business._doc.description,
+      };
+    }
+    
+    return {
+      id: business.id || business._id?.toString(),
+      _id: business._id?.toString(),
+      businessId: business.businessId,
+      businessName: business.businessName,
+      businessType: business.businessType,
+      status: business.status,
+      owner: business.owner,
+      email: business.email,
+      phone: business.phone,
+      address: business.address,
+      registrationNumber: business.registrationNumber,
+      logoUrl: business.logoUrl,
+      primaryColor: business.primaryColor,
+      website: business.website,
+      description: business.description,
+    };
+  };
+
+  // Fetch users and businesses
+  const fetchUsersAndBusinesses = useCallback(async () => {
+    setLoading(true);
+    setLoadingState(true);
+    setLoadingText("Fetching users and businesses...");
+    setErrorMessage(null);
+
+    try {
+      // Fetch businesses
+      const businessesResponse = await GET(URLS.BUSINESS.GET_ALL_BUSINESSES);
+      console.log('🔍 Raw Businesses API Response:', businessesResponse);
+      
+      let businessesData = extractDataFromResponse(businessesResponse);
+      console.log('📦 Extracted businesses data:', businessesData);
+
+      // Transform businesses
+      const transformedBusinesses = businessesData
+        .map(business => extractBusinessData(business))
+        .filter(business => business !== null && business.businessName);
+
+      console.log('✅ Transformed businesses:', transformedBusinesses);
+
+      // Store RAW MongoDB business objects for the form
+      setBusinesses(businessesData);
+
+      // Fetch users
+      let usersData = [];
+      
+      try {
+        const usersResponse = await GET(URLS.USERS.GET_ALL_USERS);
+        console.log('📥 Users API Response:', usersResponse);
+        usersData = extractDataFromResponse(usersResponse);
+        console.log('✅ Successfully fetched users:', usersData.length);
+      } catch (usersError) {
+        console.error('❌ Failed to fetch users:', usersError);
+        setErrorMessage('Unable to load users. Please check if the server is running.');
+        usersData = [];
+      }
+
+      // Format users for display with safe date handling
+      const formattedUsers = usersData.map(user => {
+        const userBusiness = transformedBusinesses.find(business => {
+          const businessId = business.id || business._id;
+          const userIdBusiness = user.businessId || user.associatedBusinessId || user.institutionId;
+          return businessId === userIdBusiness || 
+                 businessId?.toString() === userIdBusiness?.toString();
+        });
+
+        return {
+          id: user.id || user._id,
+          firstName: user.firstName || user.firstname || '',
+          lastName: user.lastName || user.lastname || '',
+          email: user.email || '',
+          institutionId: user.businessId || user.associatedBusinessId || user.institutionId || '',
+          institutionName: userBusiness?.businessName || user.businessName || user.institutionName || 'No Business',
+          role: user.role || user.userRole || '',
+          username: user.username || '',
+          phoneNumber: user.phone || user.phoneNumber || '',
+          status: (user.status || 'active').toUpperCase(),
+          lastLogin: safeDateToString(user.lastLogin), // Safe date handling
+          businessType: userBusiness?.businessType || '',
+          password: '',
+          confirmPassword: ''
+        };
+      });
+
+      console.log('✅ Formatted users:', formattedUsers.length);
+      setUsers(formattedUsers);
+
+      setLoadingState(true);
+      setLoadedText("Data loaded successfully");
+      setTimeout(() => {
+        setLoading(false);
+      }, 1000);
+
+    } catch (error) {
+      console.error('❌ Error fetching data:', error);
+      setErrorMessage('Failed to load data. Please check if the server is running.');
+      setUsers([]);
+      setBusinesses([]);
+      setLoadingState(false);
+      setLoadedText("Failed to load data");
+      setTimeout(() => {
+        setLoading(false);
+      }, 1000);
+    }
   }, []);
 
+  useEffect(() => {
+    fetchUsersAndBusinesses();
+  }, [fetchUsersAndBusinesses]);
+
+  // Modal Handlers
+  const openActionModalWithLoader = async (actionType, user) => {
+    setActionModalLoading(true);
+
+    switch (actionType) {
+      case 'disable':
+        setActionLoadingText('Preparing to disable user...');
+        break;
+      case 'enable':
+        setActionLoadingText('Preparing to enable user...');
+        break;
+      case 'delete':
+        setActionLoadingText('Preparing to delete user...');
+        break;
+      default:
+        setActionLoadingText('Loading...');
+    }
+
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    const userName = `${user.firstName} ${user.lastName}`;
+
+    switch (actionType) {
+      case 'disable':
+        openModal(
+          'disable',
+          user.id,
+          userName,
+          'user',
+          (id, reason) => handleToggleStatus(id, 'inactive', reason),
+          `You are about to disable "${userName}". By disabling, this user will no longer have access to the BizTrack application.`
+        );
+        break;
+      case 'enable':
+        openModal(
+          'enable',
+          user.id,
+          userName,
+          'user',
+          (id, reason) => handleToggleStatus(id, 'active', reason),
+          `You are about to enable "${userName}". This will restore their access to the BizTrack application.`
+        );
+        break;
+      case 'delete':
+        openModal(
+          'delete',
+          user.id,
+          userName,
+          'user',
+          (id, reason) => handleDeleteUser(id, reason),
+          `You are about to delete "${userName}". This will permanently remove the user account and all associated data.`
+        );
+        break;
+      default:
+        console.warn('Unknown action type:', actionType);
+    }
+
+    setActionModalLoading(false);
+  };
+
+  const openFormModalWithLoader = async (modalType, user = null) => {
+    setFormModalLoading(true);
+
+    switch (modalType) {
+      case 'create':
+        setFormLoadingText('Loading create form...');
+        break;
+      case 'edit':
+        setFormLoadingText('Loading edit form...');
+        break;
+      case 'enable':
+        setFormLoadingText('Loading user details...');
+        break;
+      default:
+        setFormLoadingText('Loading...');
+    }
+
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    setEditingUser(user);
+    setIsEditing(modalType === 'edit');
+    setCurrentView(modalType);
+    setFormModalLoading(false);
+  };
+
+  const closeAllModals = () => {
+    setCurrentView('table');
+    setEditingUser(null);
+    setErrorMessage(null);
+    closeModal();
+  };
+
+  const openCreateModal = () => openFormModalWithLoader('create');
+  const openEditModal = (user) => openFormModalWithLoader('edit', user);
+  const openEnableViewModal = (user) => openFormModalWithLoader('enable', user);
+  const openEnableModal = (user) => openActionModalWithLoader('enable', user);
+  const openDisableModal = (user) => openActionModalWithLoader('disable', user);
+  const openDeleteModal = (user) => openActionModalWithLoader('delete', user);
+
+  // Form Submission with Content Loader
+  const handleFormSubmit = async (values) => {
+    setSubmitting(true);
+    setCreateLoading(true);
+    setCreateLoadingText(isEditing ? "Updating user..." : "Creating user...");
+    setErrorMessage(null);
+
+    try {
+      console.log('📤 Submitting user data:', values);
+
+      // Prepare user data for backend
+      const userData = {
+        firstName: values.firstName.trim(),
+        lastName: values.lastName.trim(),
+        email: values.email.trim(),
+        username: values.username.trim(),
+        phoneNumber: values.phoneNumber.trim(),
+        role: values.role,
+        businessId: values.institutionId
+      };
+
+      // Include password for new users
+      if (!isEditing && values.password) {
+        userData.password = values.password;
+      }
+
+      console.log('📦 Prepared userData for API:', userData);
+
+      let response;
+      if (isEditing && editingUser) {
+        console.log(`🔄 Updating user with ID: ${editingUser.id}`);
+        response = await PUT(URLS.USERS.UPDATE_USER.replace(':id', editingUser.id), userData);
+        console.log('✅ Update response:', response);
+      } else {
+        console.log('➕ Creating new user');
+        response = await POST(URLS.USERS.CREATE_USER, userData);
+        console.log('✅ Create response:', response);
+      }
+
+      // Show success state briefly before refreshing
+      setCreateLoadingText(isEditing ? "User updated successfully!" : "User created successfully!");
+      await new Promise(resolve => setTimeout(resolve, 1500));
+
+      // Refresh data
+      await fetchUsersAndBusinesses();
+      closeAllModals();
+
+    } catch (error) {
+      console.error('❌ Error submitting user form:', error);
+      let serverError = 'A server error occurred. Please try again.';
+
+      if (error.response?.data?.message) {
+        serverError = error.response.data.message;
+      } else if (error.message) {
+        serverError = error.message;
+      }
+
+      setErrorMessage(`Failed: ${serverError}`);
+      setCreateLoading(false);
+    } finally {
+      setSubmitting(false);
+      setCreateLoading(false);
+    }
+  };
+
+  // Action Handlers
+  const handleDeleteUser = async (userId, reason) => {
+    setSubmitting(true);
+    try {
+      const response = await DELETE(URLS.USERS.DELETE_USER.replace(':id', userId), { reason });
+      console.log('Delete user response:', response);
+      await fetchUsersAndBusinesses();
+      closeModal();
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      setErrorMessage('Failed to delete user. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleToggleStatus = async (userId, newStatus, reason) => {
+    setSubmitting(true);
+    try {
+      const response = await PUT(URLS.USERS.TOGGLE_USER_STATUS.replace(':id', userId), { 
+        status: newStatus,
+        reason: reason 
+      });
+      console.log('Toggle status response:', response);
+      await fetchUsersAndBusinesses();
+      closeModal();
+    } catch (error) {
+      console.error('Error toggling user status:', error);
+      setErrorMessage('Failed to update user status. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleEnableUser = async (userId) => {
+    setSubmitting(true);
+    try {
+      await handleToggleStatus(userId, 'active', 'Enabled via EnableUserView');
+      closeAllModals();
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleRejectUser = () => {
+    closeAllModals();
+  };
+
+  // Selection Handlers
+  const toggleSelectAll = (filteredList) => {
+    if (selectedItems.length === filteredList.length && filteredList.length > 0) {
+      setSelectedItems([]);
+    } else {
+      setSelectedItems(filteredList.map(u => u.id));
+    }
+  };
+
+  const toggleSelectItem = (id) => {
+    setSelectedItems(prev =>
+      prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
+    );
+  };
+
+  // Filtering
+  const filteredUsers = users.filter(u => {
+    const matchesSearch =
+      u.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      u.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      u.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      u.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      u.institutionName.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const matchesStatus = !filters.status || u.status === filters.status;
+    const matchesRole = !filters.role || u.role === filters.role;
+    const matchesBusiness = !filters.business || u.institutionName === filters.business;
+
+    return matchesSearch && matchesStatus && matchesRole && matchesBusiness;
+  });
+
   const getStatusColor = (status) => {
-    switch(status) {
+    switch (status) {
       case 'ACTIVE': return 'text-green-600';
       case 'INACTIVE': return 'text-red-600';
       default: return 'text-gray-600';
     }
   };
 
-  const openModal = () => {
-    setFormData({
-      firstName: '',
-      lastName: '',
-      email: '',
-      institutionId: '',
-      role: '',
-      username: '',
-      phoneNumber: ''
-    });
-    setShowModal(true);
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    
-    const selectedBusiness = businesses.find(b => b.id === parseInt(formData.institutionId));
-    
-    const newUser = {
-      id: users.length + 1,
-      firstName: formData.firstName,
-      lastName: formData.lastName,
-      email: formData.email,
-      institutionId: parseInt(formData.institutionId),
-      institutionName: selectedBusiness?.name || '',
-      role: formData.role,
-      username: formData.username,
-      phoneNumber: formData.phoneNumber,
-      status: 'ACTIVE',
-      lastLogin: 'Never'
-    };
-    
-    setUsers([...users, newUser]);
-    setShowModal(false);
-  };
-
-  const handleDelete = (id) => {
-    if (window.confirm('Are you sure you want to delete this user? This will archive the user account.')) {
-      setUsers(users.filter(u => u.id !== id));
-    }
-  };
-
-  const handleToggleStatus = (id) => {
-    setUsers(users.map(u => 
-      u.id === id ? { ...u, status: u.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE' } : u
-    ));
-  };
-
-  const handleEdit = (user) => {
-    setFormData({
-      firstName: user.firstName,
-      lastName: user.lastName,
-      email: user.email,
-      institutionId: user.institutionId.toString(),
-      role: user.role,
-      username: user.username,
-      phoneNumber: user.phoneNumber
-    });
-    setShowModal(true);
-  };
-
-  const toggleSelectAll = () => {
-    if (selectedItems.length === filteredUsers.length) {
-      setSelectedItems([]);
-    } else {
-      setSelectedItems(filteredUsers.map(u => u.id));
-    }
-  };
-
-  const toggleSelectItem = (id) => {
-    if (selectedItems.includes(id)) {
-      setSelectedItems(selectedItems.filter(item => item !== id));
-    } else {
-      setSelectedItems([...selectedItems, id]);
-    }
-  };
-
-  const filteredUsers = users.filter(u => {
-    const matchesSearch = 
-      u.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      u.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      u.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      u.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      u.institutionName.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesSearch;
-  });
-
-  // Get available roles based on selected business
-  const availableRoles = formData.institutionId 
-    ? rolesByType[businesses.find(b => b.id === parseInt(formData.institutionId))?.type] || []
-    : [];
-
-  const ContentLoader = () => (
-    <div className="flex items-center justify-center h-64">
-      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-    </div>
-  );
-
-  return (
-    <div className="min-h-screen bg-gray-50 p-8">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold text-gray-800">Users</h1>
-          {filteredUsers.length > 0 && (
-            <button
-              onClick={openModal}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium"
-            >
-              <Plus size={20} />
-              Add User
-            </button>
-          )}
-        </div>
-
-        {loading ? (
-          <ContentLoader />
-        ) : users.length === 0 ? (
-          // Empty State
-          <div className="flex flex-col items-center justify-center h-96 bg-white rounded-lg border-2 border-dashed border-gray-300">
-            <Users size={64} className="text-gray-400 mb-4" />
-            <h3 className="text-xl font-semibold text-gray-700 mb-2">Oops! No Users</h3>
-            <p className="text-gray-500 mb-6">Get started by adding your first user</p>
-            <button
-              onClick={openModal}
-              className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium"
-            >
-              <Plus size={20} />
-              Add User
-            </button>
+  // Show content loader during create/update operations
+  if (createLoading) {
+    return (
+      <div className="min-h-screen bg-white p-8">
+        <div className="max-w-7xl mx-auto">
+          <div className='main-app-view'>
+            <div className="main-app-content-container">
+              <ContentLoader
+                state={true}
+                loading={true}
+                loadingText={createLoadingText}
+                loadedText=""
+                color={theme.primaryColor}
+              />
+            </div>
           </div>
-        ) : (
+        </div>
+      </div>
+    );
+  }
+
+  // Show content loader during initial loading
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-white p-8">
+        <div className="max-w-7xl mx-auto">
+          <div className='main-app-view'>
+            <div className="main-app-content-container">
+              <ContentLoader
+                state={loadingState}
+                loading={true}
+                loadingText={loadingText}
+                loadedText={loadedText}
+                color={theme.primaryColor}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show content loader during form modal loading
+  if (formModalLoading) {
+    return (
+      <div className="min-h-screen bg-white p-8">
+        <div className="max-w-7xl mx-auto">
+          <div className='main-app-view'>
+            <div className="main-app-content-container">
+              <ContentLoader
+                state={true}
+                loading={true}
+                loadingText={formLoadingText}
+                loadedText=""
+                color={theme.primaryColor}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show content loader during action modal loading
+  if (actionModalLoading) {
+    return (
+      <div className="min-h-screen bg-white p-8">
+        <div className="max-w-7xl mx-auto">
+          <div className='main-app-view'>
+            <div className="main-app-content-container">
+              <ContentLoader
+                state={true}
+                loading={true}
+                loadingText={actionLoadingText}
+                loadedText=""
+                color={theme.primaryColor}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const renderCurrentView = () => {
+    switch (currentView) {
+      case 'create':
+      case 'edit':
+        return (
+          <CreateUserForm
+            showModal={true}
+            setShowModal={closeAllModals}
+            initialFormData={editingUser || {}}
+            handleSubmit={handleFormSubmit}
+            businesses={businesses}
+            rolesByType={rolesByType}
+            isEditing={isEditing}
+            submitting={submitting}
+          />
+        );
+
+      case 'enable':
+        return (
+          <EnableUserView
+            user={editingUser}
+            onClose={closeAllModals}
+            onEnable={() => handleEnableUser(editingUser?.id)}
+            onReject={handleRejectUser}
+            submitting={submitting}
+          />
+        );
+
+      case 'table':
+      default:
+        return (
           <>
-            {/* Search */}
-            <div className="bg-white rounded-lg border border-gray-200 p-4 mb-4">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-                <input
-                  type="text"
-                  placeholder="Search by name, email, username, or business..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                />
-              </div>
-            </div>
-
-            {/* Bulk Actions */}
-            {selectedItems.length > 0 && (
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4 flex items-center justify-between">
-                <span className="text-blue-700 font-medium">
-                  {selectedItems.length} user{selectedItems.length > 1 ? 's' : ''} selected
-                </span>
-                <div className="flex gap-2">
-                  <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm font-medium">
-                    Bulk Activate
-                  </button>
-                  <button className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition text-sm font-medium">
-                    Bulk Deactivate
-                  </button>
-                  <button className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition text-sm font-medium">
-                    Bulk Delete
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Table */}
-            <div className="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm">
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-gray-50 border-b border-gray-200">
-                    <tr>
-                      <th className="px-6 py-3 text-left">
-                        <input 
-                          type="checkbox" 
-                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                          checked={selectedItems.length === filteredUsers.length && filteredUsers.length > 0}
-                          onChange={toggleSelectAll}
-                        />
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">ID</th>
-                      <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Name</th>
-                      <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Business</th>
-                      <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Role</th>
-                      <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Email</th>
-                      <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
-                      <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200">
-                    {filteredUsers.map((user) => (
-                      <tr key={user.id} className="hover:bg-gray-50 transition">
-                        <td className="px-6 py-4">
-                          <input 
-                            type="checkbox" 
-                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                            checked={selectedItems.includes(user.id)}
-                            onChange={() => toggleSelectItem(user.id)}
-                          />
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-700 font-medium">{user.id}</td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white font-semibold">
-                              {user.firstName.charAt(0)}{user.lastName.charAt(0)}
-                            </div>
-                            <div>
-                              <div className="font-medium text-gray-900">{user.firstName} {user.lastName}</div>
-                              <div className="text-sm text-gray-500">@{user.username}</div>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-2">
-                            <Building2 size={16} className="text-gray-400" />
-                            <span className="text-sm text-gray-700">{user.institutionName}</span>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-700">
-                            {user.role}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-700">{user.email}</td>
-                        <td className="px-6 py-4">
-                          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${getStatusColor(user.status)}`}>
-                            <span className="w-1.5 h-1.5 rounded-full bg-current"></span>
-                            {user.status}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-2">
-                            <button 
-                              onClick={() => handleEdit(user)}
-                              className="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition" 
-                              title="Edit"
-                            >
-                              <Edit size={18} />
-                            </button>
-                            <button 
-                              onClick={() => handleToggleStatus(user.id)}
-                              className="p-1.5 text-orange-600 hover:bg-orange-50 rounded transition" 
-                              title={user.status === 'ACTIVE' ? 'Disable' : 'Enable'}
-                            >
-                              <Power size={18} />
-                            </button>
-                            <button 
-                              onClick={() => handleDelete(user.id)}
-                              className="p-1.5 text-red-600 hover:bg-red-50 rounded transition" 
-                              title="Delete"
-                            >
-                              <Trash2 size={18} />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            {/* No Results */}
-            {filteredUsers.length === 0 && searchTerm && (
-              <div className="text-center py-12 bg-white rounded-lg border border-gray-200 mt-4">
-                <Users size={48} className="text-gray-400 mx-auto mb-3" />
-                <h3 className="text-lg font-semibold text-gray-700 mb-1">No users found</h3>
-                <p className="text-gray-500">Try adjusting your search</p>
-              </div>
-            )}
-          </>
-        )}
-
-        {/* Add/Edit User Modal */}
-        {showModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-              <div className="flex items-center justify-between p-6 border-b border-gray-200">
-                <h3 className="text-xl font-semibold text-gray-900">Add New User</h3>
-                <button 
-                  onClick={() => setShowModal(false)} 
-                  className="text-gray-400 hover:text-gray-600 transition"
+            {users.length === 0 && filteredUsers.length === 0 && !searchTerm ? (
+              <div className="flex flex-col items-center justify-center h-96 bg-white rounded-lg border-2 border-dashed border-gray-300">
+                <Users size={64} className="text-gray-400 mb-4" />
+                <h3 className="text-xl font-semibold text-gray-700 mb-2">Oops! No Users</h3>
+                <p className="text-gray-500 mb-6">Get started by adding your first user</p>
+                <button
+                  onClick={openCreateModal}
+                  className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium"
                 >
-                  <X size={24} />
+                  <Plus size={20} />
+                  Add User
                 </button>
               </div>
-              
-              <div className="p-6 space-y-4">
+            ) : (
+              <>
                 <div className="space-y-4">
-                  <h4 className="font-semibold text-gray-700 text-sm uppercase tracking-wide">User Information</h4>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        First Name <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={formData.firstName}
-                        onChange={(e) => setFormData({...formData, firstName: e.target.value})}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                        placeholder="John"
-                      />
+                  <span className="text-2xl font-bold text-gray-900">Users</span>
+                  {errorMessage && (
+                    <div className="bg-red-50 border border-red-200 rounded-md p-4">
+                      <p className="text-red-800">{errorMessage}</p>
                     </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Last Name <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={formData.lastName}
-                        onChange={(e) => setFormData({...formData, lastName: e.target.value})}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                        placeholder="Doe"
-                      />
-                    </div>
-                  </div>
+                  )}
+                  <UsersControls
+                    searchTerm={searchTerm}
+                    setSearchTerm={setSearchTerm}
+                    filters={filters}
+                    setFilters={setFilters}
+                    selectedItems={selectedItems}
+                    setSelectedItems={setSelectedItems}
+                    openModal={openCreateModal}
+                  />
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Email Address <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="email"
-                      required
-                      value={formData.email}
-                      onChange={(e) => setFormData({...formData, email: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                      placeholder="user@example.com"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Institution/Business <span className="text-red-500">*</span>
-                    </label>
-                    <select
-                      required
-                      value={formData.institutionId}
-                      onChange={(e) => {
-                        setFormData({...formData, institutionId: e.target.value, role: ''});
-                      }}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                    >
-                      <option value="">Select business</option>
-                      {businesses.filter(b => b.status === 'ACTIVE').map(business => (
-                        <option key={business.id} value={business.id}>
-                          {business.name} ({business.type})
-                        </option>
-                      ))}
-                    </select>
-                    <p className="text-xs text-gray-500 mt-1">Only ACTIVE businesses are shown</p>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Role <span className="text-red-500">*</span>
-                    </label>
-                    <select
-                      required
-                      value={formData.role}
-                      onChange={(e) => setFormData({...formData, role: e.target.value})}
-                      disabled={!formData.institutionId}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none disabled:bg-gray-100 disabled:cursor-not-allowed"
-                    >
-                      <option value="">Select role</option>
-                      {availableRoles.map(role => (
-                        <option key={role} value={role}>{role}</option>
-                      ))}
-                    </select>
-                    <p className="text-xs text-gray-500 mt-1">
-                      {formData.institutionId 
-                        ? 'Roles are filtered based on selected business type' 
-                        : 'Please select a business first'}
-                    </p>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Username <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={formData.username}
-                        onChange={(e) => setFormData({...formData, username: e.target.value})}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                        placeholder="johndoe"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Phone Number <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        type="tel"
-                        required
-                        value={formData.phoneNumber}
-                        onChange={(e) => setFormData({...formData, phoneNumber: e.target.value})}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                        placeholder="+1-234-567-8900"
-                      />
-                    </div>
-                  </div>
+                  <UsersTable
+                    filteredUsers={filteredUsers}
+                    selectedItems={selectedItems}
+                    setSelectedItems={setSelectedItems}
+                    toggleSelectAll={() => toggleSelectAll(filteredUsers)}
+                    toggleSelectItem={toggleSelectItem}
+                    openModalForEdit={openEditModal}
+                    openEnableView={openEnableViewModal}
+                    openEnableModal={openEnableModal}
+                    openDisableModal={openDisableModal}
+                    openDeleteModal={openDeleteModal}
+                    searchTerm={searchTerm}
+                    setSearchTerm={setSearchTerm}
+                    filters={filters}
+                    setFilters={setFilters}
+                    submitting={submitting}
+                    formatDate={formatDate}
+                    getInitials={getInitials}
+                  />
                 </div>
+              </>
+            )}
+          </>
+        );
+    }
+  };
 
-                {/* Action Buttons */}
-                <div className="flex gap-3 pt-4 border-t border-gray-200">
-                  <button
-                    type="button"
-                    onClick={() => setShowModal(false)}
-                    className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition font-medium"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleSubmit}
-                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium"
-                  >
-                    Add User
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
+  return (
+    <div className="min-h-screen bg-white p-8">
+      <div className="max-w-7xl mx-auto">
+        {modalState.isOpen && (
+          <ActionModal
+            isOpen={modalState.isOpen}
+            onClose={closeModal}
+            entityName={modalState.entityName}
+            actionType={modalState.actionType}
+            reason={modalState.reason}
+            setReason={setReason}
+            onSubmit={handleSubmit}
+            submitting={submitting}
+            customDescription={modalState.customDescription}
+          />
         )}
+
+        {!modalState.isOpen && renderCurrentView()}
       </div>
     </div>
   );

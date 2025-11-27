@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import TextInput from "../../components/Input/TextInput";
-import PasswordInput from "../../components/Input/PasswordInput";
+import PasswordInput from "../../components/input/PasswordInput";
 import FormButton from "../../components/buttons/FormButton";
 import NaviButton from "../../components/buttons/Navibutton";
 import loginBg from "../../assets/Backgrounds/background.png";
-import { validateEmail, validatePassword } from "../../utilities/SharedFunctions";
+import { validateEmail, validatePassword } from "../../utilities/Sharedfunctions";
 import Cookies from "js-cookie";
 import { useDispatch } from "react-redux";
 import { authActions } from "../../store";
@@ -14,8 +14,7 @@ import { useTheme } from "../../components/theme/ThemeContext";
 import Toaster from "../../components/Toaster";
 import axios from "axios";
 import OTPInput from "./ForgotPassword/OTPInput";
-
-const API_URL = "http://localhost:3000/api";
+import URLS from "../../utilities/Endpoints";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -25,7 +24,7 @@ const Login = () => {
   const [loadingResend, setLoadingResend] = useState(false);
   const [isValid, setIsValid] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
-  const [view, setView] = useState(0); // 0: login, 1: OTP
+  const [view, setView] = useState(0);
 
   const [toastOpen, setToastOpen] = useState(false);
   const [toastState, setToastState] = useState("true");
@@ -55,14 +54,9 @@ const Login = () => {
 
   const handleInput = (e) => {
     const { id, value } = e.target;
-    
-    if (id === "email") {
-      setEmail(value);
-    } else if (id === "password") {
-      setPassword(value);
-    } else if (id === "code") {
-      setOTP(value);
-    }
+    if (id === "email") setEmail(value);
+    else if (id === "password") setPassword(value);
+    else if (id === "code") setOTP(value);
   };
 
   const handleLogin = async (e) => {
@@ -70,17 +64,27 @@ const Login = () => {
     setLoading(true);
     setErrorMessage("");
 
+    console.log("🔐 Login attempt:", { email, password: "***" });
+
     try {
-      const response = await axios.post(`${API_URL}/auth/login`, {
+      const response = await axios.post(`${URLS.TAG_BASE_URL}${URLS.AUTH.LOGIN}`, {
         email: email,
-        password: password
+        password: password // Send plain text - backend should handle hashing comparison
       });
+
+      console.log("📨 Login response:", response.data);
 
       if (response.data.success) {
         showToaster("true", "Login Successful", "OTP sent to your email");
         setView(1);
       }
     } catch (error) {
+      console.error("❌ Login error:", {
+        status: error.response?.status,
+        data: error.response?.data,
+        message: error.message
+      });
+
       const errorMsg = error.response?.data?.message || "Login failed";
       setErrorMessage(errorMsg);
       showToaster("false", "Login Failed", errorMsg);
@@ -89,48 +93,66 @@ const Login = () => {
     }
   };
 
+  const getDashboardRoute = (role) => {
+    const roleMap = {
+      "Kiosk_Admin": "/dashboard/kiosk",
+      "Hotel_Admin": "/dashboard/hotel-admin",
+      "Hospital_Admin": "/dashboard/hospital-admin",
+      "Super_Admin": "/dashboard/super-admin",
+      "Kiosk_Shopkeeper": "/shopkeeper/sales",
+      "Hotel_Cashier": "/dashboard/cashier",
+      "Hotel_Waiter": "/dashboard/waiter",
+      "Hospital_Receptionist": "/patient/queue",
+      "Hospital_Doctor": "/dashboard/doctor",
+      "Hospital_Nurse": "/dashboard/nurse",
+      "Hospital_Pharmacist": "/pharmacy/stock"
+    };
+    return roleMap[role] || "/unauthorized";
+  };
+
   const handleValidateOTP = async () => {
     if (otp.length !== 6) {
       showToaster("false", "Invalid OTP", "Please enter a 6-digit OTP");
       return;
     }
-  
+
     setLoading(true);
-  
+
     try {
-      const response = await axios.post(`${API_URL}/auth/verify-otp`, {
+      const response = await axios.post(`${URLS.TAG_BASE_URL}${URLS.AUTH.VERIFY_OTP}`, {
         email: email,
         otp: otp
       });
-  
+
       if (response.data.success) {
         showToaster("true", "Success", "Login successful!");
-        
+
         let userData = response.data.user;
         const token = response.data.token;
-        
+
         if (userData && (userData.$__ || userData._doc)) {
           userData = userData._doc || userData;
         }
-        
+
         if (!userData || !userData.role) {
           showToaster("false", "Login Error", "Invalid user data received");
           return;
         }
-        
+
+        console.log("✅ User logged in:", userData);
+
         localStorage.setItem("token", token);
         localStorage.setItem("user", JSON.stringify(userData));
         Cookies.set("user", JSON.stringify(userData), { expires: 1 });
         Cookies.set("token", token, { expires: 1 });
-        
+
         dispatch(authActions.setAuth(userData));
-        
+
+        const dashboardRoute = getDashboardRoute(userData.role);
+        console.log("🎯 Navigating to:", dashboardRoute);
+
         setTimeout(() => {
-          if (response.data.redirectTo) {
-            navigate(response.data.redirectTo);
-          } else {
-            navigate("/dashboard");
-          }
+          navigate(dashboardRoute);
         }, 1500);
       }
     } catch (error) {
@@ -144,7 +166,7 @@ const Login = () => {
   const handleResendOTP = async () => {
     setLoadingResend(true);
     try {
-      await axios.post(`${API_URL}/auth/resend-otp`, { email });
+      await axios.post(`${URLS.TAG_BASE_URL}${URLS.AUTH.RESEND_OTP}`, { email });
       showToaster("true", "Success", "A new OTP has been sent to your email.");
     } catch (error) {
       const errorMsg = error.response?.data?.message || "Failed to resend OTP";
@@ -261,8 +283,7 @@ const Login = () => {
       >
         <div className="bg-white p-6 rounded-xl shadow-md max-w-md mx-auto mb-10">
           <span className="text-[#111827] font-bold text-xl p-3">
-            Empower Your Business: Track Profits, Minimize Losses, Maximize
-            Growth
+            Empower Your Business: Track Profits, Minimize Losses, Maximize Growth
           </span>
         </div>
       </div>

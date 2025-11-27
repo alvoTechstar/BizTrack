@@ -1,336 +1,286 @@
-import React, { useState, useEffect } from "react";
-import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Box,
-  Typography,
-  IconButton,
-} from "@mui/material";
-import CloseIcon from "@mui/icons-material/Close";
-import TextInput from "../../../../components/input/TextInput";
-import PasswordInput from "../../../../components/input/PasswordInput";
-import AppFormButton from "../../../../components/buttons/AppFormButton";
-import SelectInput from "../../../../components/input/SelectInput";
-import { useTheme } from "../../../../components/theme/ThemeContext";
-import {
-  validateEmail,
-  validatePhoneNumber,
-  validatePassword,
-} from "../../../../utilities/Sharedfunctions";
+import React from 'react';
+import { useFormik } from 'formik';
+import CancelRoundedIcon from '@mui/icons-material/CancelRounded';
+import { useTheme } from '../../../../components/theme/ThemeContext';
+import TextInput from '../../../../components/Input/TextInput';
+import SelectInput from '../../../../components/input/SelectInput';
+import AppFormButton from '../../../../components/buttons/AppFormButton';
+import PasswordInput from '../../../../components/input/PasswordInput';
+import { userValidationSchema } from '../../../../utilities/validationSchemas';
 
-const StaffFormDialog = ({ open, onClose, initialData, onSave }) => {
-  // Form state
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [role, setRole] = useState("Admin");
-  const [status, setStatus] = useState("Active");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  
-  // Error states
-  const [firstNameError, setFirstNameError] = useState("");
-  const [lastNameError, setLastNameError] = useState("");
-  const [emailError, setEmailError] = useState("");
-  const [phoneError, setPhoneError] = useState("");
-  const [passwordError, setPasswordError] = useState("");
-  const [confirmPasswordError, setConfirmPasswordError] = useState("");
-  
-  // Form validation state
-  const [isFormValid, setIsFormValid] = useState(false);
-  
-  const { primaryColor } = useTheme();
+const StaffFormDialog = ({
+  show,
+  onClose,
+  onSave,
+  staff,
+  isEditing,
+  submitting = false
+}) => {
+  const theme = useTheme();
 
-  useEffect(() => {
-    if (initialData) {
-      const [firstName = "", ...lastNameParts] = initialData.name ? initialData.name.split(" ") : ["", ""];
-      const lastName = lastNameParts.join(" ");
-      
-      setFirstName(firstName);
-      setLastName(lastName);
-      setEmail(initialData.email || "");
-      setPhone(initialData.phone || "");
-      setRole(initialData.role || "Admin");
-      setStatus(initialData.status || "Active");
-      setIsFormValid(true); // Editing existing staff is considered valid
-    } else {
-      // Reset form for new staff
-      setFirstName("");
-      setLastName("");
-      setEmail("");
-      setPhone("");
-      setRole("Admin");
-      setStatus("Active");
-      setPassword("");
-      setConfirmPassword("");
-      setIsFormValid(false);
-    }
-    
-    // Clear all errors when opening dialog
-    setFirstNameError("");
-    setLastNameError("");
-    setEmailError("");
-    setPhoneError("");
-    setPasswordError("");
-    setConfirmPasswordError("");
-  }, [open, initialData]);
+  if (!show) return null;
 
-  useEffect(() => {
-    // Basic validation check (not as thorough as validateForm)
-    const isValid = firstName && lastName && validateEmail(email) && validatePhoneNumber(phone) && 
-                    (initialData || (password && password === confirmPassword));
-    setIsFormValid(isValid);
-  }, [firstName, lastName, email, phone, password, confirmPassword, initialData]);
-
-  const validateForm = () => {
-    let isValid = true;
-
-    // First Name validation
-    if (!firstName.trim()) {
-      setFirstNameError("First Name is required");
-      isValid = false;
-    } else {
-      setFirstNameError("");
-    }
-
-    // Last Name validation
-    if (!lastName.trim()) {
-      setLastNameError("Last Name is required");
-      isValid = false;
-    } else {
-      setLastNameError("");
-    }
-
-    // Email validation
-    if (!email.trim()) {
-      setEmailError("Email is required");
-      isValid = false;
-    } else if (!validateEmail(email)) {
-      setEmailError("Please enter a valid email address");
-      isValid = false;
-    } else {
-      setEmailError("");
-    }
-
-    // Phone validation
-    if (!phone.trim()) {
-      setPhoneError("Phone number is required");
-      isValid = false;
-    } else if (!validatePhoneNumber(phone)) {
-      setPhoneError("Please enter a valid Kenyan phone number");
-      isValid = false;
-    } else {
-      setPhoneError("");
-    }
-
-    // Password validation (only for new staff)
-    if (!initialData) {
-      if (!password) {
-        setPasswordError("Password is required");
-        isValid = false;
-      } else if (!validatePassword("length", password)) {
-        setPasswordError("Password must be at least 7 characters");
-        isValid = false;
-      } else if (!validatePassword("uppercase", password)) {
-        setPasswordError("Password must contain an uppercase letter");
-        isValid = false;
-      } else if (!validatePassword("number", password)) {
-        setPasswordError("Password must contain a number");
-        isValid = false;
-      } else if (!validatePassword("characters", password)) {
-        setPasswordError("Password must contain a special character");
-        isValid = false;
-      } else {
-        setPasswordError("");
-      }
-
-      // Confirm Password validation
-      if (password !== confirmPassword) {
-        setConfirmPasswordError("Passwords do not match");
-        isValid = false;
-      } else {
-        setConfirmPasswordError("");
-      }
-    }
-
-    return isValid;
+  const safeInitialData = staff || {
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    role: '',
+    status: 'Active',
+    password: '',
+    confirmPassword: ''
   };
 
-  const handleSubmit = (e) => {
-    e?.preventDefault(); // Prevent default form submission behavior
-    
-    if (validateForm()) {
-      const staffToSave = {
-        name: `${firstName.trim()} ${lastName.trim()}`,
-        firstName,
-        lastName,
-        email,
-        phone,
-        role,
-        status,
-        ...(!initialData && { password }) // Only include password for new staff
+  const formik = useFormik({
+    initialValues: safeInitialData,
+    validationSchema: userValidationSchema,
+    onSubmit: (values) => {
+      console.log('📤 Submitting staff form with values:', values);
+      const formData = {
+        name: `${values.firstName.trim()} ${values.lastName.trim()}`,
+        firstName: values.firstName.trim(),
+        lastName: values.lastName.trim(),
+        email: values.email.trim(),
+        phone: values.phoneNumber || values.phone, // Handle both field names
+        role: values.role,
+        status: values.status,
+        ...(!isEditing && { password: values.password })
       };
-      onSave(staffToSave, initialData);
-    }
-  };
+      
+      const initialData = isEditing ? staff : null;
+      onSave(formData, initialData);
+    },
+    enableReinitialize: true,
+    validateOnBlur: true,
+    validateOnChange: false,
+  });
 
   const roleOptions = [
-    { value: "Admin", label: "Admin" },
-    { value: "Shopkeeper", label: "Shopkeeper" },
+    { value: 'Admin', label: 'Admin' },
+    { value: 'Shopkeeper', label: 'Shopkeeper' },
+    { value: 'Manager', label: 'Manager' },
+    { value: 'Staff', label: 'Staff' },
   ];
 
   const statusOptions = [
-    { value: "Active", label: "Active" },
-    { value: "Inactive", label: "Inactive" },
+    { value: 'Active', label: 'Active' },
+    { value: 'Inactive', label: 'Inactive' },
   ];
 
-  return (
-    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
-      <DialogTitle sx={{ 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'center', 
-        pb: 1, 
-        
-        borderBottom: (theme) => `1px solid ${theme.palette.divider}` 
-      }}>
-        <Typography variant="h6" component="span" sx={{ fontWeight: 'bold' }}>
-          {initialData ? "Edit Staff Member" : "Register New Staff Member"}
-        </Typography>
-        <IconButton
-          onClick={onClose}
-          size="small"
-          sx={{
-            backgroundColor: primaryColor,
-            color: "white",
-            borderRadius: "50%",
-            "&:hover": {
-              backgroundColor: primaryColor,
-              opacity: 0.9,
-            },
-            p: "6px",
-          }}
-        >
-          <CloseIcon />
-        </IconButton>
-      </DialogTitle>
+  const handleSelectChange = (event) => {
+    const { name, value } = event.target;
+    formik.setFieldValue(name, value);
+  };
 
-      <DialogContent>
-        <Box 
-          component="form" 
-          onSubmit={handleSubmit}
-          sx={{ display: "flex", flexDirection: "column", gap: 3 }}
+  const handleSelectBlur = (event) => {
+    const { name } = event.target;
+    formik.setFieldTouched(name, true);
+  };
+
+  const handleInputChange = (event) => {
+    formik.handleChange(event);
+  };
+
+  const handleInputBlur = (event) => {
+    formik.handleBlur(event);
+  };
+
+  const shouldShowError = (fieldName) => {
+    return formik.touched[fieldName] && !!formik.errors[fieldName];
+  };
+
+  const getErrorMessage = (fieldName) => {
+    return shouldShowError(fieldName) ? formik.errors[fieldName] : '';
+  };
+
+  return (
+    <div className="bg-white rounded-lg w-3/5 max-w-4xl mx-auto shadow-lg border border-gray-200 mb-8">
+      {/* Modal Header */}
+      <div
+        className="flex items-center justify-between p-6 border-gray-200 bg-gray-50 rounded-t-lg"
+        style={{ borderBottom: `1px solid ${theme.borderColor || '#e5e7eb'}` }}
+      >
+        <h3
+          className="text-xl font-semibold"
+          style={{ color: theme.textPrimary || '#1f2937' }}
         >
-          {/* First Name and Last Name */}
-          <Box sx={{ display: "flex", gap: 2 }}>
+          {isEditing ? 'Edit Staff Member' : 'Add New Staff Member'}
+        </h3>
+        <button
+          onClick={onClose}
+          className="hover:bg-gray-100 transition rounded-full p-1"
+          disabled={submitting}
+          type="button"
+        >
+          <CancelRoundedIcon
+            className="main-form-close"
+            style={{
+              fill: theme.textSecondary || '#6b7280',
+              fontSize: '24px'
+            }}
+          />
+        </button>
+      </div>
+
+      <form onSubmit={formik.handleSubmit} className="p-6">
+        <div className="space-y-6">
+          {/* Name Fields */}
+          <div className="grid grid-cols-2 gap-4">
             <TextInput
+              id="firstName"
               label="First Name"
-              placeholder="Enter first name"
-              value={firstName}
-              onChange={(e) => setFirstName(e.target.value)}
-              error={!!firstNameError}
-              helperText={firstNameError}
-              fullWidth
-              required
+              placeholder="John"
+              input={formik.values.firstName}
+              handleInput={handleInputChange}
+              handleBlur={handleInputBlur}
+              name="firstName"
+              required={true}
+              disabled={submitting}
+              error={shouldShowError('firstName')}
+              errorMessage={getErrorMessage('firstName')}
             />
+
             <TextInput
+              id="lastName"
               label="Last Name"
-              placeholder="Enter last name"
-              value={lastName}
-              onChange={(e) => setLastName(e.target.value)}
-              error={!!lastNameError}
-              helperText={lastNameError}
-              fullWidth
-              required
+              placeholder="Doe"
+              input={formik.values.lastName}
+              handleInput={handleInputChange}
+              handleBlur={handleInputBlur}
+              name="lastName"
+              required={true}
+              disabled={submitting}
+              error={shouldShowError('lastName')}
+              errorMessage={getErrorMessage('lastName')}
             />
-          </Box>
+          </div>
 
           {/* Email and Phone */}
-          <Box sx={{ display: "flex", gap: 2 }}>
+          <div className="grid grid-cols-2 gap-4">
             <TextInput
-              label="Email"
+              id="email"
+              label="Email Address"
+              placeholder="staff@example.com"
+              input={formik.values.email}
+              handleInput={handleInputChange}
+              handleBlur={handleInputBlur}
+              name="email"
               type="email"
-              placeholder="Enter email address"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              error={!!emailError}
-              helperText={emailError}
-              fullWidth
-              required
+              required={true}
+              disabled={submitting}
+              error={shouldShowError('email')}
+              errorMessage={getErrorMessage('email')}
             />
+
             <TextInput
-              label="Phone"
-              placeholder="Enter phone number"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              error={!!phoneError}
-              helperText={phoneError}
-              fullWidth
-              required
+              id="phoneNumber"
+              label="Phone Number"
+              placeholder="+254712345678"
+              input={formik.values.phoneNumber || formik.values.phone}
+              handleInput={handleInputChange}
+              handleBlur={handleInputBlur}
+              name="phoneNumber"
+              type="tel"
+              required={true}
+              disabled={submitting}
+              error={shouldShowError('phoneNumber')}
+              errorMessage={getErrorMessage('phoneNumber')}
             />
-          </Box>
+          </div>
 
           {/* Role and Status */}
-          <Box sx={{ display: "flex", gap: 2 }}>
+          <div className="grid grid-cols-2 gap-4">
             <SelectInput
+              id="role"
+              name="role"
               label="Role"
               options={roleOptions}
-              value={role}
-              onChange={(e) => setRole(e.target.value)}
-              fullWidth
+              value={formik.values.role}
+              onChange={handleSelectChange}
+              onBlur={handleSelectBlur}
+              required={true}
+              disabled={submitting}
+              error={shouldShowError('role')}
+              errorMessage={getErrorMessage('role')}
+              placeholder="Select a role"
             />
+
             <SelectInput
+              id="status"
+              name="status"
               label="Status"
               options={statusOptions}
-              value={status}
-              onChange={(e) => setStatus(e.target.value)}
-              fullWidth
+              value={formik.values.status}
+              onChange={handleSelectChange}
+              onBlur={handleSelectBlur}
+              required={true}
+              disabled={submitting}
+              error={shouldShowError('status')}
+              errorMessage={getErrorMessage('status')}
+              placeholder="Select status"
             />
-          </Box>
+          </div>
 
           {/* Password fields (only for new staff) */}
-          {!initialData && (
-            <Box sx={{ display: "flex", gap: 2 }}>
+          {!isEditing && (
+            <div className="grid grid-cols-2 gap-4">
               <PasswordInput
+                id="password"
                 label="Password"
                 placeholder="Enter password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                error={!!passwordError}
-                errorMessage={passwordError}
-                fullWidth
-                required
+                value={formik.values.password}
+                onChange={handleInputChange}
+                onBlur={handleInputBlur}
+                name="password"
+                required={true}
+                disabled={submitting}
+                error={shouldShowError('password')}
+                errorMessage={getErrorMessage('password')}
               />
+
               <PasswordInput
+                id="confirmPassword"
                 label="Confirm Password"
                 placeholder="Confirm password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                error={!!confirmPasswordError}
-                errorMessage={confirmPasswordError}
-                fullWidth
-                required
+                value={formik.values.confirmPassword}
+                onChange={handleInputChange}
+                onBlur={handleInputBlur}
+                name="confirmPassword"
+                required={true}
+                disabled={submitting}
+                error={shouldShowError('confirmPassword')}
+                errorMessage={getErrorMessage('confirmPassword')}
               />
-            </Box>
+            </div>
           )}
-
-          {/* Hidden submit button for form submission on Enter */}
-          <button type="submit" style={{ display: 'none' }} />
-        </Box>
-      </DialogContent>
-
-        <div className="ml-20 mr-20 mb-10 mt-2">
-        <AppFormButton
-          text={initialData ? "Save Changes" : "Register Staff"}
-          color={primaryColor}
-          validation={isFormValid}
-          action={handleSubmit}
-        />
         </div>
-    </Dialog>
+
+        {/* Action Buttons */}
+        <div
+          className="flex gap-3 pt-6 border-t border-gray-200 mt-6"
+          style={{ borderTopColor: theme.borderColor || '#e5e7eb' }}
+        >
+          <AppFormButton
+            text="Cancel"
+            color="invert"
+            isLoading={false}
+            validation={true}
+            action={onClose}
+            type="button"
+            disabled={submitting}
+          />
+          <AppFormButton
+            text={submitting ? 'Saving...' : (isEditing ? 'Save Changes' : 'Add Staff')}
+            color={theme.primaryColor || '#2563eb'}
+            isLoading={submitting}
+            validation={formik.isValid && !submitting}
+            action={formik.handleSubmit}
+            type="submit"
+            disabled={!formik.isValid || submitting}
+          />
+        </div>
+      </form>
+    </div>
   );
 };
 

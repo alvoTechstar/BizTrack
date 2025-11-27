@@ -1,7 +1,7 @@
 import React from "react";
 import { Loader } from "lucide-react";
 import Modal from "../../../../components/modal/Modal";
-import TextInput from "../../../../components/input/TextInput";
+import TextInput from "../../../../components/Input/TextInput";
 import AppFormButton from "../../../../components/buttons/AppFormButton";
 import { useTheme } from "../../../../components/theme/ThemeContext";
 

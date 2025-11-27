@@ -10,11 +10,13 @@ const slice = createSlice({
   reducers: {
     setAuth(state, action) {
       state.value = action.payload;
-      Cookies.set("user", JSON.stringify(action.payload), { expires: 1 });
+      // Only set cookie, not localStorage to reduce storage ops
+      Cookies.set("user", JSON.stringify(action.payload), { expires: 7 });
     },
     logout(state) {
       state.value = null;
       Cookies.remove("user");
+      localStorage.removeItem("token");
     },
   },
 });
@@ -23,13 +25,17 @@ export const authActions = { ...slice.actions };
 export const authReducer = slice.reducer;
 
 function createInitialState() {
-  const user = Cookies.get("user");
   try {
-    return {
-      value: user ? JSON.parse(user) : null,
-    };
-  } catch {
-    Cookies.remove("user"); // clean up bad cookie
-    return { value: null };
+    // Try to get from cookies first (faster than localStorage)
+    const userCookie = Cookies.get("user");
+    if (userCookie) {
+      const user = JSON.parse(userCookie);
+      return { value: user };
+    }
+  } catch (error) {
+    console.error("Error reading auth from storage:", error);
+    Cookies.remove("user");
   }
+  
+  return { value: null };
 }

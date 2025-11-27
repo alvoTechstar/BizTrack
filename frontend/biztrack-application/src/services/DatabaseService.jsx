@@ -12,10 +12,10 @@ class DatabaseService extends Component {
   }
 
   static generateHeaders() {
-    const user = JSON.parse(Cookies.get("user"));
+    const token = Cookies.get("token");
     return {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${user.jwt}`,
+      Authorization: `Bearer ${token}`,
     };
   }
 

@@ -11,7 +11,7 @@ const MainLayout = ({ children, sidebarOpen, toggleSidebar }) => {
   const handleCloseProfile = () => setProfileViewOpen(false);
 
   return (
-    <div className="flex h-screen overflow-hidden bg-gray-100">
+    <div className="flex h-screen overflow-hidden bg-white">
       <Sidebar isOpen={sidebarOpen} toggleSidebar={toggleSidebar} />
 
       {/* Main content area */}

@@ -15,10 +15,10 @@ export default function FilterInput({
   filters,
   filters2,
   options,
-  selected,
+  selected = [], // Add default value
   selectedAction,
-  selected2,
-  selectedAction2,
+  selected2, // Keep optional
+  selectedAction2, // Keep optional
   tableFilter,
   handleTableFilter,
   anchorEl,
@@ -39,7 +39,7 @@ export default function FilterInput({
   const handleReset = () => {
     setValue(options[0]);
     selectedAction([]);
-    if (selected2) {
+    if (selected2 && selectedAction2) {
       selectedAction2([]);
     }
     handleTableFilter(false);
@@ -48,7 +48,9 @@ export default function FilterInput({
   const handleCheck = (event) => {
     const selectArray = value === options[0] ? selected : selected2;
     const id = JSON.parse(event.target.id);
-    const index = selectArray.indexOf(id);
+    
+    // FIX: Check if selectArray exists before using indexOf
+    const index = selectArray ? selectArray.indexOf(id) : -1;
     handleTableFilter(false);
 
     if (value === options[0]) {
@@ -58,7 +60,7 @@ export default function FilterInput({
       } else {
         selectedAction([...selected, id]);
       }
-    } else if (selected2) {
+    } else if (selected2 && selectedAction2) {
       if (index !== -1) {
         selected2.splice(index, 1);
         selectedAction2([...selected2]);
@@ -69,10 +71,14 @@ export default function FilterInput({
   };
 
   const open = Boolean(anchorEl);
-  const selectArray = value === options[0] ? selected : selected2;
-  const filterArray = value === options[0] ? filters : filters2;
+  
+  // FIX: Safe array access with defaults
+  const selectArray = value === options[0] ? (selected || []) : (selected2 || []);
+  const filterArray = value === options[0] ? (filters || []) : (filters2 || []);
+  
+  // FIX: Safe length checks
   const selectedFilters =
-    selected.length > 0 || (selected2 && selected2.length > 0);
+    (selected && selected.length > 0) || (selected2 && selected2.length > 0);
 
   return (
     <div className="filter-input">
@@ -86,7 +92,7 @@ export default function FilterInput({
       >
         {tableFilter && selectedFilters ? (
           <>
-            {selected.length > 0
+            {selected && selected.length > 0
               ? selected2 && selected2.length > 0
                 ? `${options[0]}, ${options[1]}`
                 : options[0]
@@ -129,27 +135,26 @@ export default function FilterInput({
             handleChange={handleChange}
           />
           <div className="filter-options">
-            {filterArray &&
-              filterArray.map((filter, index) => (
-                <CheckboxInput
-                  key={index}
-                  checked={
-                    selectArray.indexOf(
-                      value === options[0] && options.length > 1
-                        ? filter.label
-                        : filter.value
-                    ) !== -1
-                  }
-                  handleCheck={handleCheck}
-                  label={
+            {filterArray && filterArray.length > 0 && filterArray.map((filter, index) => (
+              <CheckboxInput
+                key={index}
+                checked={
+                  selectArray.indexOf(
                     value === options[0] && options.length > 1
                       ? filter.label
                       : filter.value
-                  }
-                  text={filter.label}
-                  color={color}
-                />
-              ))}
+                  ) !== -1
+                }
+                handleCheck={handleCheck}
+                label={
+                  value === options[0] && options.length > 1
+                    ? filter.label
+                    : filter.value
+                }
+                text={filter.label}
+                color={color}
+              />
+            ))}
           </div>
           <div className="filter-buttons">
             <AppFormButton

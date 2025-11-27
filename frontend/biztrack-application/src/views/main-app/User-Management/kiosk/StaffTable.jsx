@@ -1,160 +1,135 @@
-import React from "react";
-import {
-  Paper,
-  Switch,
-  IconButton,
-  Box,
-  Avatar,
-  Typography,
-} from "@mui/material";
-import EmailIcon from "@mui/icons-material/Email";
-import PhoneIcon from "@mui/icons-material/Phone";
-import EditIcon from "@mui/icons-material/Edit";
-import DeleteIcon from "@mui/icons-material/Delete";
-import DataTable from "../../../../components/datatable";
+// StaffTable.jsx
+import React from 'react';
+import { Users } from 'lucide-react';
+import { useTheme } from '../../../../components/theme/ThemeContext';
+import DataTable from '../../../../components/datatable';
 
-const StaffTable = ({
-  staffData,
-  page,
-  rowsPerPage,
-  handleChangePage,
-  handleChangeRowsPerPage,
-  onEditStaff,
-  onDeleteStaff,
-  onToggleStatus,
-  getInitials,
-  formatDate,
-}) => {
-  // Define table columns
-  const columns = [
-    {
-      field: "name",
-      label: "Staff Member",
-      render: (row) => (
-        <Box sx={{ display: "flex", alignItems: "center" }}>
-          <Avatar
-            sx={{
-              bgcolor: row.status === "Active" ? "primary.main" : "grey",
-              mr: 1.5,
-            }}
-          >
-            {getInitials(row.name)}
-          </Avatar>
-          <Box component="span" sx={{ fontWeight: "medium" }}>
-            {row.name}
-          </Box>
-        </Box>
-      ),
-    },
-    {
-      field: "role",
-      label: "Role",
-      render: (row) => (
-        <Box
-          component="span"
-          sx={{
-            px: 1.5,
-            py: 0.5,
-            borderRadius: "12px",
-            fontSize: "0.75rem",
-            fontWeight: "medium",
-            bgcolor:
-              row.role === "Admin" ? "warning.light" : "info.light",
-            color: row.role === "Admin" ? "warning.dark" : "info.dark",
-          }}
-        >
-          {row.role}
-        </Box>
-      ),
-    },
-    {
-      field: "contact",
-      label: "Contact Information",
-      render: (row) => (
-        <>
-          <Box sx={{ display: "flex", alignItems: "center", mb: 0.5 }}>
-            <EmailIcon sx={{ fontSize: 16, mr: 1, color: "text.secondary" }} />
-            <Typography variant="body2" sx={{ color: "text.secondary" }}>
-              {row.email}
-            </Typography>
-          </Box>
-          <Box sx={{ display: "flex", alignItems: "center" }}>
-            <PhoneIcon sx={{ fontSize: 16, mr: 1, color: "text.secondary" }} />
-            <Typography variant="body2" sx={{ color: "text.secondary" }}>
-              {row.phone}
-            </Typography>
-          </Box>
-        </>
-      ),
-    },
-    {
-      field: "dateJoined",
-      label: "Date Joined",
-      render: (row) => (
-        <Typography variant="body2" sx={{ color: "text.secondary" }}>
-          {formatDate(row.dateJoined)}
-        </Typography>
-      ),
-    },
-    {
-      field: "status",
-      label: "Status",
-      render: (row) => (
-        <Switch
-          checked={row.status === "Active"}
-          onChange={() => onToggleStatus(row.id)}
-          inputProps={{ "aria-label": `Toggle ${row.name} status` }}
-        />
-      ),
-    },
-    {
-      isActionColumn: true,
-      label: "Actions",
-      render: (row) => (
-        <>
-          <IconButton
-            color="primary"
-            onClick={() => onEditStaff(row)}
-            aria-label={`Edit ${row.name}`}
-          >
-            <EditIcon />
-          </IconButton>
-          <IconButton
-            color="error"
-            onClick={() => onDeleteStaff(row.id)}
-            aria-label={`Delete ${row.name}`}
-          >
-            <DeleteIcon />
-          </IconButton>
-        </>
-      ),
-    },
-  ];
+const STAFF_TABLE_HEADERS = [
+  { title: '', key: 'all' },
+  { title: 'Staff Member', key: 'name' },
+  { title: 'Role', key: 'role' },
+  { title: 'Contact Information', key: 'contact' },
+  { title: 'Date Joined', key: 'dateJoined' },
+  { title: 'Status', key: 'status' },
+  { title: 'Action', key: 'action' },
+];
 
-  // Define status actions (if needed for your TableAction component)
-  const statusActionMap = {
-    Active: [
-      { key: "edit", label: "Edit", icon: <EditIcon /> },
-      { key: "delete", label: "Delete", icon: <DeleteIcon /> },
-    ],
-    Inactive: [
-      { key: "edit", label: "Edit", icon: <EditIcon /> },
-      { key: "delete", label: "Delete", icon: <DeleteIcon /> },
-    ],
+const StaffTable = (props) => {
+  // Safely destructure with defaults
+  const {
+    filteredStaff = [],
+    selectedItems = [],
+    setSelectedItems,
+    toggleSelectAll,
+    toggleSelectItem,
+    openModalForEdit,
+    openEnableView,
+    openEnableModal,
+    openDisableModal,
+    openDeleteModal,
+    getInitials,
+    formatDate,
+    searchTerm,
+    setSearchTerm,
+    filters,
+    setFilters,
+    submitting = false
+  } = props || {};
+
+  const theme = useTheme();
+
+  // Ensure arrays are always arrays
+  const safeFilteredStaff = Array.isArray(filteredStaff) ? filteredStaff : [];
+  const safeSelectedItems = Array.isArray(selectedItems) ? selectedItems : [];
+
+  // No Results State
+  if (safeFilteredStaff.length === 0) {
+    return (
+      <div className="text-center py-12 bg-white rounded-lg border border-gray-200 mt-4">
+        <Users size={48} className="text-gray-400 mx-auto mb-3" />
+        <h3 className="text-lg font-semibold text-gray-700 mb-1">No staff members found</h3>
+        <p className="text-gray-500">Try adjusting your search or filters</p>
+      </div>
+    );
+  }
+
+  const getActionsForStatus = (status) => {
+    const upperStatus = status?.toUpperCase();
+
+    if (upperStatus === 'ACTIVE') {
+      return ['View', 'Edit', 'Disable', 'Delete'];
+    } else if (upperStatus === 'INACTIVE') {
+      return ['View', 'Edit', 'Enable', 'Delete'];
+    } else if (upperStatus === 'PENDING' || upperStatus === 'NEW') {
+      return ['View', 'Edit', 'Enable', 'Delete'];
+    }
+    return ['View', 'Edit', 'Delete'];
   };
 
+  const handleActionSelected = (action, id) => {
+    const staff = safeFilteredStaff.find(s => s?.id === id);
+    if (!staff) {
+      console.error('Staff member not found with id:', id);
+      return;
+    }
+
+    console.log('Action selected:', action, 'for staff:', staff.name);
+
+    switch (action.toLowerCase()) {
+      case 'view':
+        console.log('Opening view modal for staff:', staff);
+        openEnableView?.(staff);
+        break;
+      case 'edit':
+        console.log('Opening edit modal for staff:', staff);
+        openModalForEdit?.(staff);
+        break;
+      case 'enable':
+        console.log('Opening enable action modal for staff:', staff);
+        openEnableModal?.(staff);
+        break;
+      case 'disable':
+        console.log('Opening disable action modal for staff:', staff);
+        openDisableModal?.(staff);
+        break;
+      case 'delete':
+        console.log('Opening delete action modal for staff:', staff);
+        openDeleteModal?.(staff);
+        break;
+      default:
+        console.warn('Unknown action:', action);
+    }
+  };
+
+  const handleRowClick = (column) => {
+    console.log('Row clicked:', column);
+  };
+
+  // Transform staff data for the DataTable
+  const transformedStaff = safeFilteredStaff.map(staff => ({
+    ...staff,
+    contact: `${staff?.email || ''} | ${staff?.phone || ''}`,
+    dateJoined: formatDate?.(staff?.dateJoined) || '',
+    status: staff?.status === 'Active' ? 'ACTIVE' : 'INACTIVE',
+  }));
+
   return (
-    <DataTable
-      columns={columns}
-      data={staffData}
-      statusField="status"
-      statusActionMap={statusActionMap}
-      pagination={true}
-      page={page}
-      rowsPerPage={rowsPerPage}
-      onPageChange={handleChangePage}
-      onRowsPerPageChange={handleChangeRowsPerPage}
-    />
+    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm">
+      <DataTable
+        data={transformedStaff}
+        headers={STAFF_TABLE_HEADERS}
+        type="staff-table"
+        selected={safeSelectedItems}
+        selectedAction={setSelectedItems}
+        selectAll={toggleSelectAll}
+        all={safeSelectedItems.length === safeFilteredStaff.length && safeFilteredStaff.length > 0}
+        actionSelected={handleActionSelected}
+        selectedRow={handleRowClick}
+        actions={getActionsForStatus}
+        clickable={true}
+        color={theme?.primaryColor}
+      />
+    </div>
   );
 };
 
