@@ -5,13 +5,17 @@ import DeleteOutlineRoundedIcon from "@mui/icons-material/DeleteOutlineRounded";
 import DoneRoundedIcon from "@mui/icons-material/DoneRounded";
 import VisibilityRoundedIcon from "@mui/icons-material/VisibilityRounded";
 import LocalPrintshopRoundedIcon from "@mui/icons-material/LocalPrintshopRounded";
-import AddCircleOutlineRoundedIcon from "@mui/icons-material/AddCircleOutlineRounded"; // ADD FOR RESTOCK
+import AddCircleOutlineRoundedIcon from "@mui/icons-material/AddCircleOutlineRounded";
+import ShoppingCartOutlinedIcon from "@mui/icons-material/ShoppingCartOutlined"; // ADD FOR PAYMENT/COMPLETE
 import "./table.css";
 
 export default function TableActions({ status, actions, action, id }) {
-  // FIX: Add safe defaults for actions array
+  // FIX: Add safe defaults and handle non-string status
   const safeActions = Array.isArray(actions) ? actions : [];
-  const safeStatus = (status || '').toUpperCase();
+  const safeStatus = typeof status === 'string' ? status : '';
+  
+  // Convert status to uppercase safely
+  const statusUpperCase = safeStatus.toUpperCase();
 
   const handleClick = (e, clickAction) => {
     e.preventDefault();
@@ -23,7 +27,7 @@ export default function TableActions({ status, actions, action, id }) {
 
   // Business-specific action logic
   const getBusinessActions = () => {
-    switch (safeStatus) {
+    switch (statusUpperCase) {
       case 'ACTIVE':
         return ['edit', 'disable', 'delete'];
       case 'NEW':
@@ -41,12 +45,33 @@ export default function TableActions({ status, actions, action, id }) {
     return ['view', 'restock', 'edit', 'delete'];
   };
 
+  // DEBT MANAGEMENT ACTIONS
+  const getDebtActions = () => {
+    if (statusUpperCase === 'PENDING') {
+      return ['view', 'pay', 'delete'];
+    } else {
+      return ['view', 'delete'];
+    }
+  };
+
   // Use provided actions or fall back to appropriate logic based on context
   const effectiveActions = safeActions.length > 0 ? safeActions : 
-    (safeStatus.includes('STOCK') ? getProductActions() : getBusinessActions());
+    (statusUpperCase.includes('STOCK') ? getProductActions() : 
+    (statusUpperCase === 'PENDING' || statusUpperCase === 'COMPLETED') ? getDebtActions() : 
+    getBusinessActions());
 
   return (
     <div className="table-actions">
+      {/* ADD PAYMENT/COMPLETE ACTION FOR DEBTS */}
+      {effectiveActions.includes('pay') && (
+        <ShoppingCartOutlinedIcon 
+          onClick={(e) => handleClick(e, "pay")}
+          title="Complete Payment"
+          className="action-icon"
+          style={{ color: '#10B981' }} // Green color for payment
+        />
+      )}
+      
       {/* ADD RESTOCK ACTION */}
       {effectiveActions.includes('restock') && (
         <AddCircleOutlineRoundedIcon 

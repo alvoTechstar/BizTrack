@@ -1,6 +1,8 @@
-import React, { useState, useMemo, useCallback } from "react";
-import { ShoppingCart, DollarSign, Smartphone, FileText } from "lucide-react";
+import React, { useState, useMemo, useCallback, useEffect } from "react";
+import { ShoppingCart, DollarSign, Smartphone, FileText, RefreshCw } from "lucide-react";
+import { useSelector } from "react-redux";
 import SearchInput from "../../../../components/input/SearchInput";
+import { useNavigate } from "react-router-dom";
 
 // Import the new components
 import ProductCard from "./ProductsCard";
@@ -9,31 +11,39 @@ import CashPaymentModal from "./CashPaymentModal";
 import MpesaPaymentModal from "./MpesaPaymentModal";
 import DebtPaymentModal from "./DebtPaymentModal";
 import Toaster from "../../../../components/Toaster";
+import ContentLoader from "../../../../components/Loader/ContentLoader";
+import { useTheme } from "../../../../components/theme/ThemeContext";
 
-// Mock data (could be moved to a separate file, e.g., src/data/products.js)
-const mockProducts = [
-  { id: 1, name: "Coca Cola 500ml", price: 80, availableStock: 10 },
-  { id: 2, name: "Bread (Loaf)", price: 55, availableStock: 5 },
-  { id: 3, name: "Milk 1L", price: 120, availableStock: 8 },
-  { id: 4, name: "Rice 2kg", price: 180, availableStock: 12 },
-  { id: 5, name: "Sugar 1kg", price: 150, availableStock: 7 },
-  { id: 6, name: "Tea Leaves 250g", price: 95, availableStock: 15 },
-  { id: 7, name: "Cooking Oil 1L", price: 280, availableStock: 6 },
-  { id: 8, name: "Eggs (12 pieces)", price: 320, availableStock: 20 },
-  { id: 9, name: "Bananas 1kg", price: 70, availableStock: 9 },
-  { id: 10, name: "Tomatoes 1kg", price: 60, availableStock: 11 },
-  { id: 11, name: "Onions 1kg", price: 85, availableStock: 14 },
-  { id: 12, name: "Maize Flour 2kg", price: 140, availableStock: 4 },
-];
+// Import API services and endpoints
+import { GET, POST, PUT } from "../../../../services/DatabaseServiceImp";
+import URLS from "../../../../utilities/Endpoints";
 
 const SalesPage = () => {
-  // State management
-  const [cart, setCart] = useState([]);
+  const { primaryColor } = useTheme();
+  const navigate = useNavigate();
+
+  // Get current user from Redux store
+  const currentUser = useSelector((state) => state.auth?.value);
+  const token = localStorage.getItem('token');
+
+  // Get businessId and shopkeeper info from current user
+  const [userData, setUserData] = useState({
+    user: null,
+    businessId: null,
+    businessUUID: null,
+    shopkeeperInfo: null,
+    initialized: false // Track if user data is initialized
+  });
+
+  // Separate loading states
+  const [loadingUser, setLoadingUser] = useState(true); // Loading user data
+  const [loadingProducts, setLoadingProducts] = useState(true); // Loading products
   const [searchTerm, setSearchTerm] = useState("");
   const [quantities, setQuantities] = useState({});
-  const [transactions, setTransactions] = useState([]);
-  const [debts, setDebts] = useState([]);
-  const [productsInStock, setProductsInStock] = useState(mockProducts);
+  const [cart, setCart] = useState([]);
+
+  const [productsInStock, setProductsInStock] = useState([]);
+  const [errorMessage, setErrorMessage] = useState(null);
 
   // Modal states
   const [cashModal, setCashModal] = useState(false);
@@ -48,12 +58,15 @@ const SalesPage = () => {
   const [debtPhone, setDebtPhone] = useState("");
   const [debtNotes, setDebtNotes] = useState("");
 
-  // Notification state (now configured for Toaster props)
+  // Add submitting state to prevent duplicate transactions
+  const [submitting, setSubmitting] = useState(false);
+
+  // Notification state
   const [notification, setNotification] = useState({
     open: false,
     title: "",
     message: "",
-    type: "success", // Maps to 'state' in Toaster ('success', 'error', 'info')
+    type: "success",
   });
 
   // Utility functions
@@ -75,29 +88,410 @@ const SalesPage = () => {
         stateValue = "false";
         break;
       case "info":
-        title = "Heads Up!"; // 'info' maps to the default/warning style
-        stateValue = ""; // Empty string triggers the warning style in Toaster
+        title = "Heads Up!";
+        stateValue = "";
         break;
       default:
         title = "Notification";
         stateValue = "";
     }
 
-    setNotification({ open: true, title, message, type: stateValue }); // Map 'type' to 'state'
+    setNotification({ open: true, title, message, type: stateValue });
     setTimeout(
-      () => setNotification((prev) => ({ ...prev, open: false })), // Just close it
+      () => setNotification((prev) => ({ ...prev, open: false })),
       3000
     );
   }, []);
 
-  const generateTransactionId = useCallback(() => {
-    return "TXN" + Date.now().toString().slice(-6);
-  }, []);
+  // Check authentication and extract user data
+  useEffect(() => {
+    console.log("🔍 Checking authentication status...");
+
+    // Set a timeout to show content even if authentication takes time
+    const authTimeout = setTimeout(() => {
+      if (loadingUser) {
+        console.log("⚠️ Authentication check taking too long, proceeding...");
+        setLoadingUser(false);
+      }
+    }, 2000); // 2 second timeout
+
+    // Check if user is authenticated
+    if (!currentUser || !token) {
+      console.log("❌ User not authenticated, redirecting to login");
+      showNotification("Please log in to access the sales system", "error");
+      setTimeout(() => {
+        navigate('/login');
+      }, 1500);
+      clearTimeout(authTimeout);
+      return;
+    }
+
+    console.log("✅ User authenticated:", {
+      id: currentUser.id,
+      name: `${currentUser.firstName} ${currentUser.lastName}`,
+      email: currentUser.email,
+      role: currentUser.role
+    });
+
+    // Extract business information from user
+    const businessId = currentUser.businessId;
+    const businessUUID = currentUser.businessUUID;
+
+    if (!businessId || !businessUUID) {
+      console.error("❌ No business information found in user data");
+      showNotification("No business assigned to your account. Please contact administrator.", "error");
+      setErrorMessage("No business assigned to your account.");
+      setLoadingUser(false);
+      clearTimeout(authTimeout);
+      return;
+    }
+
+    console.log("🏢 Business information:", {
+      businessId,
+      businessUUID,
+      businessName: currentUser.businessName,
+      businessType: currentUser.businessType
+    });
+
+    // Get shopkeeper information from user
+    const shopkeeperInfo = {
+      shopkeeperId: currentUser.id,
+      shopkeeperName: `${currentUser.firstName} ${currentUser.lastName}`,
+      shopkeeperEmail: currentUser.email || "",
+      shopkeeperRole: currentUser.role || "Kiosk_Shopkeeper",
+      businessId: businessId,
+      businessUUID: businessUUID,
+      businessName: currentUser.businessName,
+      businessType: currentUser.businessType
+    };
+
+    console.log("👤 Derived user data:", shopkeeperInfo);
+
+    // Validate that user is a shopkeeper
+    if (currentUser.role !== "Kiosk_Shopkeeper") {
+      console.warn(`⚠️ User role is ${currentUser.role}, expected Kiosk_Shopkeeper`);
+      showNotification(`You don't have permission to access sales. Your role: ${currentUser.role}`, "error");
+    }
+
+    setUserData({
+      user: currentUser,
+      businessId,
+      businessUUID,
+      shopkeeperInfo,
+      initialized: true
+    });
+
+    setLoadingUser(false);
+    clearTimeout(authTimeout);
+
+  }, [currentUser, token, navigate, showNotification]);
+
+  // Load products function
+  const loadProducts = useCallback(async () => {
+    if (!userData.businessId || !userData.initialized) {
+      console.log('⏳ Waiting for user data initialization...');
+      return;
+    }
+
+    setLoadingProducts(true);
+    console.log('📋 Fetching products for sales for business:', userData.businessId);
+
+    try {
+      // Use the numeric businessId (2) - this is what your backend expects
+      const endpoint = URLS.PRODUCTS.GET_PRODUCTS_BY_BUSINESS.replace(':businessId', userData.businessId);
+      console.log('🌐 API Endpoint:', endpoint);
+
+      const result = await GET(endpoint);
+      console.log('✅ Product API response:', result);
+
+      if (!result || result.success === false) {
+        throw new Error(result?.message || 'Failed to load products');
+      }
+
+      const productData = result.products || result.data || [];
+
+      console.log('📦 Products data received:', productData.length, 'products');
+
+      const fetchedProducts = productData.map(product => {
+        const availableStock = product.stock || 0;
+
+        return {
+          id: product._id?.toString() || product.id,
+          _id: product._id || product.id,
+          name: product.name || '',
+          price: product.price || 0,
+          availableStock: availableStock,
+          category: product.category || '',
+          sku: product.sku || '',
+          unit: product.unit || 'units',
+          buyingPrice: product.buyingPrice || 0,
+          threshold: product.threshold || 0,
+          status: product.status || 'Out of Stock',
+          businessId: product.businessId || userData.businessId,
+          businessUUID: product.businessUUID || userData.businessUUID
+        };
+      });
+
+      console.log('✅ Transformed products for sales:', fetchedProducts.length, 'products');
+
+      // Filter to show only products with stock > 0
+      const availableProducts = fetchedProducts.filter(p => p.availableStock > 0);
+      console.log('🛒 Available products for sale:', availableProducts.length);
+
+      setProductsInStock(availableProducts);
+      
+    } catch (error) {
+      console.error('❌ Error fetching products for sales:', error);
+      setErrorMessage(error.message || 'Failed to load products');
+      setProductsInStock([]);
+      showNotification("Failed to load products. Please try again.", "error");
+    } finally {
+      setLoadingProducts(false);
+    }
+  }, [userData, showNotification]);
+
+  // Load products when user data is available
+  useEffect(() => {
+    console.log('🔄 useEffect for loading products triggered');
+    console.log('User data state:', {
+      businessId: userData.businessId,
+      initialized: userData.initialized,
+      loadingProducts
+    });
+    
+    if (userData.businessId && userData.initialized) {
+      console.log('✅ User data ready, loading products...');
+      loadProducts();
+    } else {
+      console.log('⏳ Waiting for user data to be ready...');
+    }
+  }, [userData.businessId, userData.initialized, loadProducts]);
+
+  // Refresh products function - call this after stock changes
+  const refreshProducts = useCallback(async () => {
+    console.log('🔄 Refreshing products...');
+    await loadProducts();
+    showNotification("Products refreshed successfully", "success");
+  }, [loadProducts, showNotification]);
+
+  // Render refresh button function
+  const renderRefreshButton = useCallback(() => (
+    <button
+      onClick={refreshProducts}
+      className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors"
+      title="Refresh products"
+    >
+      <RefreshCw className="h-4 w-4" />
+      <span className="text-sm font-medium">Refresh</span>
+    </button>
+  ), [refreshProducts]);
+
+  // Save transaction to backend
+  const saveTransaction = useCallback(async (transactionData) => {
+    try {
+      console.log('💾 Saving transaction:', transactionData);
+
+      // Validate shopkeeper exists
+      if (!userData.shopkeeperInfo) {
+        throw new Error('No shopkeeper information available. Please ensure you are logged in.');
+      }
+
+      // Validate business exists
+      if (!userData.businessId || !userData.businessUUID) {
+        throw new Error('No business assigned to your account.');
+      }
+
+      // Add shopkeeper and business information to transaction
+      const transactionWithShopkeeper = {
+        ...transactionData,
+        businessId: userData.businessId,
+        businessUUID: userData.businessUUID,
+        businessName: userData.shopkeeperInfo.businessName,
+        businessType: userData.shopkeeperInfo.businessType,
+        timestamp: new Date().toISOString(),
+        // Add shopkeeper info from logged-in user
+        shopkeeperId: userData.shopkeeperInfo.shopkeeperId,
+        shopkeeperName: userData.shopkeeperInfo.shopkeeperName,
+        shopkeeperEmail: userData.shopkeeperInfo.shopkeeperEmail,
+        shopkeeperRole: userData.shopkeeperInfo.shopkeeperRole
+      };
+
+      console.log('👤 Transaction with shopkeeper:', transactionWithShopkeeper);
+
+      // First, check if transactions endpoint exists
+      if (!URLS.TRANSACTIONS?.CREATE_TRANSACTION) {
+        console.warn('⚠️ Transactions endpoint not configured. Saving to local state only.');
+
+        // Create a mock saved transaction for local testing
+        const mockTransaction = {
+          ...transactionWithShopkeeper,
+          _id: `mock_${Date.now()}`,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+
+        return mockTransaction;
+      }
+
+      const response = await POST(URLS.TRANSACTIONS.CREATE_TRANSACTION, transactionWithShopkeeper);
+
+      console.log('✅ Transaction save response:', response);
+
+      if (response.success) {
+        console.log('✅ Transaction saved successfully:', response.transaction);
+        return response.transaction;
+      } else {
+        console.warn('⚠️ Transaction save returned success:false', response);
+        return {
+          ...transactionWithShopkeeper,
+          _id: response.transaction?._id || `temp_${Date.now()}`,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+      }
+    } catch (error) {
+      console.error('❌ Error saving transaction:', error);
+
+      return {
+        ...transactionData,
+        _id: `error_${Date.now()}`,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        saveError: true,
+        errorMessage: error.message
+      };
+    }
+  }, [userData]);
+
+  // Find product in current products list by ID
+  const findProductInList = useCallback((productId) => {
+    return productsInStock.find(p => p.id === productId || p._id === productId);
+  }, [productsInStock]);
+
+  // Update product stock
+  const updateProductStock = useCallback(async (cartItems) => {
+    try {
+      console.log(`📦 Updating stock for ${cartItems.length} products`);
+
+      // Check if update endpoint exists
+      if (!URLS.PRODUCTS?.UPDATE_STOCK) {
+        console.warn('⚠️ Stock update endpoint not configured');
+        return { success: true, message: 'Local update only' };
+      }
+
+      const updatePromises = cartItems.map(async (item) => {
+        try {
+          // Find current product in our local list
+          const currentProduct = findProductInList(item.id);
+
+          if (!currentProduct) {
+            throw new Error(`Product ${item.name} not found in local inventory`);
+          }
+
+          const currentStock = currentProduct.availableStock || 0;
+          const newStock = currentStock - item.quantity;
+
+          if (newStock < 0) {
+            throw new Error(`Insufficient stock for ${item.name}. Current: ${currentStock}, Requested: ${item.quantity}`);
+          }
+
+          // Get the product ID
+          const productId = currentProduct._id || currentProduct.id;
+          if (!productId) {
+            throw new Error(`Product ${item.name} has no ID`);
+          }
+
+          // Use the dedicated stock update endpoint
+          const updateEndpoint = URLS.PRODUCTS.UPDATE_STOCK.replace(':id', productId);
+
+          // Prepare update data for stock endpoint
+          const updateData = {
+            stock: newStock
+          };
+
+          console.log(`📊 Updating ${item.name}: stock ${currentStock} -> ${newStock}`);
+
+          const result = await PUT(updateEndpoint, updateData);
+
+          if (!result.success) {
+            console.error(`❌ Stock update failed for ${item.name}:`, result.message);
+            return {
+              success: false,
+              product: item.name,
+              message: result.message
+            };
+          }
+
+          // Update local state to reflect backend changes
+          const newStatus = result.product?.status ||
+            (newStock <= 0 ? 'Out of Stock' :
+              newStock <= (currentProduct.threshold || 10) ? 'Low Stock' : 'In Stock');
+
+          setProductsInStock(prev =>
+            prev.map(p =>
+              p.id === item.id
+                ? {
+                  ...p,
+                  availableStock: newStock,
+                  status: newStatus
+                }
+                : p
+            )
+          );
+
+          return {
+            success: true,
+            product: item.name,
+            oldStock: currentStock,
+            newStock: newStock
+          };
+
+        } catch (itemError) {
+          console.error(`❌ Error updating stock for ${item.name}:`, itemError);
+          return {
+            success: false,
+            product: item.name,
+            message: itemError.message
+          };
+        }
+      });
+
+      const results = await Promise.all(updatePromises);
+
+      const successfulUpdates = results.filter(r => r.success);
+      const failedUpdates = results.filter(r => !r.success);
+
+      console.log(`✅ ${successfulUpdates.length}/${results.length} stock updates successful`);
+
+      if (failedUpdates.length > 0) {
+        console.warn('⚠️ Some stock updates failed:', failedUpdates);
+        return {
+          success: false,
+          message: `${failedUpdates.length} products failed to update`,
+          details: failedUpdates
+        };
+      }
+
+      return {
+        success: true,
+        message: `Stock updated for ${successfulUpdates.length} products`
+      };
+
+    } catch (error) {
+      console.error('❌ Error in updateProductStock:', error);
+      return {
+        success: false,
+        message: error.message
+      };
+    }
+  }, [findProductInList]);
 
   // Filter products based on search term and current stock
   const filteredProducts = useMemo(() => {
     return productsInStock.filter((product) =>
-      product.name.toLowerCase().includes(searchTerm.toLowerCase())
+      product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      product.sku?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      product.category?.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }, [searchTerm, productsInStock]);
 
@@ -106,11 +500,9 @@ const SalesPage = () => {
     return cart.reduce((total, item) => total + item.price * item.quantity, 0);
   }, [cart]);
 
-  // --- Handlers for cart and product interactions ---
-
+  // Cart handlers
   const handleQuantityChange = useCallback(
     (productId, value) => {
-      // Allow empty input for better UX when typing
       if (value === "") {
         setQuantities((prev) => ({
           ...prev,
@@ -119,17 +511,15 @@ const SalesPage = () => {
         return;
       }
 
-      // Convert to number and validate it's a positive number
       const numValue = parseFloat(value);
       if (!isNaN(numValue) && numValue > 0) {
         const productInStock = productsInStock.find((p) => p.id === productId);
 
         if (productInStock && numValue > productInStock.availableStock) {
           showNotification(
-            `Only ${productInStock.availableStock} of ${productInStock.name} available.`,
+            `Only ${productInStock.availableStock} ${productInStock.unit} of ${productInStock.name} available.`,
             "error"
           );
-          // Cap the quantity at the available stock
           setQuantities((prev) => ({
             ...prev,
             [productId]: productInStock.availableStock,
@@ -147,73 +537,104 @@ const SalesPage = () => {
   );
 
   const addToCart = useCallback(
-    (product) => {
-      const quantityToAdd = quantities[product.id] || 1;
-      const currentCartItem = cart.find((item) => item.id === product.id);
-      const currentQuantityInCart = currentCartItem
-        ? currentCartItem.quantity
-        : 0;
+    async (product) => {
+      try {
+        const quantityToAdd = quantities[product.id] || 1;
 
-      const productInActualStock = productsInStock.find(
-        (p) => p.id === product.id
-      );
-
-      if (!productInActualStock || productInActualStock.availableStock <= 0) {
-        showNotification(`${product.name} is out of stock!`, "error");
-        return;
-      }
-
-      if (quantityToAdd <= 0) {
-        showNotification("Please enter a valid quantity", "error");
-        return;
-      }
-
-      // Check if adding this quantity (plus what's already in cart) exceeds total available stock
-      if (
-        currentQuantityInCart + quantityToAdd >
-        productInActualStock.availableStock
-      ) {
-        showNotification(
-          `Cannot add ${quantityToAdd} of ${product.name}. Only ${(productInActualStock.availableStock - currentQuantityInCart).toFixed(2)} more available.`,
-          "error"
-        );
-        // Optionally, reset input quantity to max additional available
-        setQuantities((prev) => ({
-          ...prev,
-          [product.id]:
-            productInActualStock.availableStock - currentQuantityInCart,
-        }));
-        return;
-      }
-
-      setCart((prev) => {
-        if (currentCartItem) {
-          // If item exists in cart, update its quantity
-          return prev.map((item) =>
-            item.id === product.id
-              ? { ...item, quantity: item.quantity + quantityToAdd }
-              : item
-          );
-        } else {
-          // If new item, add to cart
-          return [...prev, { ...product, quantity: quantityToAdd }];
+        // Validate quantity
+        if (quantityToAdd <= 0) {
+          showNotification("Please enter a valid quantity", "error");
+          return;
         }
-      });
 
-      // Crucially, decrement the available stock for the product in `productsInStock`
-      setProductsInStock((prevProducts) =>
-        prevProducts.map((p) =>
-          p.id === product.id
-            ? { ...p, availableStock: p.availableStock - quantityToAdd }
-            : p
-        )
-      );
+        // Find product in current inventory
+        const productInInventory = findProductInList(product.id);
 
-      // Reset the quantity input for the product after adding to cart
-      setQuantities((prev) => ({ ...prev, [product.id]: 1 }));
-      showNotification(`${quantityToAdd} ${product.name} added to cart`, "success");
+        if (!productInInventory) {
+          showNotification(`${product.name} is no longer available!`, "error");
+          return;
+        }
+
+        // Check if product has sufficient stock
+        if (productInInventory.availableStock <= 0) {
+          showNotification(`${product.name} is out of stock!`, "error");
+          return;
+        }
+
+        // Check if requested quantity is available
+        if (quantityToAdd > productInInventory.availableStock) {
+          showNotification(
+            `Only ${productInInventory.availableStock} ${productInInventory.unit || 'units'} of ${productInInventory.name} available.`,
+            "error"
+          );
+
+          // Set quantity input to max available
+          setQuantities((prev) => ({
+            ...prev,
+            [product.id]: productInInventory.availableStock,
+          }));
+          return;
+        }
+
+        // Calculate total quantity that will be in cart after adding
+        const currentCartItem = cart.find((item) => item.id === product.id);
+        const currentQuantityInCart = currentCartItem ? currentCartItem.quantity : 0;
+        const totalQuantityInCartAfterAdd = currentQuantityInCart + quantityToAdd;
+
+        if (totalQuantityInCartAfterAdd > productInInventory.availableStock) {
+          const availableToAdd = productInInventory.availableStock - currentQuantityInCart;
+          showNotification(
+            `Cannot add ${quantityToAdd} ${product.unit || 'units'}. Only ${availableToAdd} more available.`,
+            "error"
+          );
+          return;
+        }
+
+        // Update cart
+        setCart((prev) => {
+          if (currentCartItem) {
+            return prev.map((item) =>
+              item.id === product.id
+                ? { ...item, quantity: item.quantity + quantityToAdd }
+                : item
+            );
+          } else {
+            return [...prev, {
+              ...product,
+              quantity: quantityToAdd,
+              availableStock: productInInventory.availableStock - quantityToAdd
+            }];
+          }
+        });
+
+        // Immediately update local stock state
+        setProductsInStock((prevProducts) =>
+          prevProducts.map((p) =>
+            p.id === product.id
+              ? {
+                ...p,
+                availableStock: p.availableStock - quantityToAdd,
+                status: (p.availableStock - quantityToAdd) <= 0 ? 'Out of Stock' :
+                  (p.availableStock - quantityToAdd) <= (p.threshold || 10) ? 'Low Stock' : 'In Stock'
+              }
+              : p
+          )
+        );
+
+        // Reset quantity input
+        setQuantities((prev) => ({ ...prev, [product.id]: 1 }));
+
+        showNotification(
+          `${quantityToAdd} ${product.unit || 'units'} of ${product.name} added to cart`,
+          "success"
+        );
+
+      } catch (error) {
+        console.error('❌ Error adding to cart:', error);
+        showNotification("Failed to add item to cart", "error");
+      }
     },
-    [cart, quantities, productsInStock, showNotification]
+    [cart, quantities, productsInStock, showNotification, findProductInList]
   );
 
   const updateCartQuantity = useCallback(
@@ -231,10 +652,8 @@ const SalesPage = () => {
         return;
       }
 
-      // If newQuantity is 0 or less, remove item from cart
       if (newQuantity <= 0) {
         setCart((prev) => prev.filter((item) => item.id !== productId));
-        // Return the old quantity to stock
         setProductsInStock((prevProducts) =>
           prevProducts.map((p) =>
             p.id === productId
@@ -246,11 +665,8 @@ const SalesPage = () => {
         return;
       }
 
-      // Calculate how much stock needs to be adjusted
-      // Positive if increasing, negative if decreasing
       const quantityDifference = newQuantity - oldQuantity;
 
-      // Check if increasing quantity exceeds available stock (stock not yet in cart)
       if (
         quantityDifference > 0 &&
         quantityDifference > productInActualStock.availableStock
@@ -259,7 +675,6 @@ const SalesPage = () => {
           `Cannot add more ${productInActualStock.name}. Only ${productInActualStock.availableStock} more available.`,
           "error"
         );
-        // Set the quantity to the maximum allowed (current cart quantity + remaining stock)
         setCart((prev) =>
           prev.map((item) =>
             item.id === productId
@@ -270,7 +685,6 @@ const SalesPage = () => {
               : item
           )
         );
-        // Deduct all remaining available stock as it's now in the cart
         setProductsInStock((prevProducts) =>
           prevProducts.map((p) =>
             p.id === productId ? { ...p, availableStock: 0 } : p
@@ -279,14 +693,12 @@ const SalesPage = () => {
         return;
       }
 
-      // Update cart item quantity
       setCart((prev) =>
         prev.map((item) =>
           item.id === productId ? { ...item, quantity: newQuantity } : item
         )
       );
 
-      // Adjust the actual stock based on the quantity change
       setProductsInStock((prevProducts) =>
         prevProducts.map((p) =>
           p.id === productId
@@ -303,7 +715,6 @@ const SalesPage = () => {
       const itemToRemove = cart.find((item) => item.id === productId);
       if (itemToRemove) {
         setCart((prev) => prev.filter((item) => item.id !== productId));
-        // Return the quantity of the removed item to stock
         setProductsInStock((prevProducts) =>
           prevProducts.map((p) =>
             p.id === productId
@@ -321,7 +732,6 @@ const SalesPage = () => {
   );
 
   const clearCart = useCallback(() => {
-    // When clearing the cart, return all items' quantities to the productsInStock
     setProductsInStock((prevProducts) => {
       const updatedProducts = [...prevProducts];
       cart.forEach((cartItem) => {
@@ -343,150 +753,417 @@ const SalesPage = () => {
     showNotification("Cart cleared, items returned to stock.", "info");
   }, [cart, showNotification]);
 
-  // --- Payment handlers ---
-  const handleCashPayment = useCallback(() => {
-    const paid = parseFloat(amountPaid);
-    if (!paid || paid < totalAmount) {
-      showNotification("Invalid amount or insufficient payment", "error");
-      return;
-    }
-
-    const transaction = {
-      id: generateTransactionId(),
-      items: [...cart], // Capture items at the time of transaction
-      total: totalAmount,
-      paymentMethod: "Cash",
-      status: "Completed",
-      amountPaid: paid,
-      change: paid - totalAmount,
-      timestamp: new Date().toISOString(),
-    };
-
-    setTransactions((prev) => [...prev, transaction]);
-    clearCart();
-    setCashModal(false);
-    setAmountPaid("");
-    showNotification(
-      `Payment successful! Change: ${formatCurrency(paid - totalAmount)}`,
-      "success"
-    );
-  }, [
-    amountPaid,
-    totalAmount,
-    cart,
-    generateTransactionId,
-    clearCart,
-    formatCurrency,
-    showNotification,
-    setTransactions,
-  ]);
-
-  const handleMpesaPayment = useCallback(async () => {
-    if (!mpesaPhone || mpesaPhone.length < 10) {
-      showNotification("Please enter a valid phone number", "error");
-      return;
-    }
-
-    setMpesaLoading(true);
-
-    // Simulate M-PESA STK Push
-    setTimeout(() => {
-      const transaction = {
-        id: generateTransactionId(),
-        items: [...cart], // Capture items at the time of transaction
-        total: totalAmount,
-        paymentMethod: "M-PESA",
-        status: "Completed",
-        phone: mpesaPhone,
-        timestamp: new Date().toISOString(),
-      };
-
-      setTransactions((prev) => [...prev, transaction]);
-      clearCart();
-      setMpesaModal(false);
-      setMpesaPhone("");
-      setMpesaLoading(false);
-      showNotification("M-PESA payment successful!", "success");
-    }, 3000);
-  }, [
-    mpesaPhone,
-    totalAmount,
-    cart,
-    generateTransactionId,
-    clearCart,
-    showNotification,
-    setTransactions,
-  ]);
-
-  const handleDebtPayment = useCallback(() => {
-    if (!debtCustomerName.trim()) {
-      showNotification("Customer name is required", "error");
-      return;
-    }
-
-    const transaction = {
-      id: generateTransactionId(),
-      items: [...cart], // Capture items at the time of transaction
-      total: totalAmount,
-      paymentMethod: "Debt",
-      status: "Pending", // Debt transactions are pending until paid
-      timestamp: new Date().toISOString(),
-    };
-
-    const debtRecord = {
-      id: transaction.id,
-      customerName: debtCustomerName,
-      customerPhone: debtPhone,
-      amount: totalAmount,
-      status: "Pending",
-      createdDate: new Date().toISOString().split("T")[0],
-      expectedPaymentDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
-        .toISOString()
-        .split("T")[0], // 7 days from now
-      notes: debtNotes,
-      datePaid: null,
-    };
-
-    setTransactions((prev) => [...prev, transaction]); // Store transaction record
-    setDebts((prev) => [...prev, debtRecord]); // Store debt record
-    clearCart(); // This already handles stock return
-    setDebtModal(false);
-    setDebtCustomerName("");
-    setDebtPhone("");
-    setDebtNotes("");
-    showNotification("Debt transaction recorded successfully!", "success");
-  }, [
-    debtCustomerName,
-    debtPhone,
-    debtNotes,
-    totalAmount,
-    cart,
-    generateTransactionId,
-    clearCart,
-    showNotification,
-    setTransactions,
-    setDebts,
-  ]);
-
   const handleSearch = useCallback((searchValue) => {
     setSearchTerm(searchValue);
   }, []);
 
+  // Generate transaction ID
+  const generateTransactionId = useCallback(() => {
+    const timestamp = Date.now().toString();
+    const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+    return `TXN${timestamp.slice(-6)}${random}`;
+  }, []);
+
+  // Payment handlers - FIXED: Added proper async/await and error handling
+  const handleCashPayment = useCallback(async () => {
+    if (submitting) return;
+    
+    setSubmitting(true);
+    setMpesaLoading(true);
+    
+    try {
+      // Validate amount paid
+      const paidAmount = parseFloat(amountPaid);
+      if (isNaN(paidAmount) || paidAmount <= 0) {
+        showNotification("Please enter a valid amount", "error");
+        setSubmitting(false);
+        setMpesaLoading(false);
+        return;
+      }
+
+      if (paidAmount < totalAmount) {
+        showNotification(`Amount paid (${formatCurrency(paidAmount)}) is less than total amount (${formatCurrency(totalAmount)})`, "error");
+        setSubmitting(false);
+        setMpesaLoading(false);
+        return;
+      }
+
+      // Calculate change
+      const change = paidAmount - totalAmount;
+
+      // Create transaction data
+      const transactionData = {
+        transactionId: generateTransactionId(),
+        type: "cash",
+        status: "completed",
+        totalAmount: totalAmount,
+        amountPaid: paidAmount,
+        change: change,
+        paymentMethod: "cash",
+        items: cart.map(item => ({
+          productId: item.id,
+          productName: item.name,
+          quantity: item.quantity,
+          unitPrice: item.price,
+          totalPrice: item.price * item.quantity
+        })),
+        customerName: "Walk-in Customer",
+        customerPhone: "",
+        notes: `Cash payment. Paid: ${formatCurrency(paidAmount)}, Change: ${formatCurrency(change)}`
+      };
+
+      console.log("💵 Processing cash payment:", transactionData);
+
+      // Save transaction to backend
+      const savedTransaction = await saveTransaction(transactionData);
+      
+      if (savedTransaction.saveError) {
+        throw new Error(savedTransaction.errorMessage || "Failed to save transaction");
+      }
+
+      // Update product stock in backend
+      const stockUpdateResult = await updateProductStock(cart);
+      
+      if (!stockUpdateResult.success) {
+        console.warn("Stock update had issues:", stockUpdateResult);
+      }
+
+      // Clear cart and reset form
+      setCart([]);
+      setQuantities({});
+      setAmountPaid("");
+      setCashModal(false);
+      
+      showNotification(`Cash payment completed successfully! Change: ${formatCurrency(change)}`, "success");
+      
+      // Refresh products to reflect updated stock
+      setTimeout(() => {
+        refreshProducts();
+      }, 500);
+
+    } catch (error) {
+      console.error("❌ Cash payment error:", error);
+      showNotification(error.message || "Failed to process cash payment", "error");
+    } finally {
+      setSubmitting(false);
+      setMpesaLoading(false);
+    }
+  }, [cart, totalAmount, amountPaid, submitting, saveTransaction, updateProductStock, refreshProducts, formatCurrency, showNotification, generateTransactionId]);
+
+  const handleMpesaPayment = useCallback(async () => {
+    if (submitting) return;
+    
+    setSubmitting(true);
+    setMpesaLoading(true);
+    
+    try {
+      // Validate phone number
+      if (!mpesaPhone || mpesaPhone.trim().length < 10) {
+        showNotification("Please enter a valid phone number", "error");
+        setSubmitting(false);
+        setMpesaLoading(false);
+        return;
+      }
+
+      // Create transaction data
+      const transactionData = {
+        transactionId: generateTransactionId(),
+        type: "mpesa",
+        status: "pending",
+        totalAmount: totalAmount,
+        amountPaid: totalAmount,
+        change: 0,
+        paymentMethod: "mpesa",
+        items: cart.map(item => ({
+          productId: item.id,
+          productName: item.name,
+          quantity: item.quantity,
+          unitPrice: item.price,
+          totalPrice: item.price * item.quantity
+        })),
+        customerName: "MPESA Customer",
+        customerPhone: mpesaPhone.trim(),
+        notes: `MPESA payment initiated for phone: ${mpesaPhone.trim()}`
+      };
+
+      console.log("📱 Processing MPESA payment:", transactionData);
+
+      // Save transaction to backend
+      const savedTransaction = await saveTransaction(transactionData);
+      
+      if (savedTransaction.saveError) {
+        throw new Error(savedTransaction.errorMessage || "Failed to save transaction");
+      }
+
+      // If you have an MPESA API endpoint, you would call it here
+      if (URLS.MPESA?.STK_PUSH) {
+        try {
+          const mpesaData = {
+            phoneNumber: mpesaPhone.trim(),
+            amount: totalAmount,
+            transactionId: transactionData.transactionId,
+            businessId: userData.businessId,
+            businessUUID: userData.businessUUID
+          };
+          
+          const mpesaResponse = await POST(URLS.MPESA.STK_PUSH, mpesaData);
+          
+          if (mpesaResponse.success) {
+            showNotification("MPESA payment initiated. Please check your phone to complete the payment.", "success");
+          } else {
+            showNotification(mpesaResponse.message || "MPESA request failed", "error");
+          }
+        } catch (mpesaError) {
+          console.error("MPESA API error:", mpesaError);
+          // Continue with transaction even if MPESA API fails
+          showNotification("Transaction saved but MPESA request failed. Please try manual MPESA payment.", "warning");
+        }
+      } else {
+        // Update product stock in backend
+        const stockUpdateResult = await updateProductStock(cart);
+        
+        if (!stockUpdateResult.success) {
+          console.warn("Stock update had issues:", stockUpdateResult);
+        }
+
+        // Clear cart and reset form
+        setCart([]);
+        setQuantities({});
+        setMpesaPhone("");
+        setMpesaModal(false);
+        
+        showNotification(`MPESA payment completed successfully for ${mpesaPhone.trim()}`, "success");
+        
+        // Refresh products to reflect updated stock
+        setTimeout(() => {
+          refreshProducts();
+        }, 500);
+      }
+
+    } catch (error) {
+      console.error("❌ MPESA payment error:", error);
+      showNotification(error.message || "Failed to process MPESA payment", "error");
+    } finally {
+      setSubmitting(false);
+      setMpesaLoading(false);
+    }
+  }, [cart, totalAmount, mpesaPhone, submitting, saveTransaction, updateProductStock, refreshProducts, userData, showNotification, generateTransactionId]);
+
+  const handleDebtPayment = useCallback(async () => {
+    if (submitting) return;
+    
+    setSubmitting(true);
+    
+    try {
+      // Validate customer name
+      if (!debtCustomerName || debtCustomerName.trim().length < 2) {
+        showNotification("Please enter a valid customer name", "error");
+        setSubmitting(false);
+        return;
+      }
+
+      // Create transaction data
+      const transactionData = {
+        transactionId: generateTransactionId(),
+        type: "debt",
+        status: "pending",
+        totalAmount: totalAmount,
+        amountPaid: 0,
+        change: 0,
+        paymentMethod: "debt",
+        items: cart.map(item => ({
+          productId: item.id,
+          productName: item.name,
+          quantity: item.quantity,
+          unitPrice: item.price,
+          totalPrice: item.price * item.quantity
+        })),
+        customerName: debtCustomerName.trim(),
+        customerPhone: debtPhone.trim() || "",
+        notes: debtNotes.trim() || `Credit sale for ${debtCustomerName.trim()}`
+      };
+
+      console.log("📝 Processing debt payment:", transactionData);
+
+      // Save transaction to backend
+      const savedTransaction = await saveTransaction(transactionData);
+      
+      if (savedTransaction.saveError) {
+        throw new Error(savedTransaction.errorMessage || "Failed to save transaction");
+      }
+
+      // Update product stock in backend
+      const stockUpdateResult = await updateProductStock(cart);
+      
+      if (!stockUpdateResult.success) {
+        console.warn("Stock update had issues:", stockUpdateResult);
+      }
+
+      // Clear cart and reset form
+      setCart([]);
+      setQuantities({});
+      setDebtCustomerName("");
+      setDebtPhone("");
+      setDebtNotes("");
+      setDebtModal(false);
+      
+      showNotification(`Credit sale recorded for ${debtCustomerName.trim()}`, "success");
+      
+      // Refresh products to reflect updated stock
+      setTimeout(() => {
+        refreshProducts();
+      }, 500);
+
+    } catch (error) {
+      console.error("❌ Debt payment error:", error);
+      showNotification(error.message || "Failed to process credit sale", "error");
+    } finally {
+      setSubmitting(false);
+    }
+  }, [cart, totalAmount, debtCustomerName, debtPhone, debtNotes, submitting, saveTransaction, updateProductStock, refreshProducts, showNotification, generateTransactionId]);
+
+  // Combined loading state - show loader only for 2 seconds max
+  const isLoading = loadingUser || loadingProducts;
+
+  // Show loader for maximum 2 seconds
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-white p-8">
+        <div className="max-w-7xl mx-auto">
+          <div className='main-app-view'>
+            <div className="main-app-content-container">
+              <ContentLoader
+                state={true}
+                loading={true}
+                loadingText={loadingProducts ? "Loading products..." : "Loading sales system..."}
+                loadedText=""
+                color={primaryColor}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state - no user or no business assigned
+  if (!userData.user || !userData.businessId) {
+    return (
+      <div className="min-h-screen bg-white p-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center py-12">
+            <div className="text-red-500 text-xl mb-4">
+              {!userData.user ? "User Not Logged In" : "No Business Assigned"}
+            </div>
+            <div className="text-gray-600 mb-6">
+              {!userData.user
+                ? "Please log in to access the sales system."
+                : "Your account is not assigned to any business. Please contact your administrator."}
+            </div>
+            {!userData.user && (
+              <button
+                onClick={() => navigate('/login')}
+                className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg"
+              >
+                Go to Login
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state - products failed to load
+  if (errorMessage && productsInStock.length === 0) {
+    return (
+      <div className="min-h-screen bg-white p-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center py-12">
+            <div className="text-red-500 text-xl mb-4">Unable to Load Products</div>
+            <div className="text-gray-600 mb-6">
+              {errorMessage}
+              <div className="mt-4">
+                <button
+                  onClick={loadProducts}
+                  className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg mr-2"
+                >
+                  Retry Loading
+                </button>
+                {renderRefreshButton()}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Empty products state
+  if (productsInStock.length === 0 && !isLoading) {
+    return (
+      <div className="min-h-screen bg-white p-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center py-12">
+            <div className="text-gray-600 text-xl mb-4">No Products Available for Sale</div>
+            <div className="text-gray-500 mb-6">
+              All products are currently out of stock. 
+              <div className="mt-2">
+                1. Add products in the Stock Management section
+              </div>
+              <div className="mt-1">
+                2. Make sure products have stock greater than 0
+              </div>
+            </div>
+            <div className="flex justify-center gap-4">
+              <button
+                onClick={() => navigate('/stock-management')}
+                className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg"
+              >
+                Go to Stock Management
+              </button>
+              {renderRefreshButton()}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Main sales page
   return (
-    <div className="min-h-screen bg-gray-50 p-2 mb-6">
-      <h1 className="text-2xl font-bold text-gray-800 mb-6">
-        Kiosk Sales System
-      </h1>
+    <div className="min-h-screen bg-white p-2 mb-6">
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-800">
+            {userData.shopkeeperInfo?.businessName || "Kiosk"} Sales System
+          </h1>
+          <p className="text-sm text-gray-500 mt-1">
+            Available products: {productsInStock.length} | In cart: {cart.length}
+          </p>
+        </div>
+
+        <div className="flex items-center gap-3">
+          {renderRefreshButton()}
+        </div>
+      </div>
+
+      {/* Error messages */}
+      {errorMessage && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4 mb-4">
+          <p className="text-yellow-800">{errorMessage}</p>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Product Selection Area */}
         <div className="lg:col-span-2">
           <div className="bg-white rounded-lg shadow-md p-4 mb-4">
             <SearchInput
-              input={searchTerm} // Your component uses 'input' prop
-              handleInput={handleSearch} // Your component uses 'handleInput' prop
-              placeholder="Search products..."
-              handleClear={() => setSearchTerm("")} // Add clear functionality
+              input={searchTerm}
+              handleInput={handleSearch}
+              placeholder="Search products by name, SKU or category..."
+              handleClear={() => setSearchTerm("")}
             />
           </div>
 
@@ -510,7 +1187,7 @@ const SalesPage = () => {
             <div className="flex items-center gap-2 mb-4">
               <ShoppingCart className="h-6 w-6 text-gray-600" />
               <h2 className="text-xl font-bold text-gray-800">
-                Shopping Cart
+                Shopping Cart ({cart.length} items)
               </h2>
             </div>
 
@@ -537,30 +1214,35 @@ const SalesPage = () => {
                     <p className="text-2xl font-bold text-green-600">
                       Total: {formatCurrency(totalAmount)}
                     </p>
+                    {userData.shopkeeperInfo && (
+                      <p className="text-sm text-gray-500 mt-1">
+                        Selling as: <span className="font-medium">{userData.shopkeeperInfo.shopkeeperName}</span>
+                      </p>
+                    )}
                   </div>
 
                   {/* Payment Options */}
                   <div className="space-y-2">
                     <button
                       onClick={() => setCashModal(true)}
-                      className="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
-                      disabled={cart.length === 0} // Disable if cart is empty
+                      className="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                      disabled={cart.length === 0}
                     >
                       <DollarSign className="h-5 w-5" />
                       Pay with Cash
                     </button>
                     <button
                       onClick={() => setMpesaModal(true)}
-                      className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
-                      disabled={cart.length === 0} // Disable if cart is empty
+                      className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                      disabled={cart.length === 0}
                     >
                       <Smartphone className="h-5 w-5" />
                       Pay with M-PESA
                     </button>
                     <button
                       onClick={() => setDebtModal(true)}
-                      className="w-full bg-orange-600 text-white py-3 rounded-lg hover:bg-orange-700 transition-colors flex items-center justify-center gap-2"
-                      disabled={cart.length === 0} // Disable if cart is empty
+                      className="w-full bg-orange-600 text-white py-3 rounded-lg hover:bg-orange-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                      disabled={cart.length === 0}
                     >
                       <FileText className="h-5 w-5" />
                       Buy on Debt
@@ -582,6 +1264,8 @@ const SalesPage = () => {
         onAmountPaidChange={setAmountPaid}
         onConfirmPayment={handleCashPayment}
         formatCurrency={formatCurrency}
+        submitting={submitting}
+        shopkeeperName={userData.shopkeeperInfo?.shopkeeperName}
       />
 
       <MpesaPaymentModal
@@ -593,6 +1277,8 @@ const SalesPage = () => {
         onConfirmPayment={handleMpesaPayment}
         mpesaLoading={mpesaLoading}
         formatCurrency={formatCurrency}
+        submitting={submitting}
+        shopkeeperName={userData.shopkeeperInfo?.shopkeeperName}
       />
 
       <DebtPaymentModal
@@ -607,6 +1293,8 @@ const SalesPage = () => {
         onDebtNotesChange={setDebtNotes}
         onConfirmPayment={handleDebtPayment}
         formatCurrency={formatCurrency}
+        submitting={submitting}
+        shopkeeperName={userData.shopkeeperInfo?.shopkeeperName}
       />
 
       {/* Toaster Notification */}

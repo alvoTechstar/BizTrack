@@ -5,7 +5,7 @@ import PasswordInput from "../../components/input/PasswordInput";
 import FormButton from "../../components/buttons/FormButton";
 import NaviButton from "../../components/buttons/Navibutton";
 import loginBg from "../../assets/Backgrounds/background.png";
-import { validateEmail, validatePassword } from "../../utilities/Sharedfunctions";
+import { validateEmail, validatePassword } from "../../utilities/SharedFunctions";
 import Cookies from "js-cookie";
 import { useDispatch } from "react-redux";
 import { authActions } from "../../store";

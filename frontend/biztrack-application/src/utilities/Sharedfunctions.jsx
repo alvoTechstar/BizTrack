@@ -334,3 +334,74 @@ export const formatPaidDate = (dateString) => {
 
 // Export jwtDecode directly for use in other components
 export { jwtDecode };
+
+export const formatCurrency = (amount) => `KSh ${amount?.toLocaleString() || "0"}`;
+
+export const formatTime = (timestamp) => {
+  if (!timestamp) return "N/A";
+  return new Date(timestamp).toLocaleTimeString([], {
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+};
+
+// Helper for shortened items display
+export const renderShortenedItems = (items) => {
+  if (!items || items.length === 0) return "No items";
+
+  const firstItem = items[0];
+  const remainingCount = items.length - 1;
+  const itemName = firstItem.name || firstItem.product?.name || "Unknown Product";
+  const quantity = firstItem.quantity || 1;
+
+  return (
+    <div className="flex flex-col gap-0">
+      <div className="text-sm">
+        {quantity}x {itemName.length > 20 ? itemName.substring(0, 20) + '...' : itemName}
+      </div>
+      {remainingCount > 0 && (
+        <div className="text-xs text-gray-500">
+          +{remainingCount} more item{remainingCount > 1 ? 's' : ''}
+        </div>
+      )}
+    </div>
+  );
+};
+// Add this function inside your SalesReport component, before the return statement
+export const renderTransactionItems = (items) => {
+  if (!items || !Array.isArray(items) || items.length === 0) {
+    return <span className="text-gray-500">No items</span>;
+  }
+  
+  const productList = items.map(item => ({
+    name: item.productName || item.name || "Unknown Product",
+    quantity: item.quantity || 1
+  }));
+  
+  if (productList.length === 1) {
+    const item = productList[0];
+    return (
+      <span className="font-medium">
+        {item.name} ({item.quantity}x)
+      </span>
+    );
+  }
+  
+  return (
+    <div className="flex flex-col gap-1">
+      {productList.slice(0, 2).map((item, index) => (
+        <div key={index} className="flex items-center gap-1">
+          <span className="text-xs font-medium truncate max-w-[100px]">
+            {item.name}
+          </span>
+          <span className="text-xs text-gray-500">({item.quantity}x)</span>
+        </div>
+      ))}
+      {productList.length > 2 && (
+        <span className="text-xs text-gray-500">
+          +{productList.length - 2} more items
+        </span>
+      )}
+    </div>
+  );
+};

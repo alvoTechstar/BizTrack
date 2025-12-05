@@ -19,7 +19,7 @@ import KioskStaffManagement from "../views/main-app/User-Management/kiosk";
 import KioskAdminReportsPage from "../views/main-app/reports/kiosk/kioskadmin/KioskAdminReportsPage";
 import SalesPage from "../views/main-app/sales/kiosk";
 import ShopkeeperReportsPage from "../views/main-app/reports/kiosk/shopkeeper/ShopkeeperReportsPage";
-import DebtManagement from "../views/main-app/debtmanagement/DebtManagement";
+import DebtManagement from "../views/main-app/debtmanagement/index.jsx";
 import HospitalAdminDashboard from "../views/main-app/dashboard/hospital/hospitaladmin/HospitalAdminDashboard";
 import PharmacyStock from "../views/main-app/products/hospital/PharmacyStock";
 import HospitalStaff from "../views/main-app/User-Management/hospital/hospitalStaff";

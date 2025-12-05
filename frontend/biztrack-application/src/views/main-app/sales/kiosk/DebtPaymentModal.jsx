@@ -37,8 +37,8 @@ const DebtPaymentModal = ({
           name="debtCustomerName"
           label="Customer Name *"
           type="text"
-          value={debtCustomerName}
-          onChange={(e) => onDebtCustomerNameChange(e.target.value)}
+          input={debtCustomerName}
+          handleInput={(e) => onDebtCustomerNameChange(e.target.value)}
           placeholder="Enter customer name"
           required
           className="py-1"
@@ -50,8 +50,8 @@ const DebtPaymentModal = ({
           name="debtPhone"
           label="Phone Number (Optional)"
           type="tel"
-          value={debtPhone}
-          onChange={(e) => onDebtPhoneChange(e.target.value)}
+          input={debtPhone}
+          handleInput={(e) => onDebtPhoneChange(e.target.value)}
           placeholder="0712345678"
           className="py-1"
         />

@@ -35,9 +35,9 @@ const MpesaPaymentModal = ({
           name="mpesaPhone"
           label="Customer Phone Number"
           type="tel"
-          value={mpesaPhone}
-          onChange={(e) => onMpesaPhoneChange(e.target.value)}
-          placeholder="0712345678"
+          input={mpesaPhone}
+          handleInput={(e) => onMpesaPhoneChange(e.target.value)}
+          placeholder="0719515125"
           required
           className="py-1"
         />

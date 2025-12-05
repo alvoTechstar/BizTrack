@@ -4,7 +4,7 @@ import { Link, useLocation } from "react-router-dom";
 import { MENU } from "../../config/Menu";
 import { X } from "lucide-react";
 import { useTheme } from "../theme/ThemeContext";
-import { normalizeRole } from "../../utilities/Sharedfunctions"; 
+import { normalizeRole } from "../../utilities/SharedFunctions";
 
 const Sidebar = ({ isOpen, toggleSidebar }) => {
   const user = useSelector((state) => state.auth.value);
@@ -14,28 +14,22 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
   // Memoize normalized role
   const normalizedRole = useMemo(() => {
     if (!user?.role) {
-      console.log("   - No user role found");
       return "";
     }
     const normalized = normalizeRole(user.role);
-    console.log("   - Normalized role:", normalized);
     return normalized;
   }, [user?.role]);
 
   // Memoize allowed menu items
   const allowedMenuItems = useMemo(() => {
     if (!normalizedRole) {
-      console.log("   - No normalized role, returning empty menu");
       return [];
     }
-    
+
     const filteredItems = MENU.filter((item) => {
       const hasPermission = item.permissions.includes(normalizedRole);
-      console.log(`   - Checking ${item.key}: permissions ${item.permissions} includes ${normalizedRole}? ${hasPermission}`);
       return hasPermission;
     });
-    
-    console.log("   - Final allowed menu items:", filteredItems.map(item => item.key));
     return filteredItems;
   }, [normalizedRole]);
 
@@ -62,9 +56,8 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
 
       {/* Sidebar */}
       <aside
-        className={`fixed top-0 left-0 h-full w-64 bg-white shadow-md z-30 transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:h-auto ${
-          isOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
+        className={`fixed top-0 left-0 h-full w-64 bg-white shadow-md z-30 transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:h-auto ${isOpen ? "translate-x-0" : "-translate-x-full"
+          }`}
       >
         {/* Mobile Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b lg:hidden">
@@ -102,11 +95,10 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
                     <Link
                       to={item.path}
                       onClick={handleItemClick}
-                      className={`flex items-center px-3 py-2 rounded-md text-sm font-medium transition-all duration-150 ${
-                        isActive
+                      className={`flex items-center px-3 py-2 rounded-md text-sm font-medium transition-all duration-150 ${isActive
                           ? "text-opacity-100"
                           : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
-                      }`}
+                        }`}
                       style={{
                         backgroundColor: isActive ? `${primaryColor}15` : undefined,
                         color: isActive ? primaryColor : undefined,

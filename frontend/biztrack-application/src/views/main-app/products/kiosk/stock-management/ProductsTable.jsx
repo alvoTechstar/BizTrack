@@ -1,7 +1,8 @@
 import React from 'react';
-import { Package } from 'lucide-react';
+import { Package, PlusCircle } from 'lucide-react';
 import { useTheme } from '../../../../../components/theme/ThemeContext';
 import DataTable from '../../../../../components/datatable';
+import AppFormButton from '../../../../../components/buttons/AppFormButton';
 
 const PRODUCTS_TABLE_HEADERS = [
   { title: '', key: 'all' },
@@ -17,85 +18,101 @@ const PRODUCTS_TABLE_HEADERS = [
 ];
 
 const ProductsTable = ({
-  products = [], // Changed from filteredProducts to products to match parent prop
-  selectedItems = [],
-  setSelectedItems,
-  toggleSelectAll,
-  toggleSelectItem,
+  products = [],
+  sortField,
+  sortDirection,
+  handleSort,
   onEditProduct,
   onRestockProduct,
   onDeleteProduct,
+  onAddProduct,
 }) => {
   const theme = useTheme();
-
-  // Safe check for products
   const safeProducts = Array.isArray(products) ? products : [];
-  const safeSelectedItems = Array.isArray(selectedItems) ? selectedItems : [];
 
-  // No Results State
   if (safeProducts.length === 0) {
     return (
-      <div className="text-center py-12 bg-white rounded-lg border border-gray-200 mt-4">
-        <Package size={48} className="text-gray-400 mx-auto mb-3" />
-        <h3 className="text-lg font-semibold text-gray-700 mb-1">No products found</h3>
-        <p className="text-gray-500">Try adjusting your search or filters</p>
+      <div className="text-center py-16 bg-white rounded-lg border-2 border-dashed border-gray-300 mt-4">
+        <div className="max-w-md mx-auto">
+          <Package size={64} className="text-gray-400 mx-auto mb-4" />
+          <h3 className="text-xl font-semibold text-gray-700 mb-2">
+            Oops! Nothing in the database yet
+          </h3>
+          <p className="text-gray-500 mb-6">
+            Get started by adding your first product to manage your inventory.
+          </p>
+          <AppFormButton
+            text={
+              <div className="flex items-center gap-2">
+                <PlusCircle size={18} />
+                Add Your First Product
+              </div>
+            }
+            color={theme.primaryColor}
+            action={onAddProduct}
+            validation={true}
+          />
+        </div>
       </div>
     );
   }
 
-  const getActionsForStatus = (status) => {
-    // Product-specific actions - all products get these actions
+  const getActionsForStatus = () => {
     return ['View', 'Restock', 'Edit', 'Delete'];
   };
 
   const handleActionSelected = (action, id) => {
-    const product = safeProducts.find(p => p.id === id);
+    // Find the product from original data - NOT transformed
+    const product = safeProducts.find(p => p._id === id || p.id === id);
+    
     if (!product) {
-      console.error('Product not found with id:', id);
+      console.error('❌ Product not found with id:', id);
       return;
     }
 
-    console.log('Action selected:', action, 'for product:', product.name);
+    console.log(`✅ Action "${action}" selected for product: ${product.name}`);
+    console.log('📦 Product data passed:', product);
 
     switch (action.toLowerCase()) {
       case 'view':
-        console.log('Opening product view for:', product.name);
-        // You can add a view modal here if needed
+        console.log('👀 View product:', product.name);
         break;
       case 'edit':
-        console.log('Opening edit modal for product:', product.name);
+        console.log('✏️ Edit product:', product.name);
         onEditProduct?.(product);
         break;
       case 'restock':
-        console.log('Opening restock modal for product:', product.name);
+        console.log('📦 Restock product:', product.name);
         onRestockProduct?.(product);
         break;
       case 'delete':
-        console.log('Opening delete modal for product:', product.name);
+        console.log('🗑️ Delete product:', product.name);
         onDeleteProduct?.(product);
         break;
       default:
-        console.warn('Unknown action:', action);
+        console.warn('⚠️ Unknown action:', action);
     }
   };
 
-  const handleRowClick = (column) => {
-    console.log('Row clicked:', column);
-    // You can implement view details on row click if needed
+  const handleRowClick = (row) => {
+    console.log('Row clicked:', row);
   };
 
-  // Transform products data for display
+  // Transform only for display - keep raw data intact in safeProducts
   const transformedProducts = safeProducts.map(product => {
-    const profitPerUnit = product.price - product.buyingPrice;
-    const totalPotentialProfit = profitPerUnit * product.stock;
+    const productId = product._id || product.id;
+    const profitPerUnit = (product.price || 0) - (product.buyingPrice || 0);
+    const totalPotentialProfit = profitPerUnit * (product.stock || 0);
     
     return {
       ...product,
-      buyingPrice: `KES ${product.buyingPrice ? parseFloat(product.buyingPrice).toFixed(2) : '0.00'}`,
-      price: `KES ${product.price ? parseFloat(product.price).toFixed(2) : '0.00'}`,
+      id: productId,
+      _id: productId,
+      buyingPrice: `KES ${parseFloat(product.buyingPrice || 0).toFixed(2)}`,
+      price: `KES ${parseFloat(product.price || 0).toFixed(2)}`,
       potentialProfit: `KES ${totalPotentialProfit.toFixed(2)}`,
-      stock: `${product.stock} ${product.unit}`,
-      status: product.status, // This will work with the updated TablePill
+      stock: `${product.stock || 0} ${product.unit || 'units'}`,
+      status: product.status || 'Out of Stock',
     };
   });
 
@@ -105,15 +122,18 @@ const ProductsTable = ({
         data={transformedProducts}
         headers={PRODUCTS_TABLE_HEADERS}
         type="products"
-        selected={safeSelectedItems}
-        selectedAction={setSelectedItems}
-        selectAll={toggleSelectAll}
-        all={safeSelectedItems.length === safeProducts.length && safeProducts.length > 0}
+        selected={[]}
+        selectedAction={() => {}}
+        selectAll={() => {}}
+        all={false}
         actionSelected={handleActionSelected}
         selectedRow={handleRowClick}
         actions={getActionsForStatus}
         clickable={true}
         color={theme.primaryColor}
+        sortField={sortField}
+        sortDirection={sortDirection}
+        onSort={handleSort}
       />
     </div>
   );

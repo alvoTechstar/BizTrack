@@ -1,190 +1,236 @@
-import React, { useState, useMemo } from "react";
-import {
-  TrendingUp,
-  DollarSign,
-  ShoppingCart,
-  Users,
-  ArrowUpDown,
-  Clock,
-  Calendar,
-} from "lucide-react";
+import React, { useState, useMemo, useEffect } from "react";
+import { Clock, Calendar } from "lucide-react";
+import { useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
+import ContentLoader from "../../../../../components/Loader/ContentLoader";
+import { useTheme } from "../../../../../components/theme/ThemeContext";
+import { GET } from "../../../../../services/DatabaseServiceImp";
+import URLS from "../../../../../utilities/Endpoints";
 
-// Mock data - replace with actual data from your backend
-const mockTransactions = [
-  {
-    id: 1,
-    customerId: 1,
-    customerName: "John Doe",
-    phone: "+254701234567",
-    amount: 1500,
-    paymentMethod: "Cash",
-    status: "Completed",
-    date: new Date().toISOString().split("T")[0], // Today's date
-    time: "09:15",
-    products: [{ name: "Rice 2kg", quantity: 2, price: 750 }],
-  },
-  {
-    id: 2,
-    customerId: 2,
-    customerName: "Jane Smith",
-    phone: "+254709876543",
-    amount: 2300,
-    paymentMethod: "M-PESA",
-    status: "Completed",
-    date: new Date().toISOString().split("T")[0], // Today's date
-    time: "10:30",
-    products: [
-      { name: "Sugar 1kg", quantity: 1, price: 150 },
-      { name: "Cooking Oil 1L", quantity: 1, price: 350 },
-    ],
-  },
-  {
-    id: 3,
-    customerId: 3,
-    customerName: "Peter Kamau",
-    phone: "+254712345678",
-    amount: 850,
-    paymentMethod: "Debt",
-    status: "Pending",
-    date: new Date().toISOString().split("T")[0], // Today's date
-    time: "11:45",
-    products: [
-      { name: "Bread", quantity: 3, price: 80 },
-      { name: "Milk 500ml", quantity: 2, price: 65 },
-    ],
-  },
-  {
-    id: 4,
-    customerId: 4,
-    customerName: "Mary Wanjiku",
-    phone: "+254723456789",
-    amount: 1200,
-    paymentMethod: "Debt",
-    status: "Completed",
-    date: new Date().toISOString().split("T")[0], // Today's date
-    time: "12:20",
-    products: [{ name: "Rice 2kg", quantity: 1, price: 750 }],
-  },
-  {
-    id: 5,
-    customerId: 1,
-    customerName: "John Doe",
-    phone: "+254701234567",
-    amount: 650,
-    paymentMethod: "Cash",
-    status: "Completed",
-    date: new Date().toISOString().split("T")[0], // Today's date
-    time: "13:15",
-    products: [{ name: "Sugar 1kg", quantity: 2, price: 150 }],
-  },
-  {
-    id: 6,
-    customerId: 5,
-    customerName: "David Kiprop",
-    phone: "+254734567890",
-    amount: 1800,
-    paymentMethod: "Debt",
-    status: "Pending",
-    date: new Date().toISOString().split("T")[0], // Today's date
-    time: "14:45",
-    products: [{ name: "Cooking Oil 1L", quantity: 2, price: 350 }],
-  },
-  {
-    id: 7,
-    customerId: 2,
-    customerName: "Jane Smith",
-    phone: "+254709876543",
-    amount: 950,
-    paymentMethod: "M-PESA",
-    status: "Completed",
-    date: new Date().toISOString().split("T")[0], // Today's date
-    time: "15:30",
-    products: [{ name: "Bread", quantity: 5, price: 80 }],
-  },
-  {
-    id: 8,
-    customerId: 6,
-    customerName: "Grace Achieng",
-    phone: "+254745678901",
-    amount: 2100,
-    paymentMethod: "Cash",
-    status: "Completed",
-    date: new Date().toISOString().split("T")[0], // Today's date
-    time: "16:10",
-    products: [
-      { name: "Rice 2kg", quantity: 2, price: 750 },
-      { name: "Sugar 1kg", quantity: 1, price: 150 },
-    ],
-  },
-];
+import TabsNavigation from "./TabsNavigation";
+import SalesReport from "./Salesreport";
+import DebtReport from "./DebtReport";
+import ProductSummary from "./ProductSummary";
+import ReportCards from "./ReportsCard";
+import TransactionDetailsModal from "./TransactionDetails";
 
-const formatCurrency = (amount) => `KSh ${amount.toLocaleString()}`;
+export default function ShopkeeperReportsPage() {
+  const { primaryColor } = useTheme();
+  const navigate = useNavigate();
 
-const SummaryCard = ({
-  title,
-  value,
-  icon: Icon,
-  bgColor,
-  iconColor,
-  description,
-}) => (
-  <div className="bg-white rounded-lg shadow-md p-6 border border-gray-200">
-    <div className="flex items-center justify-between">
-      <div className="flex-1">
-        <p className="text-sm font-medium text-gray-600 mb-1">{title}</p>
-        <p className="text-2xl font-bold text-gray-900">{value}</p>
-        {description && (
-          <p className="text-xs text-gray-500 mt-1">{description}</p>
-        )}
-      </div>
-      <div className={`p-3 rounded-full ${bgColor}`}>
-        <Icon className={`w-6 h-6 ${iconColor}`} />
-      </div>
-    </div>
-  </div>
-);
+  // Get current user from Redux store
+  const currentUser = useSelector((state) => state.auth?.value);
+  const token = localStorage.getItem('token');
 
-const StatusBadge = ({ status, type = "status" }) => {
-  const getStatusColor = () => {
-    if (type === "payment") {
-      switch (status) {
-        case "Cash":
-          return "bg-green-100 text-green-800";
-        case "M-PESA":
-          return "bg-blue-100 text-blue-800";
-        case "Debt":
-          return "bg-red-100 text-red-800";
-        default:
-          return "bg-gray-100 text-gray-800";
-      }
-    } else {
-      switch (status) {
-        case "Completed":
-          return "bg-green-100 text-green-800";
-        case "Pending":
-          return "bg-yellow-100 text-yellow-800";
-        default:
-          return "bg-gray-100 text-gray-800";
-      }
-    }
-  };
-
-  return (
-    <span
-      className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor()}`}
-    >
-      {status}
-    </span>
-  );
-};
-
-export default function ShopkeeperDailyReports() {
   const [activeTab, setActiveTab] = useState(0);
   const [sortBy, setSortBy] = useState("time");
   const [sortOrder, setSortOrder] = useState("desc");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [selectedTransaction, setSelectedTransaction] = useState(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [contentLoaded, setContentLoaded] = useState(false);
 
-  // Get current date information
+  // User data state
+  const [userData, setUserData] = useState({
+    user: null,
+    businessId: null,
+    businessUUID: null,
+    shopkeeperInfo: null,
+    initialized: false
+  });
+
+  const [transactions, setTransactions] = useState([]);
+
+  // Check authentication and extract user data
+  useEffect(() => {
+    console.log("🔍 Checking authentication status...");
+
+    // Set a timeout to show content even if authentication takes time
+    const authTimeout = setTimeout(() => {
+      if (loading) {
+        console.log("⚠️ Authentication check taking too long, proceeding...");
+        setLoading(false);
+      }
+    }, 2000);
+
+    // Check if user is authenticated
+    if (!currentUser || !token) {
+      console.log("❌ User not authenticated, redirecting to login");
+      setTimeout(() => {
+        navigate('/login');
+      }, 1500);
+      clearTimeout(authTimeout);
+      return;
+    }
+
+    console.log("✅ User authenticated:", {
+      id: currentUser.id,
+      name: `${currentUser.firstName} ${currentUser.lastName}`,
+      email: currentUser.email,
+      role: currentUser.role
+    });
+
+    // Extract business information from user
+    const businessId = currentUser.businessId;
+    const businessUUID = currentUser.businessUUID;
+
+    if (!businessId || !businessUUID) {
+      console.error("❌ No business information found in user data");
+      setError("No business assigned to your account. Please contact administrator.");
+      setLoading(false);
+      clearTimeout(authTimeout);
+      return;
+    }
+
+    console.log("🏢 Business information:", {
+      businessId,
+      businessUUID,
+      businessName: currentUser.businessName,
+      businessType: currentUser.businessType
+    });
+
+    // Get shopkeeper information from user
+    const shopkeeperInfo = {
+      shopkeeperId: currentUser.id,
+      shopkeeperName: `${currentUser.firstName} ${currentUser.lastName}`,
+      shopkeeperEmail: currentUser.email || "",
+      shopkeeperRole: currentUser.role || "Kiosk_Shopkeeper",
+      businessId: businessId,
+      businessUUID: businessUUID,
+      businessName: currentUser.businessName,
+      businessType: currentUser.businessType
+    };
+
+    console.log("👤 Derived user data:", shopkeeperInfo);
+
+    setUserData({
+      user: currentUser,
+      businessId,
+      businessUUID,
+      shopkeeperInfo,
+      initialized: true
+    });
+
+    clearTimeout(authTimeout);
+
+  }, [currentUser, token, navigate]);
+
+  const fetchTransactions = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      setContentLoaded(false);
+
+      // Check if user data is ready
+      if (!userData.businessId) {
+        console.log("⏳ Waiting for business data initialization...");
+        setTimeout(() => {
+          setContentLoaded(true);
+          setLoading(false);
+        }, 500);
+        return;
+      }
+
+      console.log('🔍 Fetching transactions for business:', userData.businessId);
+
+      // OPTION 1: Try to use business-specific endpoint
+      let endpoint;
+      if (URLS.TRANSACTIONS?.GET_TRANSACTIONS_BY_BUSINESS) {
+        endpoint = URLS.TRANSACTIONS.GET_TRANSACTIONS_BY_BUSINESS.replace(
+          ':businessId',
+          userData.businessId // This should be numeric like "2"
+        );
+        console.log('🌐 Using business endpoint:', endpoint);
+      } 
+      // OPTION 2: Fallback to old kiosk endpoint (but use businessId)
+      else if (URLS.TRANSACTIONS?.GET_TRANSACTIONS_BY_KIOSK) {
+        endpoint = URLS.TRANSACTIONS.GET_TRANSACTIONS_BY_KIOSK.replace(
+          ':kioskId',
+          userData.businessId // Use businessId as kioskId
+        );
+        console.log('🌐 Using kiosk endpoint with businessId:', endpoint);
+      } else {
+        throw new Error('No transaction endpoints configured');
+      }
+
+      const result = await GET(endpoint);
+
+      if (!result || result.success === false) {
+        // If business endpoint fails, try to get all and filter client-side
+        console.log('⚠️ Business endpoint failed, trying alternative...');
+        await fetchAllTransactionsAndFilter();
+        return;
+      }
+
+      const transactionData = result.transactions || result.data || [];
+      console.log('✅ Transactions data received:', transactionData.length, 'transactions');
+
+      setTransactions(transactionData);
+
+      setTimeout(() => {
+        setContentLoaded(true);
+      }, 500);
+    } catch (error) {
+      console.error('Error fetching transactions:', error);
+      // Try alternative method
+      await fetchAllTransactionsAndFilter();
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Alternative method: fetch all transactions and filter
+  const fetchAllTransactionsAndFilter = async () => {
+    try {
+      console.log('🔄 Trying to fetch all transactions and filter...');
+      
+      // First check if we have a GET_ALL endpoint
+      if (URLS.TRANSACTIONS?.GET_ALL_TRANSACTIONS) {
+        const result = await GET(URLS.TRANSACTIONS.GET_ALL_TRANSACTIONS);
+        
+        if (result && result.success) {
+          const allTransactions = result.transactions || result.data || [];
+          console.log('📋 All transactions loaded:', allTransactions.length);
+          
+          // Filter by businessId
+          const filteredTransactions = allTransactions.filter(t => 
+            t.businessId === userData.businessId || 
+            t.businessId?.toString() === userData.businessId?.toString()
+          );
+          
+          console.log('✅ Filtered by businessId:', filteredTransactions.length);
+          setTransactions(filteredTransactions);
+          setTimeout(() => {
+            setContentLoaded(true);
+          }, 500);
+          return;
+        }
+      }
+      
+      // If no GET_ALL endpoint or it failed, try a different approach
+      // Since we can't get transactions, let's show empty state
+      console.log('⚠️ No transactions available or endpoints not working');
+      setTransactions([]);
+      setTimeout(() => {
+        setContentLoaded(true);
+      }, 500);
+      
+    } catch (fetchError) {
+      console.error('Error in alternative fetch method:', fetchError);
+      setError('Unable to load transactions. Please check backend configuration.');
+      setContentLoaded(true);
+    }
+  };
+
+  useEffect(() => {
+    if (userData.initialized) {
+      fetchTransactions();
+    }
+  }, [userData.initialized]);
+
   const currentDate = new Date();
+  const today = currentDate.toISOString().split('T')[0];
   const dateString = currentDate.toLocaleDateString("en-US", {
     weekday: "long",
     year: "numeric",
@@ -197,31 +243,69 @@ export default function ShopkeeperDailyReports() {
     minute: "2-digit",
   });
 
-  // Filter data for today only
   const todayData = useMemo(() => {
-    const today = new Date().toISOString().split("T")[0];
-    return mockTransactions.filter((transaction) => transaction.date === today);
-  }, []);
+    return transactions.filter((transaction) => {
+      if (!transaction.timestamp && !transaction.date) return false;
 
-  // Calculate sales report data
+      let transactionDate;
+      try {
+        transactionDate = transaction.timestamp
+          ? new Date(transaction.timestamp).toISOString().split('T')[0]
+          : new Date(transaction.date).toISOString().split('T')[0];
+      } catch (e) {
+        console.log('Error parsing transaction date:', e);
+        return false;
+      }
+
+      return transactionDate === today;
+    });
+  }, [transactions, today]);
+
+  // Sales Report Data
   const salesData = useMemo(() => {
-    const completedTransactions = todayData.filter(
-      (t) => t.status === "Completed" && t.paymentMethod !== "Debt"
+    const salesTransactions = todayData.filter(t => {
+      const status = (t.status || '').toLowerCase();
+      const paymentMethod = (t.paymentMethod || '').toLowerCase();
+      const originalPaymentMethod = (t.originalPaymentMethod || '').toLowerCase();
+
+      return status === 'completed' &&
+        (paymentMethod === 'cash' || paymentMethod === 'mpesa' || paymentMethod === 'm-pesa') &&
+        paymentMethod !== 'debt' &&
+        originalPaymentMethod !== 'debt';
+    });
+
+    const completedTransactions = salesTransactions.filter(t =>
+      (t.status || '').toLowerCase() === 'completed'
     );
+    const pendingTransactions = todayData.filter(t => {
+      const status = (t.status || '').toLowerCase();
+      const paymentMethod = (t.paymentMethod || '').toLowerCase();
+      return status === 'pending' &&
+        (paymentMethod === 'cash' || paymentMethod === 'mpesa' || paymentMethod === 'm-pesa') &&
+        paymentMethod !== 'debt';
+    });
+    const failedTransactions = todayData.filter(t => {
+      const status = (t.status || '').toLowerCase();
+      const paymentMethod = (t.paymentMethod || '').toLowerCase();
+      return status === 'failed' &&
+        (paymentMethod === 'cash' || paymentMethod === 'mpesa' || paymentMethod === 'm-pesa');
+    });
+
     const totalRevenue = completedTransactions.reduce(
-      (sum, t) => sum + t.amount,
+      (sum, t) => sum + (t.totalAmount || t.total || 0),
       0
     );
-    const totalTransactions = completedTransactions.length;
 
-    // Calculate most sold product
     const productSales = {};
     completedTransactions.forEach((transaction) => {
-      transaction.products.forEach((product) => {
-        if (productSales[product.name]) {
-          productSales[product.name] += product.quantity;
+      transaction.items?.forEach((item) => {
+        const productName = item.productName || item.name || item.product?.name || "Unknown Product";
+        const quantity = item.quantity || 0;
+
+        if (productSales[productName]) {
+          productSales[productName] += quantity;
         } else {
-          productSales[product.name] = product.quantity;
+          productSales[productName] = quantity;
         }
       });
     });
@@ -232,47 +316,102 @@ export default function ShopkeeperDailyReports() {
       { name: "None", quantity: 0 }
     );
 
+    const statusCounts = {
+      completed: completedTransactions.length,
+      pending: pendingTransactions.length,
+      failed: failedTransactions.length,
+      total: salesTransactions.length,
+    };
+
     return {
       totalRevenue,
-      totalTransactions,
+      statusCounts,
       mostSoldProduct,
+      salesTransactions,
       completedTransactions,
     };
   }, [todayData]);
 
-  // Calculate debt report data
+  // Debt Report Data
   const debtData = useMemo(() => {
-    const debtTransactions = todayData.filter(
-      (t) => t.paymentMethod === "Debt"
+    const debtTransactions = todayData.filter(t => {
+      const paymentMethod = (t.paymentMethod || '').toLowerCase();
+      const originalPaymentMethod = (t.originalPaymentMethod || '').toLowerCase();
+      return paymentMethod === 'debt' || originalPaymentMethod === 'debt';
+    });
+
+    const pendingDebt = debtTransactions.filter(t =>
+      (t.status || '').toLowerCase() === 'pending'
     );
-    const pendingDebt = debtTransactions.filter((t) => t.status === "Pending");
-    const recoveredDebt = debtTransactions.filter(
-      (t) => t.status === "Completed"
+    const completedDebt = debtTransactions.filter(t =>
+      (t.status || '').toLowerCase() === 'completed'
+    );
+    const failedDebt = debtTransactions.filter(t =>
+      (t.status || '').toLowerCase() === 'failed'
     );
 
-    const totalOutstanding = pendingDebt.reduce((sum, t) => sum + t.amount, 0);
-    const totalRecovered = recoveredDebt.reduce((sum, t) => sum + t.amount, 0);
+    const totalOutstanding = pendingDebt.reduce((sum, t) =>
+      sum + (t.totalAmount || t.total || 0), 0
+    );
+    const totalRecovered = completedDebt.reduce((sum, t) =>
+      sum + (t.totalAmount || t.total || 0), 0
+    );
+    const totalFailed = failedDebt.reduce((sum, t) =>
+      sum + (t.totalAmount || t.total || 0), 0
+    );
 
-    return { totalOutstanding, totalRecovered, debtTransactions };
+    const statusCounts = {
+      pending: pendingDebt.length,
+      completed: completedDebt.length,
+      failed: failedDebt.length,
+      total: debtTransactions.length,
+    };
+
+    const recoveryRate = debtTransactions.length > 0
+      ? ((completedDebt.length / debtTransactions.length) * 100).toFixed(1)
+      : 0;
+
+    return {
+      totalOutstanding,
+      totalRecovered,
+      totalFailed,
+      debtTransactions,
+      statusCounts,
+      pendingDebt,
+      completedDebt,
+      failedDebt,
+      recoveryRate,
+    };
   }, [todayData]);
 
-  // Calculate product summary data
+  // Product Summary Data
   const productSummary = useMemo(() => {
     const productData = {};
 
     todayData
-      .filter((t) => t.status === "Completed")
+      .filter((t) => {
+        const status = (t.status || '').toLowerCase();
+        const paymentMethod = (t.paymentMethod || '').toLowerCase();
+        const originalPaymentMethod = (t.originalPaymentMethod || '').toLowerCase();
+        return status === 'completed' &&
+          paymentMethod !== 'debt' &&
+          originalPaymentMethod !== 'debt';
+      })
       .forEach((transaction) => {
-        transaction.products.forEach((product) => {
-          if (productData[product.name]) {
-            productData[product.name].quantity += product.quantity;
-            productData[product.name].revenue +=
-              product.quantity * product.price;
+        transaction.items?.forEach((item) => {
+          const productName = item.productName || item.name || item.product?.name || "Unknown Product";
+          const quantity = item.quantity || 0;
+          const price = item.unitPrice || item.price || item.product?.price || 0;
+          const revenue = quantity * price;
+
+          if (productData[productName]) {
+            productData[productName].quantity += quantity;
+            productData[productName].revenue += revenue;
           } else {
-            productData[product.name] = {
-              name: product.name,
-              quantity: product.quantity,
-              revenue: product.quantity * product.price,
+            productData[productName] = {
+              name: productName,
+              quantity: quantity,
+              revenue: revenue,
             };
           }
         });
@@ -295,314 +434,166 @@ export default function ShopkeeperDailyReports() {
     });
   }, [todayData, sortBy, sortOrder]);
 
-  const handleSort = (column) => {
-    if (sortBy === column) {
-      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
-    } else {
-      setSortBy(column);
-      setSortOrder("asc");
+  const transactionsMap = useMemo(() => {
+    const map = {};
+    transactions.forEach(t => {
+      const id = t._id || t.id;
+      if (id) {
+        map[id] = t;
+      }
+    });
+    return map;
+  }, [transactions]);
+
+  const handleViewTransaction = (transactionId) => {
+    const transaction = transactionsMap[transactionId];
+    if (transaction) {
+      setSelectedTransaction(transaction);
+      setModalOpen(true);
     }
   };
 
-  const tabs = ["Sales Report", "Debt Report", "Product Summary"];
+  const handleRefresh = () => {
+    setContentLoaded(false);
+    fetchTransactions();
+  };
+
+  // Combined loading state
+  const isLoading = loading || !contentLoaded || (!userData.initialized && loading);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-white p-8">
+        <div className="max-w-7xl mx-auto">
+          <div className='main-app-view'>
+            <div className="main-app-content-container">
+              <ContentLoader
+                state={true}
+                loading={true}
+                loadingText="Loading daily reports..."
+                loadedText=""
+                color={primaryColor}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state - no user or no business assigned
+  if (!userData.user || !userData.businessId) {
+    return (
+      <div className="min-h-screen bg-white p-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center py-12">
+            <div className="text-red-500 text-xl mb-4">
+              {!userData.user ? "User Not Logged In" : "No Business Assigned"}
+            </div>
+            <div className="text-gray-600 mb-6">
+              {!userData.user
+                ? "Please log in to access the reports system."
+                : "Your account is not assigned to any business. Please contact your administrator."}
+            </div>
+            {!userData.user && (
+              <button
+                onClick={() => navigate('/login')}
+                className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg"
+              >
+                Go to Login
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-2">
+    <div className="min-h-screen bg-white p-2">
+      <TransactionDetailsModal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        transaction={selectedTransaction}
+      />
+
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Daily Reports</h1>
-        <div className="flex items-center gap-4 text-gray-600">
-          <div className="flex items-center gap-2">
-            <Calendar className="w-5 h-5" />
-            <span className="font-medium">{dateString}</span>
+      <div className="flex justify-between items-center mb-8">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            Daily Reports - {userData.shopkeeperInfo?.businessName || "Kiosk"}
+          </h1>
+          <div className="flex items-center gap-4 text-gray-600">
+            <div className="flex items-center gap-2">
+              <Calendar className="w-5 h-5" />
+              <span className="font-medium">{dateString}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Clock className="w-5 h-5" />
+              <span>
+                {startTime} - {endTime}
+              </span>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Clock className="w-5 h-5" />
-            <span>
-              {startTime} - {endTime}
-            </span>
-          </div>
+          {userData.shopkeeperInfo && (
+            <div className="text-sm text-gray-500 mt-1">
+              Shopkeeper: <span className="font-medium">{userData.shopkeeperInfo.shopkeeperName}</span>
+              {todayData.length > 0 && (
+                <span className="ml-4">
+                  Today's Transactions: <span className="font-medium">{todayData.length}</span>
+                </span>
+              )}
+            </div>
+          )}
         </div>
+
+        <button
+          onClick={handleRefresh}
+          className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+          Refresh
+        </button>
       </div>
 
-      {/* Tabs */}
-      <div className="bg-white rounded-lg shadow-md mb-6 border border-gray-200">
-        <div className="border-b border-gray-200">
-          <nav className="flex space-x-8 px-6">
-            {tabs.map((tab, index) => (
-              <button
-                key={index}
-                onClick={() => setActiveTab(index)}
-                className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-                  activeTab === index
-                    ? "border-blue-500 text-blue-600"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                }`}
-              >
-                {tab}
-              </button>
-            ))}
-          </nav>
-        </div>
-      </div>
+      {/* Summary Cards */}
+      <ReportCards salesData={salesData} debtData={debtData} />
 
-      {/* Sales Report Tab */}
+      {/* Tabs Navigation */}
+      <TabsNavigation activeTab={activeTab} setActiveTab={setActiveTab} />
+
+      {/* Tab Content */}
       {activeTab === 0 && (
-        <div className="space-y-6">
-          {/* Summary Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <SummaryCard
-              title="Today's Revenue"
-              value={formatCurrency(salesData.totalRevenue)}
-              icon={TrendingUp}
-              bgColor="bg-blue-100"
-              iconColor="text-blue-600"
-              description="From completed transactions"
-            />
-            <SummaryCard
-              title="Total Transactions"
-              value={salesData.totalTransactions}
-              icon={ShoppingCart}
-              bgColor="bg-green-100"
-              iconColor="text-green-600"
-              description="Cash & M-PESA payments"
-            />
-            <SummaryCard
-              title="Top Product Today"
-              value={`${salesData.mostSoldProduct.name}`}
-              icon={DollarSign}
-              bgColor="bg-purple-100"
-              iconColor="text-purple-600"
-              description={`${salesData.mostSoldProduct.quantity} units sold`}
-            />
-          </div>
-
-          {/* Transactions Table */}
-          <div className="bg-white rounded-lg shadow-md border border-gray-200">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900">
-                Today's Completed Transactions
-              </h3>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Time
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Customer
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Amount
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Payment Method
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Products
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {salesData.completedTransactions
-                    .sort((a, b) => b.time.localeCompare(a.time))
-                    .map((transaction) => (
-                      <tr key={transaction.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          {transaction.time}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-gray-900">
-                            {transaction.customerName}
-                          </div>
-                          <div className="text-sm text-gray-500">
-                            {transaction.phone}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
-                          {formatCurrency(transaction.amount)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <StatusBadge
-                            status={transaction.paymentMethod}
-                            type="payment"
-                          />
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-900">
-                          {transaction.products
-                            .map((p) => `${p.name} (${p.quantity})`)
-                            .join(", ")}
-                        </td>
-                      </tr>
-                    ))}
-                </tbody>
-              </table>
-            </div>
-            {salesData.completedTransactions.length === 0 && (
-              <div className="text-center py-8">
-                <ShoppingCart className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-500">No completed transactions today</p>
-              </div>
-            )}
-          </div>
-        </div>
+        <SalesReport
+          salesData={salesData}
+          color={primaryColor}
+          onViewTransaction={handleViewTransaction}
+        />
       )}
-
-      {/* Debt Report Tab */}
       {activeTab === 1 && (
-        <div className="space-y-6">
-          {/* Summary Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <SummaryCard
-              title="Outstanding Debt Today"
-              value={formatCurrency(debtData.totalOutstanding)}
-              icon={Users}
-              bgColor="bg-red-100"
-              iconColor="text-red-600"
-              description="Pending payments"
-            />
-            <SummaryCard
-              title="Recovered Debt Today"
-              value={formatCurrency(debtData.totalRecovered)}
-              icon={TrendingUp}
-              bgColor="bg-green-100"
-              iconColor="text-green-600"
-              description="Completed payments"
-            />
-          </div>
-
-          {/* Debt Transactions Table */}
-          <div className="bg-white rounded-lg shadow-md border border-gray-200">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900">
-                Today's Debt Transactions
-              </h3>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Time
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Customer Name
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Phone Number
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Amount Owed
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Status
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {debtData.debtTransactions
-                    .sort((a, b) => b.time.localeCompare(a.time))
-                    .map((transaction) => (
-                      <tr key={transaction.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          {transaction.time}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          {transaction.customerName}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {transaction.phone}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
-                          {formatCurrency(transaction.amount)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <StatusBadge status={transaction.status} />
-                        </td>
-                      </tr>
-                    ))}
-                </tbody>
-              </table>
-            </div>
-            {debtData.debtTransactions.length === 0 && (
-              <div className="text-center py-8">
-                <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-500">No debt transactions today</p>
-              </div>
-            )}
-          </div>
-        </div>
+        <DebtReport
+          debtData={debtData}
+          color={primaryColor}
+          onViewTransaction={handleViewTransaction}
+        />
       )}
-
-      {/* Product Summary Tab */}
       {activeTab === 2 && (
-        <div className="space-y-6">
-          <div className="bg-white rounded-lg shadow-md border border-gray-200">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900">
-                Today's Product Sales Summary
-              </h3>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      <button
-                        onClick={() => handleSort("name")}
-                        className="flex items-center gap-1 hover:text-gray-700"
-                      >
-                        Product Name
-                        <ArrowUpDown className="w-3 h-3" />
-                      </button>
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      <button
-                        onClick={() => handleSort("quantity")}
-                        className="flex items-center gap-1 hover:text-gray-700"
-                      >
-                        Quantity Sold
-                        <ArrowUpDown className="w-3 h-3" />
-                      </button>
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      <button
-                        onClick={() => handleSort("revenue")}
-                        className="flex items-center gap-1 hover:text-gray-700"
-                      >
-                        Total Revenue
-                        <ArrowUpDown className="w-3 h-3" />
-                      </button>
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {productSummary.map((product, index) => (
-                    <tr key={index} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {product.name}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {product.quantity}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
-                        {formatCurrency(product.revenue)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            {productSummary.length === 0 && (
-              <div className="text-center py-8">
-                <DollarSign className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-500">No product sales today</p>
-              </div>
-            )}
-          </div>
-        </div>
+        <ProductSummary
+          productSummary={productSummary}
+          color={primaryColor}
+          sortBy={sortBy}
+          sortOrder={sortOrder}
+          onSortChange={(field) => {
+            if (sortBy === field) {
+              setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+            } else {
+              setSortBy(field);
+              setSortOrder("desc");
+            }
+          }}
+        />
       )}
     </div>
   );

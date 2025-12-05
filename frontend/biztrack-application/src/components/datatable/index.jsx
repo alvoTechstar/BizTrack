@@ -66,6 +66,7 @@ export default function DataTable({
   selectedRow,
   selectAll,
   actionSelected,
+  customRenderCell, // Add custom render prop
 }) {
   const ROWS_PER_PAGE = type === "role-matrix" ? 3 : 6;
 
@@ -96,6 +97,9 @@ export default function DataTable({
   const safeSelectAll = selectAll || ((...args) => {
     console.warn('selectAll function not provided', args);
   });
+
+  // Add default for customRenderCell
+  const safeCustomRenderCell = customRenderCell || ((column, header) => column[header.key]);
 
   const handleAction = (action, id) => {
     safeActionSelected(action, id);
@@ -173,6 +177,120 @@ export default function DataTable({
     setPage(1);
   }, [searchFilter]);
 
+  // Helper function to render cell content
+  const renderCellContent = (column, header) => {
+    // Use custom render if provided
+    if (customRenderCell) {
+      return safeCustomRenderCell(column, header);
+    }
+
+    // Handle debt management table specifically
+    if (type === "debts") {
+      if (header.key === "status") {
+        return <TablePill state={column[header.key]} page="debts" />;
+      }
+      if (header.key === "paymentMethod") {
+        return <TablePill state={column[header.key]} type="payment" />;
+      }
+    }
+
+    // Original rendering logic
+    if (type === "logs") {
+      if (header.key === "dateCreated") {
+        return formatDateLogs(column[header.key]);
+      } else if (header.key === "userName") {
+        return column.actionBy?.userName;
+      } else if (header.key === "pin") {
+        return column.cashPickUpOrder?.pin ? column.cashPickUpOrder.pin : "";
+      } else if (header.key === "userRole") {
+        return formatString(column.actionBy?.userRole);
+      } else if (header.key === "action" || header.key === "details") {
+        return formatValue(column[header.key]);
+      } else if (header.key === "ipAddress") {
+        return column.actionBy?.ipAddress;
+      }
+    } else if (type === "outbound") {
+      if (header.key === "beneficiary") {
+        return `${column.iswRiaCashBeneficiary?.firstName || ""} ${column.iswRiaCashBeneficiary?.middleName ||
+          column.iswRiaCashBeneficiary?.thirdName || ""
+          }`;
+      } else if (header.key === "customer") {
+        return `${column.iswRiaCashCustomer?.firstName || ""} ${column.iswRiaCashCustomer?.middleName ||
+          column.iswRiaCashCustomer?.thirdName || ""
+          }`;
+      } else if (header.key === "create_date") {
+        return formatDate(column[header.key]);
+      } else if (header.key === "amount" || header.key === "paymentAmount") {
+        return formatAmount(column[header.key]);
+      } else if (header.key === "status" || header.key === "orderStatus") {
+        return <TablePill state={column[header.key]} page={"outbound"} />;
+      } else if (header.key === "action") {
+        return <TableActions
+          status={column.status || column.orderStatus}
+          actions={
+            column.orderStatus === "ReadyForPayout" ||
+              column.status === "ReadyForPayout" ||
+              column.status === "Paid" ||
+              column.status === "Pending" ||
+              column.orderStatus === "Pending" ||
+              column.status === "Sent" ||
+              column.orderStatus === "Sent" ||
+              column.status === "Processing" ||
+              column.orderStatus === "Processing"
+              ? actions
+              : [actions?.[0] || "View"]
+          }
+          id={column.id}
+          action={handleAction}
+        />;
+      }
+    }
+
+    // Generic rendering
+    if (header.key === "createDate" || header.key === "orderDate") {
+      return formatPaidDate(column[header.key]);
+    } else if (header.key === "responseDateTimeUTC") {
+      return column.status === "PAID"
+        ? column.paidDate
+          ? formatPaidDate(column.paidDate)
+          : formatPaidDate(column.responseDateTimeUTC)
+        : "";
+    } else if (header.key === "userRole" || header.key === "method") {
+      return formatString(column[header.key]);
+    } else if (header.key === "institution") {
+      return column.institution?.institutionName;
+    } else if (header.key === "phoneNumber") {
+      return column[header.key] ? formatPhoneNumber(column[header.key]) : "N/A";
+    } else if (header.key === "amount" || header.key === "beneficiaryAmount") {
+      return formatAmount(column[header.key]);
+    } else if (header.key === "status" || header.key === "orderStatus") {
+      return <TablePill state={column[header.key]} />;
+    } else if (header.key === "agent") {
+      return column.searchedBy
+        ? `${column.searchedBy.firstName} ${column.searchedBy.secondName}`
+        : null;
+    } else if (header.key === "countryFrom") {
+      return column.countryFromDetails ? column.countryFromDetails.name : null;
+    } else if (header.key === "action") {
+      return <TableActions
+        status={column.status}
+        actions={actions || []}
+        id={column.id}
+        action={handleAction}
+      />;
+    } else if (header.key === "permissions") {
+      return Array.isArray(column[header.key])
+        ? column[header.key].map((permission, index) => (
+          <Typography key={index} variant="body">
+            {permission}
+          </Typography>
+        ))
+        : null;
+    }
+
+    return column[header.key];
+  };
+
   return (
     <div className="table-container">
       {Array.isArray(rows) && rows.length > 0 ? (
@@ -209,12 +327,12 @@ export default function DataTable({
                         (clickable &&
                           (column.status === "ACTIVE" ||
                             column.amount ||
-                            type === "logs"))
+                            type === "logs" ||
+                            type === "debts")) // Add debts to clickable types
                         ? { cursor: "pointer" }
                         : null
                     }
                     onClick={(e) => {
-                      // FIX: Only call if conditions are met and prevent default behavior
                       if (
                         column.status === "PAID" ||
                         column.status === "PENDING" ||
@@ -224,7 +342,8 @@ export default function DataTable({
                           (column.status === "ACTIVE" ||
                             column.amount ||
                             type === "logs" ||
-                            type === "bank deposit"))
+                            type === "bank deposit" ||
+                            type === "debts")) // Add debts to clickable
                       ) {
                         e.preventDefault();
                         e.stopPropagation();
@@ -243,7 +362,8 @@ export default function DataTable({
                             column.amount ||
                             column.paymentAmount ||
                             type === "logs" ||
-                            type === "bank deposit" ? (
+                            type === "bank deposit" ||
+                            type === "debts" ? ( // Add debts to checkbox condition
                             <CheckboxInput
                               checked={
                                 all ||
@@ -259,121 +379,7 @@ export default function DataTable({
                         </StyledTableCell>
                       ) : (
                         <StyledTableCell key={header.key || index}>
-                          {type === "logs" ? (
-                            header.key === "dateCreated" ? (
-                              formatDateLogs(column[header.key])
-                            ) : header.key === "userName" ? (
-                              column.actionBy?.userName
-                            ) : header.key === "pin" ? (
-                              column.cashPickUpOrder?.pin ? (
-                                column.cashPickUpOrder.pin
-                              ) : (
-                                ""
-                              )
-                            ) : header.key === "userRole" ? (
-                              formatString(column.actionBy?.userRole)
-                            ) : header.key === "action" ||
-                              header.key === "details" ? (
-                              formatValue(column[header.key])
-                            ) : header.key === "ipAddress" ? (
-                              column.actionBy?.ipAddress
-                            ) : (
-                              column[header.key]
-                            )
-                          ) : type === "outbound" ? (
-                            header.key === "beneficiary" ? (
-                              `${column.iswRiaCashBeneficiary?.firstName || ""} ${column.iswRiaCashBeneficiary?.middleName ||
-                              column.iswRiaCashBeneficiary?.thirdName || ""
-                              }`
-                            ) : header.key === "customer" ? (
-                              `${column.iswRiaCashCustomer?.firstName || ""} ${column.iswRiaCashCustomer?.middleName ||
-                              column.iswRiaCashCustomer?.thirdName || ""
-                              }`
-                            ) : header.key === "create_date" ? (
-                              formatDate(column[header.key])
-                            ) : header.key === "amount" ||
-                              header.key === "paymentAmount" ? (
-                              formatAmount(column[header.key])
-                            ) : header.key === "status" ||
-                              header.key === "orderStatus" ? (
-                              <TablePill
-                                state={column[header.key]}
-                                page={"outbound"}
-                              />
-                            ) : header.key === "action" ? (
-                              <TableActions
-                                status={column.status || column.orderStatus}
-                                actions={
-                                  column.orderStatus === "ReadyForPayout" ||
-                                    column.status === "ReadyForPayout" ||
-                                    column.status === "Paid" ||
-                                    column.status === "Pending" ||
-                                    column.orderStatus === "Pending" ||
-                                    column.status === "Sent" ||
-                                    column.orderStatus === "Sent" ||
-                                    column.status === "Processing" ||
-                                    column.orderStatus === "Processing"
-                                    ? actions
-                                    : [actions?.[0] || "View"] // FIX: Safe array access
-                                }
-                                id={column.id}
-                                action={handleAction}
-                              />
-                            ) : (
-                              column[header.key]
-                            )
-                          ) : header.key === "createDate" ||
-                            header.key === "orderDate" ? (
-                            formatPaidDate(column[header.key])
-                          ) : header.key === "responseDateTimeUTC" ? (
-                            column.status === "PAID" ? (
-                              column.paidDate ? (
-                                formatPaidDate(column.paidDate)
-                              ) : (
-                                formatPaidDate(column.responseDateTimeUTC)
-                              )
-                            ) : (
-                              ""
-                            )
-                          ) : header.key === "userRole" ||
-                            header.key === "method" ? (
-                            formatString(column[header.key])
-                          ) : header.key === "institution" ? (
-                            column.institution?.institutionName
-                          ) : header.key === "phoneNumber" ? (
-                            column[header.key] ? formatPhoneNumber(column[header.key]) : "N/A"
-                          ) : header.key === "amount" ||
-                            header.key === "beneficiaryAmount" ? (
-                            formatAmount(column[header.key])
-                          ) : header.key === "status" ||
-                            header.key === "orderStatus" ? (
-                            <TablePill state={column[header.key]} />
-                          ) : header.key === "agent" ? (
-                            column.searchedBy ? (
-                              `${column.searchedBy.firstName} ${column.searchedBy.secondName}`
-                            ) : null
-                          ) : header.key === "countryFrom" ? (
-                            column.countryFromDetails ? (
-                              column.countryFromDetails.name
-                            ) : null
-                          ) : header.key === "action" ? (
-                            <TableActions
-                              status={column.status}
-                              actions={actions || []} // FIX: Provide empty array as default
-                              id={column.id}
-                              action={handleAction}
-                            />
-                          ) : header.key === "permissions" ? (
-                            Array.isArray(column[header.key]) ?
-                              column[header.key].map((permission, index) => (
-                                <Typography key={index} variant="body">
-                                  {permission}
-                                </Typography>
-                              ))
-                              : null
-                          ) : (
-                            column[header.key]
-                          )}
+                          {renderCellContent(column, header)}
                         </StyledTableCell>
                       )
                     )}

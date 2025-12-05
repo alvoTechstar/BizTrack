@@ -10,7 +10,7 @@ const ThemeContext = createContext(null);
 // Logo mapping based on business type
 const BUSINESS_LOGO_MAP = {
   "kiosk": KioskLogo,
-  "hotel": HotelLogo, 
+  "hotel": HotelLogo,
   "hospital": HospitalLogo,
   "kiosk_admin": KioskLogo,
   "hotel_admin": HotelLogo,
@@ -39,16 +39,14 @@ const DEFAULT_THEME = {
 
 export const ThemeProvider = ({ children }) => {
   const [theme, setTheme] = useState(DEFAULT_THEME);
-  
+
   const authState = useSelector((state) => state.auth);
-  
-  console.log("🎨 ThemeProvider - Full auth state:", authState);
+
 
   useEffect(() => {
     const loadBusinessTheme = () => {
       // If no auth state, return default theme
       if (!authState) {
-        console.log("🎨 No auth state found, using default theme");
         return DEFAULT_THEME;
       }
 
@@ -57,22 +55,15 @@ export const ThemeProvider = ({ children }) => {
       // Try different possible Redux structures
       if (authState.user) {
         userData = authState.user;
-        console.log("🎨 Found user in authState.user");
       } else if (authState.value) {
         userData = authState.value;
-        console.log("🎨 Found user in authState.value");
       } else if (authState.email) {
         userData = authState;
-        console.log("🎨 Using authState directly");
       }
-
-      console.log("🎨 Extracted user data:", userData);
-
       // If userData is a string (from localStorage), parse it
       if (typeof userData === "string") {
         try {
           userData = JSON.parse(userData);
-          console.log("🎨 Parsed user data from string:", userData);
         } catch (error) {
           console.error("🎨 Failed to parse user data:", error);
           return DEFAULT_THEME;
@@ -84,18 +75,10 @@ export const ThemeProvider = ({ children }) => {
         const primaryColor = userData.primaryColor || "#118eed";
         const businessType = (userData.businessType || "general").toLowerCase();
         const businessName = userData.businessName || "Business";
-        
+
         // Get logo based on business type
         const logoUrl = userData.logo || BUSINESS_LOGO_MAP[businessType] || BUSINESS_LOGO_MAP.default;
 
-        console.log("🎨 Final theme configuration:", {
-          primaryColor,
-          businessType,
-          businessName,
-          logoUrl,
-          hasCustomColor: !!userData.primaryColor,
-          hasCustomBusinessType: userData.businessType !== "general"
-        });
 
         return {
           primaryColor,
@@ -113,28 +96,21 @@ export const ThemeProvider = ({ children }) => {
       }
 
       // Fallback to default theme
-      console.log("🎨 Using default theme - no valid user data");
       return DEFAULT_THEME;
     };
 
     const businessTheme = loadBusinessTheme();
-    console.log("🎨 Setting business theme:", businessTheme);
     setTheme(businessTheme);
   }, [authState]);
 
   // Apply CSS variables when theme changes - WITH ERROR HANDLING
   useEffect(() => {
     const root = document.documentElement;
-    
+
     // Safe color access with fallbacks
     const primaryColor = theme.primaryColor || DEFAULT_THEME.primaryColor;
     const colors = theme.colors || DEFAULT_COLORS;
-    
-    console.log("🎨 Applying CSS variables:", {
-      primaryColor,
-      business: theme.businessName
-    });
-    
+
     // Apply CSS variables safely
     root.style.setProperty("--primary-color", primaryColor);
     root.style.setProperty("--color-success", colors.success);

@@ -10,6 +10,8 @@ import {
   styled,
   CircularProgress,
 } from "@mui/material";
+import { useFormik } from "formik";
+import * as yup from 'yup';
 import TextInput from "../../../../../components/Input/TextInput";
 import AppFormButton from "../../../../../components/buttons/AppFormButton";
 import Toaster from "../../../../../components/Toaster";
@@ -36,15 +38,23 @@ const AnimatedBackdrop = styled(Backdrop)({
   backgroundColor: "rgba(0, 0, 0, 0.7)",
 });
 
+// Yup validation schema for restocking
+const restockValidationSchema = yup.object({
+  addQuantity: yup
+    .number()
+    .required('Quantity is required')
+    .min(1, 'Quantity must be at least 1')
+    .integer('Quantity must be a whole number')
+    .typeError('Quantity must be a valid number')
+});
+
 export default function RestockProductModal({
   show,
   product,
   onClose,
-  onSave,
+  onSave, // Parent component handles the API call
 }) {
   const { primaryColor } = useTheme();
-  const [addQuantity, setAddQuantity] = useState(0);
-  const [displayProduct, setDisplayProduct] = useState(product);
   const [isLoading, setIsLoading] = useState(false);
   const [toaster, setToaster] = useState({
     open: false,
@@ -54,32 +64,97 @@ export default function RestockProductModal({
     position: "right",
   });
 
-  // Update displayProduct when the 'product' prop changes
-  useEffect(() => {
-    setDisplayProduct(product);
-    setAddQuantity(0); // Reset quantity when modal opens for a new product
-  }, [product, show]);
+  // Formik initialization
+  const formik = useFormik({
+    initialValues: {
+      addQuantity: 0
+    },
+    validationSchema: restockValidationSchema,
+    onSubmit: async (values) => {
+      setIsLoading(true);
+      try {
+        console.log('📦 Restocking product:', product?.name);
+        console.log('➕ Adding quantity:', values.addQuantity);
+        
+        if (!product) {
+          throw new Error('Product information is missing');
+        }
 
-  const handleQuantityChange = (e) => {
-    const qty = parseInt(e.target.value) || 0;
-    setAddQuantity(qty);
-    const newStock = product.stock + qty; // Calculate based on original product stock
-    setDisplayProduct({
-      ...product, // Use the original product details
-      stock: newStock,
-      status:
-        newStock >= product.threshold
+        // Get the product ID - based on parent component, it's using _id
+        const productId = product._id || product.id;
+        console.log('🔍 Product ID found:', productId);
+        
+        if (!productId) {
+          console.log('📋 Product object structure:', Object.keys(product));
+          throw new Error('Product ID is required but not found in product data');
+        }
+
+        // Calculate new stock and status
+        const currentStock = product.stock || 0;
+        const newStock = currentStock + values.addQuantity;
+        const threshold = product.threshold || 0;
+        const newStatus = newStock >= threshold
           ? "In Stock"
           : newStock > 0
             ? "Low Stock"
-            : "Out of Stock",
-    });
-  };
+            : "Out of Stock";
+
+        // Prepare the updated product data
+        // Note: The parent component's saveRestockedProduct expects:
+        // - _id for the product ID
+        // - stock and operation for the UPDATE_STOCK endpoint
+        const updatedProduct = {
+          ...product,
+          _id: productId, // Ensure _id is present
+          id: productId, // Include both for compatibility
+          stock: newStock,
+          status: newStatus
+        };
+
+        console.log('🔄 Updated product data for parent:', updatedProduct);
+        
+        // Call the parent's save function which handles the API call
+        // The parent uses: URLS.PRODUCTS.UPDATE_STOCK with stock and operation
+        await onSave(updatedProduct);
+        
+        // Success toast will be handled by parent
+        // Reset form and close modal after successful save
+        formik.resetForm();
+        onClose();
+        
+      } catch (error) {
+        console.error('❌ Error restocking product:', error);
+        showToaster("error", "Error", error.message || "Failed to restock product");
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    enableReinitialize: true
+  });
+
+  // Reset form when modal opens/closes
+  useEffect(() => {
+    if (show) {
+      formik.resetForm({ values: { addQuantity: 0 } });
+    }
+  }, [show]);
+
+  // Calculate preview values with safe defaults
+  const currentStock = product ? (product.stock || 0) : 0;
+  const newStock = currentStock + (formik.values.addQuantity || 0);
+  const threshold = product ? (product.threshold || 0) : 0;
+  const newStatus = product ? (
+    newStock >= threshold
+      ? "In Stock"
+      : newStock > 0
+        ? "Low Stock"
+        : "Out of Stock"
+  ) : "Out of Stock";
 
   const showToaster = (state, title, message) => {
     setToaster({
       open: true,
-      state: state, // "true" or "false" string
+      state: state,
       title,
       message,
       position: "right",
@@ -90,21 +165,25 @@ export default function RestockProductModal({
     setToaster((prev) => ({ ...prev, open: false }));
   };
 
-  const handleSave = async () => {
-    setIsLoading(true);
-    try {
-      await onSave(displayProduct);
-      showToaster("true", "Success", "Product restocked successfully");
+  const handleClose = () => {
+    if (!isLoading) {
+      formik.resetForm();
       onClose();
-    } catch (error) {
-      showToaster("false", "Error", "Failed to restock product");
-      console.error("Error restocking product:", error);
-    } finally {
-      setIsLoading(false);
     }
   };
 
-  if (!show || !displayProduct) return null;
+  // Custom handleChange for quantity input
+  const handleQuantityChange = (e) => {
+    const value = e.target.value;
+    if (value === '') {
+      formik.setFieldValue('addQuantity', '');
+    } else {
+      const numValue = parseInt(value) || 0;
+      formik.setFieldValue('addQuantity', numValue);
+    }
+  };
+
+  if (!show || !product) return null;
 
   return (
     <>
@@ -112,7 +191,7 @@ export default function RestockProductModal({
 
       <StyledDialog
         open={show}
-        onClose={onClose}
+        onClose={handleClose}
         closeAfterTransition
         BackdropComponent={Backdrop}
         BackdropProps={{
@@ -125,7 +204,7 @@ export default function RestockProductModal({
         }}
       >
         <Fade in={show} timeout={300}>
-          <Box>
+          <Box component="form" onSubmit={formik.handleSubmit}>
             <DialogTitle
               sx={{
                 backgroundColor: "#f8f9fa",
@@ -142,54 +221,108 @@ export default function RestockProductModal({
               <Box
                 sx={{ display: "flex", flexDirection: "column", gap: "20px" }}
               >
-                <p className="mb-1">
-                  <span className="text-xl font-bold text-gray-900">
-                    {displayProduct.name}
-                  </span>
-                  <span className="text-gray-600 mx-2">-</span>
-                  <span className="text-gray-700">Current stock:</span>
-                  <span
-                    className="font-semibold ml-1"
-                    style={{ color: primaryColor }}
-                  >
-                    {product.stock}
-                  </span>
-                  <span className="text-gray-500 ml-1">{product.unit}</span>
-                </p>
+                {/* Product Information */}
+                <Box>
+                  <p className="mb-1">
+                    <span className="text-xl font-bold text-gray-900">
+                      {product.name || 'Unnamed Product'}
+                    </span>
+                    {product.sku && (
+                      <>
+                        <span className="text-gray-600 mx-2">-</span>
+                        <span className="text-gray-700">SKU:</span>
+                        <span className="font-semibold ml-1 text-gray-800">
+                          {product.sku}
+                        </span>
+                      </>
+                    )}
+                  </p>
+                  
+                  <Box sx={{ mt: 2, mb: 2 }}>
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <span className="text-gray-600">Current Stock:</span>
+                        <span className="font-semibold ml-1" style={{ color: primaryColor }}>
+                          {currentStock}
+                        </span>
+                        <span className="text-gray-500 ml-1">{product.unit || 'units'}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-600">Low Stock Threshold:</span>
+                        <span className="font-semibold ml-1">
+                          {threshold}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-gray-600">Current Status:</span>
+                        <span
+                          className={`font-semibold ml-1 ${
+                            product.status === "In Stock"
+                              ? "text-green-600"
+                              : product.status === "Low Stock"
+                                ? "text-amber-600"
+                                : "text-red-600"
+                          }`}
+                        >
+                          {product.status || "Unknown"}
+                        </span>
+                      </div>
+                    </div>
+                  </Box>
+                </Box>
 
-                <div className="mt-0 mb-0">
+                {/* Restock Input */}
+                <Box>
                   <TextInput
-                    id="restockQuantity" // Add this id prop
+                    id="addQuantity"
+                    name="addQuantity"
                     label="Add Stock Quantity"
                     type="number"
-                    value={addQuantity === 0 ? "" : addQuantity}
-                    handleInput={(e) => handleQuantityChange(e)} // Use handleInput instead of onChange
+                    value={formik.values.addQuantity === 0 ? "" : formik.values.addQuantity}
+                    handleInput={handleQuantityChange}
+                    onBlur={formik.handleBlur}
                     placeholder="Enter quantity to add"
                     required={true}
+                    min="1"
+                    error={formik.touched.addQuantity && Boolean(formik.errors.addQuantity)}
+                    helperText={formik.touched.addQuantity && formik.errors.addQuantity}
                   />
-                  <Box sx={{ mt: 1, mb: 2 }}>
-                    <p className="text-gray-700">
-                      New Stock Level:{" "}
-                      <span className="font-semibold">
-                        {displayProduct.stock} {displayProduct.unit}
-                      </span>
-                    </p>
-                    <p className="text-gray-700">
-                      New Status:{" "}
-                      <span
-                        className={
-                          displayProduct.status === "In Stock"
-                            ? "text-green-600"
-                            : displayProduct.status === "Low Stock"
-                              ? "text-amber-600"
-                              : "text-red-600"
-                        }
-                      >
-                        {displayProduct.status}
-                      </span>
-                    </p>
-                  </Box>
-                </div>              </Box>
+                  
+                  {/* Preview Section */}
+                  {formik.values.addQuantity > 0 && (
+                    <Box sx={{ mt: 2, p: 2, backgroundColor: '#f8f9fa', borderRadius: 1 }}>
+                      <p className="text-sm font-semibold text-gray-700 mb-2">Preview Changes:</p>
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        <div>
+                          <span className="text-gray-600">New Stock Level:</span>
+                          <span className="font-semibold ml-1 text-green-600">
+                            {newStock} {product.unit || 'units'}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-gray-600">New Status:</span>
+                          <span
+                            className={`font-semibold ml-1 ${
+                              newStatus === "In Stock"
+                                ? "text-green-600"
+                                : newStatus === "Low Stock"
+                                  ? "text-amber-600"
+                                  : "text-red-600"
+                            }`}
+                          >
+                            {newStatus}
+                          </span>
+                        </div>
+                      </div>
+                      {product.status && newStatus !== product.status && (
+                        <p className="text-xs text-blue-600 mt-1">
+                          Status will change from <strong>{product.status}</strong> to <strong>{newStatus}</strong>
+                        </p>
+                      )}
+                    </Box>
+                  )}
+                </Box>
+              </Box>
             </DialogContent>
 
             <DialogActions
@@ -202,9 +335,10 @@ export default function RestockProductModal({
               <AppFormButton
                 text="Cancel"
                 color="invert"
-                action={onClose}
+                action={handleClose}
                 validation={true}
                 disabled={isLoading}
+                type="button"
               />
 
               <AppFormButton
@@ -222,8 +356,9 @@ export default function RestockProductModal({
                 }
                 color={primaryColor}
                 validation={true}
-                action={handleSave}
-                disabled={isLoading || addQuantity <= 0}
+                action={formik.handleSubmit}
+                disabled={isLoading || !formik.isValid || formik.values.addQuantity <= 0}
+                type="submit"
               />
             </DialogActions>
           </Box>

@@ -34,24 +34,20 @@ const CashPaymentModal = ({
         {/* Amount Paid Input */}
         <TextInput
           id="amountPaid"
-          name="amountPaid"
           label="Amount Paid"
           type="number"
-          step="0.01"
           min="0"
           placeholder="Enter amount paid"
-          value={amountPaid}
-          onChange={(e) => onAmountPaidChange(e.target.value)}
+          input={amountPaid}  
+          handleInput={(e) => onAmountPaidChange(e.target.value)}  
           required
-          className="py-1" // Tighter padding
         />
 
         {/* Compact Single-line Payment Status */}
         {amountPaid && (
           <div
-            className={`flex items-center gap-2 text-sm ${
-              difference >= 0 ? "text-green-600" : "text-amber-600"
-            }`}
+            className={`flex items-center gap-2 text-sm ${difference >= 0 ? "text-green-600" : "text-amber-600"
+              }`}
           >
             {difference >= 0 ? (
               <CheckCircle className="h-4 w-4" />
