@@ -11,7 +11,9 @@ import { useActionModal } from '../../../../../hooks/useActionModal';
 import ActionModal from '../../../../../components/modal/ActionModal';
 import { GET, POST, PUT, DELETE } from "../../../../../services/DatabaseServiceImp";
 import URLS from '../../../../../utilities/Endpoints';
-import { formatDate, getInitials } from '../../../../../utilities/SharedFunctions'; 
+import { formatDate, getInitials } from '../../../../../utilities/SharedFunctions';
+import Toaster from '../../../../../components/Toaster';
+
 const UsersPage = () => {
   const theme = useTheme();
 
@@ -33,28 +35,33 @@ const UsersPage = () => {
     business: null
   });
 
-  // View state
   const [currentView, setCurrentView] = useState('table');
-
-  // Action modal loading states
   const [actionModalLoading, setActionModalLoading] = useState(false);
   const [actionLoadingText, setActionLoadingText] = useState('');
-
-  // Form modal loading states
   const [formModalLoading, setFormModalLoading] = useState(false);
   const [formLoadingText, setFormLoadingText] = useState('');
-
-  // Content Loader states
   const [loadingState, setLoadingState] = useState(true);
   const [loadingText, setLoadingText] = useState("");
   const [loadedText, setLoadedText] = useState("");
-
-  // Create operation loading state
   const [createLoading, setCreateLoading] = useState(false);
   const [createLoadingText, setCreateLoadingText] = useState("");
+  const [toaster, setToaster] = useState({
+    open: false,
+    state: 'true',
+    title: '',
+    message: '',
+  });
 
-  // Reusable action modal hook
   const { modalState, openModal, closeModal, setReason, handleSubmit } = useActionModal();
+
+  const showToaster = (state, title, message) => {
+    setToaster({
+      open: true,
+      state: state ? 'true' : 'false',
+      title,
+      message,
+    });
+  };
 
   // Role-based access control mapping
   const rolesByType = {
@@ -69,26 +76,18 @@ const UsersPage = () => {
   // Safe date handling function
   const safeDateToString = (dateValue) => {
     if (!dateValue) return 'Never';
-    
-    // Handle various invalid date representations
     if (dateValue === 'Invalid Date' || dateValue === 'null' || dateValue === 'undefined') {
       return 'Never';
     }
-    
     try {
       const date = new Date(dateValue);
-      
-      // Check if the date is valid
       if (isNaN(date.getTime())) {
         return 'Never';
       }
-      
-      // Check if date is within reasonable range
       const year = date.getFullYear();
       if (year < 1970 || year > 2100) {
         return 'Never';
       }
-      
       return date.toISOString().split('T')[0];
     } catch (error) {
       console.warn('Invalid date value:', dateValue, error);
@@ -99,23 +98,23 @@ const UsersPage = () => {
   // Helper function to safely extract data from API response
   const extractDataFromResponse = (response) => {
     if (!response) return [];
-    
+
     if (response.data !== undefined) {
       return Array.isArray(response.data) ? response.data : [response.data];
     }
-    
+
     if (Array.isArray(response)) {
       return response;
     }
-    
+
     if (response._doc) {
       return [response._doc];
     }
-    
+
     if (typeof response === 'object' && response !== null) {
       return [response];
     }
-    
+
     return [];
   };
 
@@ -142,7 +141,7 @@ const UsersPage = () => {
         description: business._doc.description,
       };
     }
-    
+
     return {
       id: business.id || business._id?.toString(),
       _id: business._id?.toString(),
@@ -162,7 +161,6 @@ const UsersPage = () => {
     };
   };
 
-  // Fetch users and businesses
   const fetchUsersAndBusinesses = useCallback(async () => {
     setLoading(true);
     setLoadingState(true);
@@ -170,44 +168,35 @@ const UsersPage = () => {
     setErrorMessage(null);
 
     try {
-      // Fetch businesses
       const businessesResponse = await GET(URLS.BUSINESS.GET_ALL_BUSINESSES);
-      console.log('🔍 Raw Businesses API Response:', businessesResponse);
-      
       let businessesData = extractDataFromResponse(businessesResponse);
-      console.log('📦 Extracted businesses data:', businessesData);
-
-      // Transform businesses
       const transformedBusinesses = businessesData
         .map(business => extractBusinessData(business))
         .filter(business => business !== null && business.businessName);
-
-      console.log('✅ Transformed businesses:', transformedBusinesses);
-
-      // Store RAW MongoDB business objects for the form
       setBusinesses(businessesData);
 
       // Fetch users
       let usersData = [];
-      
+
       try {
         const usersResponse = await GET(URLS.USERS.GET_ALL_USERS);
-        console.log('📥 Users API Response:', usersResponse);
         usersData = extractDataFromResponse(usersResponse);
-        console.log('✅ Successfully fetched users:', usersData.length);
       } catch (usersError) {
         console.error('❌ Failed to fetch users:', usersError);
-        setErrorMessage('Unable to load users. Please check if the server is running.');
+        const errorMsg = 'Unable to load users. Please check if the server is running.';
+        setErrorMessage(errorMsg);
+
+        // Show error toaster
+        showToaster(false, 'Error', errorMsg);
+
         usersData = [];
       }
-
-      // Format users for display with safe date handling
       const formattedUsers = usersData.map(user => {
         const userBusiness = transformedBusinesses.find(business => {
           const businessId = business.id || business._id;
           const userIdBusiness = user.businessId || user.associatedBusinessId || user.institutionId;
-          return businessId === userIdBusiness || 
-                 businessId?.toString() === userIdBusiness?.toString();
+          return businessId === userIdBusiness ||
+            businessId?.toString() === userIdBusiness?.toString();
         });
 
         return {
@@ -216,34 +205,43 @@ const UsersPage = () => {
           lastName: user.lastName || user.lastname || '',
           email: user.email || '',
           institutionId: user.businessId || user.associatedBusinessId || user.institutionId || '',
-          institutionName: userBusiness?.businessName || user.businessName || user.institutionName || 'No Business',
+          businessName: user.businessName || userBusiness?.businessName || user.institutionName || 'No Business',
           role: user.role || user.userRole || '',
           username: user.username || '',
           phoneNumber: user.phone || user.phoneNumber || '',
           status: (user.status || 'active').toUpperCase(),
-          lastLogin: safeDateToString(user.lastLogin), // Safe date handling
+          lastLogin: safeDateToString(user.lastLogin),
           businessType: userBusiness?.businessType || '',
           password: '',
           confirmPassword: ''
         };
       });
-
-      console.log('✅ Formatted users:', formattedUsers.length);
       setUsers(formattedUsers);
-
       setLoadingState(true);
       setLoadedText("Data loaded successfully");
+
+      if (formattedUsers.length > 0) {
+        showToaster(true, 'Success', `Loaded ${formattedUsers.length} user(s) and ${transformedBusinesses.length} business(es)`);
+      } else {
+        showToaster(true, 'Info', 'No users found. Start by adding your first user.');
+      }
       setTimeout(() => {
         setLoading(false);
       }, 1000);
 
     } catch (error) {
       console.error('❌ Error fetching data:', error);
-      setErrorMessage('Failed to load data. Please check if the server is running.');
+      const errorMsg = 'Failed to load data. Please check if the server is running.';
+      setErrorMessage(errorMsg);
       setUsers([]);
       setBusinesses([]);
+
       setLoadingState(false);
       setLoadedText("Failed to load data");
+
+      // Show error toaster
+      showToaster(false, 'Error', errorMsg);
+
       setTimeout(() => {
         setLoading(false);
       }, 1000);
@@ -308,7 +306,6 @@ const UsersPage = () => {
         );
         break;
       default:
-        console.warn('Unknown action type:', actionType);
     }
 
     setActionModalLoading(false);
@@ -353,7 +350,6 @@ const UsersPage = () => {
   const openDisableModal = (user) => openActionModalWithLoader('disable', user);
   const openDeleteModal = (user) => openActionModalWithLoader('delete', user);
 
-  // Form Submission with Content Loader
   const handleFormSubmit = async (values) => {
     setSubmitting(true);
     setCreateLoading(true);
@@ -361,9 +357,6 @@ const UsersPage = () => {
     setErrorMessage(null);
 
     try {
-      console.log('📤 Submitting user data:', values);
-
-      // Prepare user data for backend
       const userData = {
         firstName: values.firstName.trim(),
         lastName: values.lastName.trim(),
@@ -374,29 +367,24 @@ const UsersPage = () => {
         businessId: values.institutionId
       };
 
-      // Include password for new users
       if (!isEditing && values.password) {
         userData.password = values.password;
       }
-
-      console.log('📦 Prepared userData for API:', userData);
-
       let response;
       if (isEditing && editingUser) {
-        console.log(`🔄 Updating user with ID: ${editingUser.id}`);
         response = await PUT(URLS.USERS.UPDATE_USER.replace(':id', editingUser.id), userData);
-        console.log('✅ Update response:', response);
       } else {
-        console.log('➕ Creating new user');
         response = await POST(URLS.USERS.CREATE_USER, userData);
-        console.log('✅ Create response:', response);
       }
 
-      // Show success state briefly before refreshing
-      setCreateLoadingText(isEditing ? "User updated successfully!" : "User created successfully!");
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      const successMessage = isEditing
+        ? `User "${values.firstName} ${values.lastName}" updated successfully!`
+        : `User "${values.firstName} ${values.lastName}" created successfully!`;
 
-      // Refresh data
+      setCreateLoadingText(successMessage);
+
+      showToaster(true, 'Success', successMessage);
+      await new Promise(resolve => setTimeout(resolve, 1500));
       await fetchUsersAndBusinesses();
       closeAllModals();
 
@@ -410,7 +398,12 @@ const UsersPage = () => {
         serverError = error.message;
       }
 
-      setErrorMessage(`Failed: ${serverError}`);
+      const errorMessage = `Failed to ${isEditing ? 'update' : 'create'} user: ${serverError}`;
+      setErrorMessage(errorMessage);
+
+      // Show error toaster
+      showToaster(false, 'Error', errorMessage);
+
       setCreateLoading(false);
     } finally {
       setSubmitting(false);
@@ -423,12 +416,16 @@ const UsersPage = () => {
     setSubmitting(true);
     try {
       const response = await DELETE(URLS.USERS.DELETE_USER.replace(':id', userId), { reason });
-      console.log('Delete user response:', response);
+      const user = users.find(u => u.id === userId);
+      const userName = user ? `${user.firstName} ${user.lastName}` : 'User';
+      showToaster(true, 'Success', `User "${userName}" deleted successfully!`);
       await fetchUsersAndBusinesses();
       closeModal();
     } catch (error) {
       console.error('Error deleting user:', error);
-      setErrorMessage('Failed to delete user. Please try again.');
+      const errorMsg = 'Failed to delete user. Please try again.';
+      setErrorMessage(errorMsg);
+      showToaster(false, 'Error', errorMsg);
     } finally {
       setSubmitting(false);
     }
@@ -437,16 +434,26 @@ const UsersPage = () => {
   const handleToggleStatus = async (userId, newStatus, reason) => {
     setSubmitting(true);
     try {
-      const response = await PUT(URLS.USERS.TOGGLE_USER_STATUS.replace(':id', userId), { 
+      const response = await PUT(URLS.USERS.TOGGLE_USER_STATUS.replace(':id', userId), {
         status: newStatus,
-        reason: reason 
+        reason: reason
       });
-      console.log('Toggle status response:', response);
+
+      const user = users.find(u => u.id === userId);
+      const userName = user ? `${user.firstName} ${user.lastName}` : 'User';
+      const statusMessage = newStatus === 'active' ? 'enabled' : 'disabled';
+
+      showToaster(true, 'Success', `User "${userName}" ${statusMessage} successfully!`);
+
       await fetchUsersAndBusinesses();
       closeModal();
     } catch (error) {
       console.error('Error toggling user status:', error);
-      setErrorMessage('Failed to update user status. Please try again.');
+      const errorMsg = 'Failed to update user status. Please try again.';
+      setErrorMessage(errorMsg);
+
+      // Show error toaster
+      showToaster(false, 'Error', errorMsg);
     } finally {
       setSubmitting(false);
     }
@@ -457,12 +464,17 @@ const UsersPage = () => {
     try {
       await handleToggleStatus(userId, 'active', 'Enabled via EnableUserView');
       closeAllModals();
+    } catch (error) {
+      console.error('Error enabling user:', error);
+      showToaster(false, 'Error', 'Failed to enable user. Please try again.');
     } finally {
       setSubmitting(false);
     }
   };
 
   const handleRejectUser = () => {
+    // Show info toaster when user is rejected
+    showToaster(undefined, 'Info', 'User request has been rejected.');
     closeAllModals();
   };
 
@@ -483,12 +495,18 @@ const UsersPage = () => {
 
   // Filtering
   const filteredUsers = users.filter(u => {
+    const firstName = u.firstName || '';
+    const lastName = u.lastName || '';
+    const email = u.email || '';
+    const username = u.username || '';
+    const institutionName = u.institutionName || '';
+
     const matchesSearch =
-      u.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      u.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      u.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      u.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      u.institutionName.toLowerCase().includes(searchTerm.toLowerCase());
+      firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      username.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      institutionName.toLowerCase().includes(searchTerm.toLowerCase());
 
     const matchesStatus = !filters.status || u.status === filters.status;
     const matchesRole = !filters.role || u.role === filters.role;
@@ -505,7 +523,6 @@ const UsersPage = () => {
     }
   };
 
-  // Show content loader during create/update operations
   if (createLoading) {
     return (
       <div className="min-h-screen bg-white p-8">
@@ -525,8 +542,6 @@ const UsersPage = () => {
       </div>
     );
   }
-
-  // Show content loader during initial loading
   if (loading) {
     return (
       <div className="min-h-screen bg-white p-8">
@@ -546,8 +561,6 @@ const UsersPage = () => {
       </div>
     );
   }
-
-  // Show content loader during form modal loading
   if (formModalLoading) {
     return (
       <div className="min-h-screen bg-white p-8">
@@ -567,8 +580,6 @@ const UsersPage = () => {
       </div>
     );
   }
-
-  // Show content loader during action modal loading
   if (actionModalLoading) {
     return (
       <div className="min-h-screen bg-white p-8">
@@ -682,6 +693,15 @@ const UsersPage = () => {
 
   return (
     <div className="min-h-screen bg-white p-8">
+      <Toaster
+        open={toaster.open}
+        state={toaster.state}
+        title={toaster.title}
+        message={toaster.message}
+        action={(open) => setToaster({ ...toaster, open })}
+        position="right"
+      />
+
       <div className="max-w-7xl mx-auto">
         {modalState.isOpen && (
           <ActionModal

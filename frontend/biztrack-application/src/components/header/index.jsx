@@ -8,7 +8,6 @@ import { authActions } from "../../store";
 
 export default function Topbar({ toggleSidebar, openProfile }) {
   const user = useSelector((state) => state.auth.value);
-  const role = user?.role?.replace(/[-_]/g, " ");
   const dispatch = useDispatch();
 
   const { logoUrl, primaryColor } = useTheme();
@@ -23,35 +22,72 @@ export default function Topbar({ toggleSidebar, openProfile }) {
     dispatch(authActions.logout());
   };
 
-  const getInitials = (name) => {
-    if (!name) return "NA";
-    return name
-      .split(" ")
-      .filter(Boolean)
-      .map((word) => word[0].toUpperCase())
-      .slice(0, 2)
-      .join("");
+  // Get user's full name from first and last name
+  const getUserFullName = () => {
+    if (user?.firstName && user?.lastName) {
+      return `${user.firstName} ${user.lastName}`;
+    }
+    return user?.name || "User";
   };
+
+  // Get user's initials from first and last name
+  const getInitials = () => {
+    if (user?.firstName && user?.lastName) {
+      return `${user.firstName.charAt(0)}${user.lastName.charAt(0)}`.toUpperCase();
+    }
+    if (user?.name) {
+      const nameParts = user.name.split(' ').filter(Boolean);
+      if (nameParts.length >= 2) {
+        return `${nameParts[0].charAt(0)}${nameParts[1].charAt(0)}`.toUpperCase();
+      }
+      return user.name.charAt(0).toUpperCase();
+    }
+    return "NA";
+  };
+
+  // Format role for display
+  const formatRole = (role) => {
+    if (!role) return "User";
+    return role.replace(/[-_]/g, " ");
+  };
+
+  // Get business name from user data
+  const businessName = user?.businessName || user?.organization || "My Business";
+  const businessType = user?.businessType || user?.organizationType || "";
+
+  // Get user's role
+  const userRole = formatRole(user?.role);
 
   return (
     <header
       className="shadow-sm px-4 py-3 flex items-center justify-between sticky top-0 z-10"
       style={{ backgroundColor: primaryColor || "#6f42c1" }}
     >
-      <div className="flex items-center">
-        <button className="mr-2 text-white lg:hidden" onClick={toggleSidebar}>
+      <div className="flex items-center gap-3">
+        <button className="mr-1 text-white lg:hidden" onClick={toggleSidebar}>
           <Menu size={24} />
         </button>
 
-        <img
-          src={logoUrl}
-          alt="Business Logo"
-          className="h-8 md:h-10 w-auto lg:hidden"
-          style={{ maxHeight: "40px" }}
-        />
+        {/* Simple Business Name | Business Type on LEFT */}
+        <div className="flex items-center text-white">
+          {/* Business Name */}
+          <span className="font-semibold text-base">
+            {businessName}
+          </span>
+
+          {/* Separator and Business Type (only if businessType exists) */}
+          {businessType && (
+            <>
+              <span className="mx-2 font-bold">|</span>
+              <span className="text-sm opacity-90">
+                {businessType}
+              </span>
+            </>
+          )}
+        </div>
       </div>
 
-      <div className="flex items-center space-x-4 relative">
+      <div className="flex items-center space-x-4">
         <button className="relative p-1 text-white hover:bg-opacity-80 rounded-full transition">
           <Bell size={20} />
           <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
@@ -71,12 +107,12 @@ export default function Topbar({ toggleSidebar, openProfile }) {
                 : "#6f42c1",
             }}
           >
-            {getInitials(user?.name)}
+            {getInitials()}
           </div>
           <div className="hidden md:inline text-xs text-white">
-            <span className="font-semibold">Hi, {user?.name}</span>
+            <span className="font-semibold">Hi, {getUserFullName()}</span>
             <br />
-            <span className="text-xs font-medium">{role}</span>
+            <span className="text-xs font-medium">{userRole}</span>
           </div>
         </div>
 

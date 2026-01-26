@@ -134,7 +134,7 @@ const productValidationSchema = yup.object({
     .test(
       'price-greater-than-buying',
       'Selling price must be greater than or equal to buying price',
-      function(value) {
+      function (value) {
         const { buyingPrice } = this.parent;
         return value >= buyingPrice;
       }
@@ -153,7 +153,8 @@ export default function ProductFormModal({
   onClose,
   onSave,
   categories = [],
-  kioskId,
+  businessId,
+  businessUUID,
 }) {
   const { primaryColor } = useTheme();
   const [isLoading, setIsLoading] = useState(false);
@@ -173,7 +174,7 @@ export default function ProductFormModal({
   // Memoized initial values that update when product changes
   const initialValues = useMemo(() => {
     console.log('🔄 Computing initial values - mode:', mode, 'product:', product);
-    
+
     if (mode === "edit" && product) {
       const values = {
         _id: product._id || product.id || "",
@@ -185,12 +186,13 @@ export default function ProductFormModal({
         buyingPrice: Number(product.buyingPrice) || 0,
         price: Number(product.price) || 0,
         threshold: Number(product.threshold) || 0,
-        kioskId: product.kioskId || kioskId,
+        businessId: product.businessId || businessId,
+        businessUUID: product.businessUUID || businessUUID,
       };
       console.log('✏️ Edit mode - initial values:', values);
       return values;
     }
-    
+
     const values = {
       _id: "",
       name: "",
@@ -201,11 +203,12 @@ export default function ProductFormModal({
       buyingPrice: 0,
       price: 0,
       threshold: 0,
-      kioskId: kioskId,
+      businessId: businessId,
+      businessUUID: businessUUID,
     };
     console.log('➕ Add mode - initial values:', values);
     return values;
-  }, [product, mode, kioskId]);
+  }, [product, mode, businessId, businessUUID]);
 
   // Initialize formik
   const formik = useFormik({
@@ -226,7 +229,8 @@ export default function ProductFormModal({
           buyingPrice: parseFloat(values.buyingPrice) || 0,
           price: parseFloat(values.price) || 0,
           threshold: parseInt(values.threshold) || 0,
-          kioskId: values.kioskId || kioskId,
+          businessId: values.businessId || businessId,
+          businessUUID: values.businessUUID || businessUUID,
         };
 
         if (mode === "edit" && values._id) {
@@ -235,7 +239,7 @@ export default function ProductFormModal({
 
         console.log('📤 Submitting product data:', productData);
         await onSave(productData);
-        
+
         showToaster("success", "Success", successMessage);
         setTimeout(() => {
           onClose();
@@ -268,26 +272,10 @@ export default function ProductFormModal({
     onClose();
   };
 
-  const handleNumberChange = (field) => (e) => {
-    const value = e.target.value;
-    if (value === '') {
-      formik.setFieldValue(field, 0);
-    } else {
-      const numValue = field === 'stock' || field === 'threshold' 
-        ? parseInt(value) || 0
-        : parseFloat(value) || 0;
-      formik.setFieldValue(field, numValue);
-    }
-  };
-
-  const handleTextChange = (field) => (e) => {
-    formik.setFieldValue(field, e.target.value);
-  };
-
   // Build category options - always include all defaults + any passed categories
   const allCategories = useMemo(() => {
     let options = [...CATEGORY_OPTIONS];
-    
+
     // Add any custom categories from props
     if (categories && Array.isArray(categories) && categories.length > 0) {
       categories.forEach(cat => {
@@ -296,15 +284,15 @@ export default function ProductFormModal({
         }
       });
     }
-    
+
     // Ensure current category is in the list
     if (formik.values.category && !options.some(opt => opt.value === formik.values.category)) {
-      options.push({ 
-        value: formik.values.category, 
-        label: formik.values.category 
+      options.push({
+        value: formik.values.category,
+        label: formik.values.category
       });
     }
-    
+
     console.log('📋 Category options:', options.length, 'options');
     return options;
   }, [categories, formik.values.category]);
@@ -312,7 +300,7 @@ export default function ProductFormModal({
   const calculateStatus = () => {
     const stock = formik.values.stock || 0;
     const threshold = formik.values.threshold || 0;
-    
+
     if (stock === 0) return "Out of Stock";
     if (stock < threshold) return "Low Stock";
     return "In Stock";
@@ -352,26 +340,26 @@ export default function ProductFormModal({
                     id="name"
                     name="name"
                     label="Product Name"
-                    value={formik.values.name}
-                    handleInput={handleTextChange('name')}
-                    onBlur={formik.handleBlur}
+                    input={formik.values.name}
+                    handleInput={formik.handleChange}
+                    handleBlur={formik.handleBlur}
                     placeholder="Enter product name"
                     required
                     error={formik.touched.name && Boolean(formik.errors.name)}
-                    helperText={formik.touched.name && formik.errors.name}
+                    errorMessage={formik.touched.name && formik.errors.name}
                   />
 
                   <TextInput
                     id="sku"
                     name="sku"
                     label="SKU"
-                    value={formik.values.sku}
-                    handleInput={handleTextChange('sku')}
-                    onBlur={formik.handleBlur}
+                    input={formik.values.sku}
+                    handleInput={formik.handleChange}
+                    handleBlur={formik.handleBlur}
                     placeholder="Enter SKU"
                     required
                     error={formik.touched.sku && Boolean(formik.errors.sku)}
-                    helperText={formik.touched.sku && formik.errors.sku}
+                    errorMessage={formik.touched.sku && formik.errors.sku}
                   />
                 </Box>
 
@@ -381,14 +369,14 @@ export default function ProductFormModal({
                     name="stock"
                     label="Current Stock"
                     type="number"
-                    value={formik.values.stock}
-                    handleInput={handleNumberChange('stock')}
-                    onBlur={formik.handleBlur}
+                    input={formik.values.stock}
+                    handleInput={formik.handleChange}
+                    handleBlur={formik.handleBlur}
                     placeholder="0"
                     required
                     min="0"
                     error={formik.touched.stock && Boolean(formik.errors.stock)}
-                    helperText={formik.touched.stock && formik.errors.stock}
+                    errorMessage={formik.touched.stock && formik.errors.stock}
                   />
 
                   <SelectInput
@@ -413,14 +401,14 @@ export default function ProductFormModal({
                     label="Buying Price (KES)"
                     type="number"
                     step="0.01"
-                    value={formik.values.buyingPrice}
-                    handleInput={handleNumberChange('buyingPrice')}
-                    onBlur={formik.handleBlur}
+                    input={formik.values.buyingPrice}
+                    handleInput={formik.handleChange}
+                    handleBlur={formik.handleBlur}
                     placeholder="0.00"
                     required
                     min="0.01"
                     error={formik.touched.buyingPrice && Boolean(formik.errors.buyingPrice)}
-                    helperText={formik.touched.buyingPrice && formik.errors.buyingPrice}
+                    errorMessage={formik.touched.buyingPrice && formik.errors.buyingPrice}
                   />
 
                   <TextInput
@@ -429,14 +417,14 @@ export default function ProductFormModal({
                     label="Selling Price (KES)"
                     type="number"
                     step="0.01"
-                    value={formik.values.price}
-                    handleInput={handleNumberChange('price')}
-                    onBlur={formik.handleBlur}
+                    input={formik.values.price}
+                    handleInput={formik.handleChange}
+                    handleBlur={formik.handleBlur}
                     placeholder="0.00"
                     required
                     min="0.01"
                     error={formik.touched.price && Boolean(formik.errors.price)}
-                    helperText={formik.touched.price && formik.errors.price}
+                    errorMessage={formik.touched.price && formik.errors.price}
                   />
                 </Box>
 
@@ -446,14 +434,14 @@ export default function ProductFormModal({
                     name="threshold"
                     label="Low Stock Threshold"
                     type="number"
-                    value={formik.values.threshold}
-                    handleInput={handleNumberChange('threshold')}
-                    onBlur={formik.handleBlur}
+                    input={formik.values.threshold}
+                    handleInput={formik.handleChange}
+                    handleBlur={formik.handleBlur}
                     placeholder="0"
                     required
                     min="0"
                     error={formik.touched.threshold && Boolean(formik.errors.threshold)}
-                    helperText={formik.touched.threshold && formik.errors.threshold}
+                    errorMessage={formik.touched.threshold && formik.errors.threshold}
                   />
 
                   <SelectInput
@@ -476,13 +464,12 @@ export default function ProductFormModal({
                     <div className="text-sm">
                       <span className="text-gray-600">Current Status:</span>
                       <span
-                        className={`font-semibold ml-2 ${
-                          calculateStatus() === "In Stock"
+                        className={`font-semibold ml-2 ${calculateStatus() === "In Stock"
                             ? "text-green-600"
                             : calculateStatus() === "Low Stock"
                               ? "text-amber-600"
                               : "text-red-600"
-                        }`}
+                          }`}
                       >
                         {calculateStatus()}
                       </span>

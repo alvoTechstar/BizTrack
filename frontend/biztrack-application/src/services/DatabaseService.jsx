@@ -2,6 +2,7 @@ import React, { Component } from "react";
 import Cookies from "js-cookie";
 import axios from "axios";
 import URLS from "../utilities/Endpoints";
+
 class DatabaseService extends Component {
   static settings = {
     url: URLS.TAG_BASE_URL,
@@ -11,21 +12,51 @@ class DatabaseService extends Component {
     return <div />;
   }
 
-  static generateHeaders() {
+  // ✅ FIXED: Now accepts skipContentType parameter
+  static generateHeaders(skipContentType = false) {
     const token = Cookies.get("token");
-    return {
-      "Content-Type": "application/json",
+    const headers = {
       Authorization: `Bearer ${token}`,
     };
+
+    // Only add Content-Type for non-FormData requests
+    if (!skipContentType) {
+      headers["Content-Type"] = "application/json";
+    }
+
+    return headers;
   }
 
+  // ✅ FIXED: Detect FormData and adjust headers accordingly
   static async POST(end_point, post_data) {
     try {
+      const isFormData = post_data instanceof FormData;
+      
+      console.log('🔍 DatabaseService POST:', {
+        endpoint: end_point,
+        isFormData,
+        dataType: post_data?.constructor?.name
+      });
+
+      if (isFormData) {
+        console.log('📤 Sending FormData (multipart/form-data)');
+        // Log FormData contents for debugging
+        for (let [key, value] of post_data.entries()) {
+          if (value instanceof File) {
+            console.log(`  📎 ${key}: [File: ${value.name}, ${value.size} bytes]`);
+          } else {
+            console.log(`  📄 ${key}: ${value}`);
+          }
+        }
+      } else {
+        console.log('📤 Sending JSON (application/json)');
+      }
+
       const response = await axios.post(
         this.settings.url + end_point,
         post_data,
         {
-          headers: this.generateHeaders(),
+          headers: this.generateHeaders(isFormData), // Skip Content-Type for FormData
         }
       );
       return response.data;
@@ -78,13 +109,36 @@ class DatabaseService extends Component {
     }
   }
 
+  // ✅ FIXED: Detect FormData and adjust headers accordingly
   static async PUT(end_point, post_data) {
     try {
+      const isFormData = post_data instanceof FormData;
+      
+      console.log('🔍 DatabaseService PUT:', {
+        endpoint: end_point,
+        isFormData,
+        dataType: post_data?.constructor?.name
+      });
+
+      if (isFormData) {
+        console.log('📤 Sending FormData (multipart/form-data)');
+        // Log FormData contents for debugging
+        for (let [key, value] of post_data.entries()) {
+          if (value instanceof File) {
+            console.log(`  📎 ${key}: [File: ${value.name}, ${value.size} bytes]`);
+          } else {
+            console.log(`  📄 ${key}: ${value}`);
+          }
+        }
+      } else {
+        console.log('📤 Sending JSON (application/json)');
+      }
+
       const response = await axios.put(
         this.settings.url + end_point,
         post_data,
         {
-          headers: this.generateHeaders(),
+          headers: this.generateHeaders(isFormData), // Skip Content-Type for FormData
         }
       );
       return response.data;

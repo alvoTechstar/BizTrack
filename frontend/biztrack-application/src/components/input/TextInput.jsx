@@ -17,6 +17,7 @@ export default function TextInput({
   disabled,
   required,
   color,
+  name, // Make sure you're passing name prop
 }) {
   const disablePastDate = () => {
     const today = new Date();
@@ -25,6 +26,10 @@ export default function TextInput({
     const yyyy = today.getFullYear();
     return yyyy + "-" + mm + "-" + dd;
   };
+  
+  // Handle undefined/null input by providing a default value
+  const inputValue = input ?? '';
+  
   return (
     <div className="text-input-container">
       <span
@@ -45,12 +50,13 @@ export default function TextInput({
       ) : null}
       <input
         id={id}
+        name={name || id} // Make sure name is passed
         disabled={disabled}
         type={type || "text"}
         placeholder={placeholder}
-        value={input}
+        value={inputValue} // Use the safe value
         pattern={type === "number" ? `\d*` : null}
-        onChange={(e) => handleInput(e)}
+        onChange={(e) => handleInput && handleInput(e)}
         onBlur={handleBlur}
         maxLength={max}
         minLength={min}
@@ -59,11 +65,11 @@ export default function TextInput({
             ? "text-input-container-error"
             : color
             ? `text-input-${color}`
-            : null
+            : "text-input-default" // Add default class
         }
         autoComplete={id === "code" ? "off" : "on"}
-        min={!id.includes("issueDate") ? disablePastDate() : null}
-        max={id.includes("issueDate") ? disablePastDate() : null}
+        min={!id?.includes("issueDate") ? disablePastDate() : null}
+        max={id?.includes("issueDate") ? disablePastDate() : null}
       />
       {error ? (
         <div className="text-input-error">

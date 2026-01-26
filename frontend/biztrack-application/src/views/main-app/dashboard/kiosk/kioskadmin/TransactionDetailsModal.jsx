@@ -12,10 +12,9 @@ import {
   Typography,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
-import { CreditCard } from "lucide-react";
-import StatusBadge from "./StatusBadge";
+import { CreditCard, User } from "lucide-react";
+import StatusBadge from "../../../reports/kiosk/shopkeeper/StatusBadge";
 import { formatCurrency } from "../../../../../utilities/SharedFunctions";
-
 const TransactionDetailsModal = ({ open, onClose, transaction }) => {
   if (!transaction) return null;
 
@@ -75,7 +74,9 @@ const TransactionDetailsModal = ({ open, onClose, transaction }) => {
       </DialogTitle>
       <DialogContent dividers>
         <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4 mb-4">
+          {/* Changed from grid-cols-2 to grid-cols-3 for 3 columns */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+            {/* Transaction Column 1 */}
             <div>
               <Typography variant="subtitle2" color="textSecondary">
                 Date & Time
@@ -103,6 +104,35 @@ const TransactionDetailsModal = ({ open, onClose, transaction }) => {
                 )}
               </div>
             </div>
+
+            {/* Added Shopkeeper Column 2 */}
+            <div>
+              <Typography variant="subtitle2" color="textSecondary">
+                Shopkeeper Name
+              </Typography>
+              <Typography variant="body1" className="flex items-center gap-1">
+                <User className="h-4 w-4" />
+                {transaction.shopkeeperName || "Not specified"}
+              </Typography>
+            </div>
+            <div>
+              <Typography variant="subtitle2" color="textSecondary">
+                Shopkeeper ID
+              </Typography>
+              <Typography variant="body1">
+                {transaction.shopkeeperId || "N/A"}
+              </Typography>
+            </div>
+            <div>
+              <Typography variant="subtitle2" color="textSecondary">
+                Shopkeeper Role
+              </Typography>
+              <Typography variant="body1">
+                {transaction.shopkeeperRole || "N/A"}
+              </Typography>
+            </div>
+
+            {/* Existing Column 3 */}
             <div>
               <Typography variant="subtitle2" color="textSecondary">
                 Total Amount
@@ -112,6 +142,18 @@ const TransactionDetailsModal = ({ open, onClose, transaction }) => {
               </Typography>
             </div>
           </div>
+
+          {/* Shopkeeper Email Row if available */}
+          {transaction.shopkeeperEmail && (
+            <div className="mb-4 p-3 bg-blue-50 rounded-lg">
+              <Typography variant="subtitle2" color="textSecondary" className="mb-1">
+                Shopkeeper Contact
+              </Typography>
+              <Typography variant="body1">
+                Email: {transaction.shopkeeperEmail}
+              </Typography>
+            </div>
+          )}
 
           {/* Debt Information Box */}
           {isDebtTransaction && (

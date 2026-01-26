@@ -15,7 +15,6 @@ export default function PassReset({
   buttonAction,
   back,
 }) {
-  // Check if passwords are valid (all requirements met and matching)
   const isPasswordValid = 
     input &&
     validatePassword("length", input) &&

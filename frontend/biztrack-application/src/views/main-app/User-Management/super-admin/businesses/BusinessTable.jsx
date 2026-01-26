@@ -1,4 +1,3 @@
-// src/components/business/BusinessTable.jsx
 import React from 'react';
 import { Building2 } from 'lucide-react';
 import { useTheme } from '../../../../../components/theme/ThemeContext';
@@ -19,19 +18,27 @@ const BUSINESS_TABLE_HEADERS = [
 
 const BusinessTable = ({
   filteredBusinesses,
-  selectedItems,
+  selectedItems = [],
   setSelectedItems,
   toggleSelectAll,
   toggleSelectItem,
-  openModalForEdit, // ✅ Opens CreateBusinessForm in edit mode
-  openEnableView, // ✅ Opens CreateBusinessForm in view mode
-  openEnableModal, // ✅ Opens ActionModal with enable configuration
-  openDisableModal, // ✅ Opens ActionModal with disable configuration
-  openDeleteModal, // ✅ Opens ActionModal with delete configuration
+  openModalForEdit,
+  openEnableView,
+  openEnableModal,
+  openDisableModal,
+  openDeleteModal,
 }) => {
   const theme = useTheme();
+  if (!filteredBusinesses) {
+    return (
+      <div className="text-center py-12 bg-white rounded-lg border border-gray-200 mt-4">
+        <Building2 size={48} className="text-gray-400 mx-auto mb-3" />
+        <h3 className="text-lg font-semibold text-gray-700 mb-1">Loading businesses...</h3>
+        <p className="text-gray-500">Please wait while we fetch the data</p>
+      </div>
+    );
+  }
 
-  // No Results State
   if (filteredBusinesses.length === 0) {
     return (
       <div className="text-center py-12 bg-white rounded-lg border border-gray-200 mt-4">
@@ -61,38 +68,30 @@ const BusinessTable = ({
       console.error('Business not found with id:', id);
       return;
     }
-
-    console.log('Action selected:', action, 'for business:', business.name);
-
     switch (action.toLowerCase()) {
       case 'view':
-        console.log('Opening CreateBusinessForm in view mode for business:', business);
-        openEnableView(business); // ✅ Opens CreateBusinessForm in read-only view mode
+        openEnableView(business);
         break;
       case 'edit':
-        console.log('Opening CreateBusinessForm in edit mode for business:', business);
-        openModalForEdit(business); // ✅ Opens CreateBusinessForm in edit mode
+        openModalForEdit(business);
         break;
       case 'enable':
-        console.log('Opening enable action modal for business:', business);
-        openEnableModal(business); // ✅ Opens ActionModal with enable configuration
+        openEnableModal(business);
         break;
       case 'disable':
-        console.log('Opening disable action modal for business:', business);
-        openDisableModal(business); // ✅ Opens ActionModal with disable configuration
+        openDisableModal(business);
         break;
       case 'delete':
-        console.log('Opening delete action modal for business:', business);
-        openDeleteModal(business); // ✅ Opens ActionModal with delete configuration
+        openDeleteModal(business);
         break;
       default:
-        console.warn('Unknown action:', action);
     }
   };
 
   const handleRowClick = (column) => {
-    console.log('Row clicked:', column);
   };
+  const isAllSelected = selectedItems.length === filteredBusinesses.length &&
+    filteredBusinesses.length > 0;
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm">
@@ -103,7 +102,7 @@ const BusinessTable = ({
         selected={selectedItems}
         selectedAction={setSelectedItems}
         selectAll={toggleSelectAll}
-        all={selectedItems.length === filteredBusinesses.length && filteredBusinesses.length > 0}
+        all={isAllSelected}
         actionSelected={handleActionSelected}
         selectedRow={handleRowClick}
         actions={getActionsForStatus}

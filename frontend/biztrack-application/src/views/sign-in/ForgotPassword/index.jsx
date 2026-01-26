@@ -5,9 +5,10 @@ import OTPRequest from "./OTPRequest";
 import OTPInput from "./OTPInput";
 import PassReset from "./PassReset";
 import Toaster from "../../../components/Toaster";
-import Footer from "../../../components/footer";
 import axios from "axios";
 import URLS from "../../../utilities/Endpoints";
+import loginBg from "../../../assets/Backgrounds/background.png";
+import ModalFooter from "../../../components/footer/ModalFooter";
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState("");
@@ -19,7 +20,7 @@ export default function ForgotPassword() {
   const [toasterState, setToasterState] = useState("");
   const [toasterTitle, setToasterTitle] = useState("");
   const [toasterMessage, setToasterMessage] = useState("");
-  const [view, setView] = useState(0); // 0: email, 1: OTP, 2: new password
+  const [view, setView] = useState(0); 
   const [loading, setLoading] = useState(false);
   const [loadingOTP, setLoadingOTP] = useState(false);
 
@@ -65,9 +66,6 @@ export default function ForgotPassword() {
       const response = await axios.post(`${URLS.TAG_BASE_URL}${URLS.AUTH.FORGOT_PASSWORD}`, {
         email: email
       });
-
-      console.log("📧 Forgot password response:", response.data);
-
       if (response.data.success) {
         handleToaster("true", "Success", "OTP sent to your email");
         setTimeout(() => {
@@ -95,10 +93,7 @@ export default function ForgotPassword() {
       const response = await axios.post(`${URLS.TAG_BASE_URL}${URLS.AUTH.VERIFY_RESET_OTP}`, {
         email: email,
         otp: otp
-      });
-
-      console.log("✅ OTP verification response:", response.data);
-  
+      });  
       if (response.data.success) {
         handleToaster("true", "Success", "OTP verified successfully");
         setResetToken(response.data.resetToken);
@@ -139,24 +134,15 @@ export default function ForgotPassword() {
     setLoading(true);
 
     try {
-      console.log("🔄 Resetting password with:", { 
-        resetToken: resetToken ? "***" : "missing",
-        email: email,
-        passwordLength: password.length 
-      });
-
       const response = await axios.post(`${URLS.TAG_BASE_URL}${URLS.AUTH.RESET_PASSWORD}`, {
         resetToken: resetToken,
-        newPassword: password, // Send plain text - backend should handle hashing
+        newPassword: password,
         confirmPassword: passwordConfirm
       });
-
-      console.log("✅ Password reset response:", response.data);
-
       if (response.data.success) {
         handleToaster("true", "Success", "Password reset successfully! You can now login with your new password.");
         setTimeout(() => {
-          navigate("/"); // Redirect to login page
+          navigate("/login");
         }, 3000);
       }
     } catch (error) {
@@ -239,17 +225,80 @@ export default function ForgotPassword() {
   };
 
   return (
-    <div className="reset-container">
+    <div className="min-h-screen w-full bg-gray-100 relative">
       <Toaster
         open={showToaster}
         state={toasterState}
         title={toasterTitle}
         message={toasterMessage}
         action={setShowToaster}
-        position={"right"}
+        position="right"
       />
-      {handleView(view)}
-      <Footer />
+      
+      <div className="lg:hidden min-h-screen w-full relative">
+        <div
+          className="fixed inset-0 w-full h-full bg-cover bg-center z-0"
+          style={{
+            backgroundImage: `url(${loginBg})`,
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+            backgroundRepeat: "no-repeat"
+          }}
+        ></div>
+        
+        <div className="fixed inset-0 w-full h-full bg-black/20 z-5"></div>
+        
+        <div className="relative z-10 min-h-screen flex flex-col justify-center items-center p-4">
+          <div className="w-full max-w-md bg-white/95 backdrop-blur-sm p-6 rounded-2xl shadow-xl border border-white/30 mt-4">
+            <h2 className="text-xl sm:text-xl font-semibold mb-1 text-left">
+              BizTrack Application
+            </h2>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-4 mt-2 text-left">
+              {view === 0 ? "Reset Password" : view === 1 ? "Verify OTP" : "Set New Password"}
+            </h1>
+            
+            {handleView(view)}
+            
+            <div className="mt-8 mb-2 text-center">
+              <ModalFooter />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="hidden lg:grid lg:grid-cols-2 min-h-screen">
+        <div className="flex items-center justify-center p-8 relative z-10">
+          <div className="bg-white p-8 rounded-xl shadow-md border border-gray-300 w-full max-w-md">
+            <h2 className="text-xl font-semibold mb-1 text-left">
+              BizTrack Application
+            </h2>
+            <h1 className="text-3xl font-bold text-gray-700 mb-6 mt-3 text-left">
+              {view === 0 ? "Reset Password" : view === 1 ? "Verify OTP" : "Set New Password"}
+            </h1>
+            
+            {handleView(view)}
+            
+            <div className="mt-8 mb-2 text-center">
+              <ModalFooter />
+            </div>
+          </div>
+        </div>
+
+        <div
+          className="bg-cover bg-center h-full flex flex-col justify-end"
+          style={{
+            backgroundImage: `url(${loginBg})`,
+            borderTopLeftRadius: "40px",
+            borderBottomLeftRadius: "40px",
+          }}
+        >
+          <div className="bg-white p-6 rounded-xl shadow-md max-w-md mx-auto mb-10">
+            <span className="text-[#111827] font-bold text-xl p-3">
+              Empower Your Business: Track Profits, Minimize Losses, Maximize Growth
+            </span>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

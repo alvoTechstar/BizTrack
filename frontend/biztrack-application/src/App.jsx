@@ -1,33 +1,34 @@
+// App.jsx
 import React, { useState, useEffect } from "react";
-import {
-  BrowserRouter as Router,
-  Routes,
-  Route,
-  Navigate,
-  Outlet,
-} from "react-router-dom";
-import { useSelector, useDispatch, Provider } from "react-redux";
-import { store, authActions } from "./store";
+import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from "react-router-dom";
+import { Provider, useDispatch, useSelector } from "react-redux";
 import Cookies from "js-cookie";
-import { routes } from "./config/routes";
-import Login from "./views/sign-in/Login";
-import ForgotPassword from "./views/sign-in/ForgotPassword";
+import { store, authActions } from "./store";
+
 import { ThemeProvider } from "./components/theme/ThemeContext";
 import MainLayout from "./layout";
 import AppRoutes from "./components/AppRoutes";
+import ContentLoader from "./components/Loader/ContentLoader";
+
+import Login from "./views/sign-in/Login";
+import ForgotPassword from "./views/sign-in/ForgotPassword";
+import OTPInput from "./views/sign-in/ForgotPassword/OTPInput";
 import NotFound from "./components/notfound";
 import Unauthorized from "./components/notfound/Unauthorized";
-import { CircularProgress } from "@mui/material";
-import OTPInput from "./views/sign-in/ForgotPassword/OTPInput";
 
+import { routes } from "./config/routes";
+
+// ---------------------------------------------------
+// Protected layout that includes MainLayout + Sidebar
+// ---------------------------------------------------
 const ThemedMainLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isLoadingAuth, setIsLoadingAuth] = useState(true);
   const dispatch = useDispatch();
   const authState = useSelector((state) => state.auth.value);
 
+  // Load user from cookie if Redux is empty
   useEffect(() => {
-    // Only load from cookie if Redux is empty
     if (!authState) {
       const userCookie = Cookies.get("user");
       if (userCookie) {
@@ -47,20 +48,27 @@ const ThemedMainLayout = () => {
 
   if (isLoadingAuth) {
     return (
-      <div className="flex flex-col justify-center items-center h-screen bg-gray-50">
-        <CircularProgress color="primary" size={60} />
-        <p className="mt-4 text-lg text-gray-600">Loading application...</p>
+      <div className="min-h-screen bg-white p-8">
+        <div className="max-w-7xl mx-auto">
+          <ContentLoader
+            state={true}
+            loading={true}
+            loadingText="Loading application..."
+            loadedText=""
+            color="primary"
+          />
+        </div>
       </div>
     );
   }
 
   if (!authState) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/login" replace />; // Redirect to /login if not authenticated
   }
 
   return (
-    <MainLayout 
-      sidebarOpen={sidebarOpen} 
+    <MainLayout
+      sidebarOpen={sidebarOpen}
       toggleSidebar={() => setSidebarOpen(!sidebarOpen)}
     >
       <Outlet />
@@ -68,14 +76,18 @@ const ThemedMainLayout = () => {
   );
 };
 
+// ------------------------
+// Main App Component
+// ------------------------
 const App = () => {
   return (
     <Provider store={store}>
-      <Router>
-        <ThemeProvider>
+      <ThemeProvider>
+        <Router>
           <Routes>
             {/* Public Routes */}
-            <Route path="/" element={<Login />} />
+            <Route path="/" element={<Navigate to="/login" replace />} /> {/* Redirect / to /login */}
+            <Route path="/login" element={<Login />} />
             <Route path="/reset-password" element={<ForgotPassword />} />
             <Route path="/otp" element={<OTPInput />} />
             <Route path="/unauthorized" element={<Unauthorized />} />
@@ -98,11 +110,11 @@ const App = () => {
                 ))}
             </Route>
 
-            {/* Catch All - 404 */}
+            {/* Catch-all */}
             <Route path="*" element={<Navigate to="/not-found" replace />} />
           </Routes>
-        </ThemeProvider>
-      </Router>
+        </Router>
+      </ThemeProvider>
     </Provider>
   );
 };

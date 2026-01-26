@@ -9,6 +9,9 @@ import {
   TableHead,
   TableRow,
   Typography,
+  Box,
+  useTheme,
+  useMediaQuery,
 } from "@mui/material";
 import "./table.css";
 import {
@@ -28,22 +31,23 @@ import TableActions from "./TableActions";
 import CheckboxInput from "../input/CheckboxInput"
 import TablePagination from "./TablePagination";
 
-const StyledTableCell = styled(TableCell)(({ theme }) => ({
+const StyledTableCell = styled(TableCell)(({ theme, isMobile, isTablet }) => ({
   [`&.${tableCellClasses.head}`]: {
     backgroundColor: "#F3F4F6",
     color: "#353F50",
     fontFamily: `"Averta-Bolder", sans-serif`,
-    fontSize: 12,
-    lineHeight: "14px",
-    padding: "10px 9px",
+    fontSize: isMobile ? 10 : isTablet ? 11 : 12,
+    lineHeight: isMobile ? "12px" : "14px",
+    padding: isMobile ? "8px 6px" : isTablet ? "9px 7px" : "10px 9px",
     fontWeight: "bold",
-
+    whiteSpace: isMobile ? "nowrap" : "normal",
   },
   [`&.${tableCellClasses.body}`]: {
-    fontSize: 12,
+    fontSize: isMobile ? 10 : isTablet ? 11 : 12,
     fontFamily: `"Averta-Bold", sans-serif`,
     color: "#353F50",
-    padding: "6px 9px",
+    padding: isMobile ? "5px 6px" : isTablet ? "5px 7px" : "6px 9px",
+    whiteSpace: isMobile ? "nowrap" : "normal",
   },
 }));
 
@@ -68,7 +72,13 @@ export default function DataTable({
   actionSelected,
   customRenderCell, // Add custom render prop
 }) {
-  const ROWS_PER_PAGE = type === "role-matrix" ? 3 : 6;
+  // Responsive hooks
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const isTablet = useMediaQuery(theme.breakpoints.between('sm', 'md'));
+  const isDesktop = useMediaQuery(theme.breakpoints.up('md'));
+
+  const ROWS_PER_PAGE = type === "role-matrix" ? 3 : isMobile ? 5 : 6;
 
   const [page, setPage] = useState(1);
   const [prevData, setPrevData] = useState([]);
@@ -184,6 +194,16 @@ export default function DataTable({
       return safeCustomRenderCell(column, header);
     }
 
+    // NEW: Handle dateJoined field for any table type
+    if (header.key === "dateJoined") {
+      // Check if column has createdAt field (from your data structure)
+      if (column.createdAt) {
+        return formatDate(column.createdAt);
+      }
+      // Fallback to dateJoined field if it exists
+      return column[header.key] ? formatDate(column[header.key]) : 'N/A';
+    }
+
     // Handle debt management table specifically
     if (type === "debts") {
       if (header.key === "status") {
@@ -272,16 +292,21 @@ export default function DataTable({
     } else if (header.key === "countryFrom") {
       return column.countryFromDetails ? column.countryFromDetails.name : null;
     } else if (header.key === "action") {
+      const rowActions = column.availableActions || actions || [];
       return <TableActions
         status={column.status}
-        actions={actions || []}
+        actions={rowActions}  // Use row-specific actions
         id={column.id}
         action={handleAction}
       />;
     } else if (header.key === "permissions") {
       return Array.isArray(column[header.key])
         ? column[header.key].map((permission, index) => (
-          <Typography key={index} variant="body">
+          <Typography
+            key={index}
+            variant="body2"
+            sx={{ fontSize: isMobile ? '10px' : '12px' }}
+          >
             {permission}
           </Typography>
         ))
@@ -292,15 +317,51 @@ export default function DataTable({
   };
 
   return (
-    <div className="table-container">
+    <Box
+      className="table-container"
+      sx={{
+        width: '100%',
+        mt: { xs: 1, sm: 1.5, md: 2 },
+      }}
+    >
       {Array.isArray(rows) && rows.length > 0 ? (
         <>
-          <TableContainer className="table">
-            <Table>
+          <TableContainer
+            className="table"
+            sx={{
+              overflowX: 'auto',
+              minHeight: isMobile ? '250px' : isTablet ? '300px' : '18.5em',
+              width: '100%',
+              '&::-webkit-scrollbar': {
+                height: isMobile ? '6px' : '8px',
+              },
+              '&::-webkit-scrollbar-track': {
+                backgroundColor: '#f1f1f1',
+                borderRadius: '10px',
+              },
+              '&::-webkit-scrollbar-thumb': {
+                backgroundColor: '#888',
+                borderRadius: '10px',
+                '&:hover': {
+                  backgroundColor: '#555',
+                },
+              },
+            }}
+          >
+            <Table
+              sx={{
+                minWidth: isMobile ? 500 : 650,
+                width: '100%',
+              }}
+            >
               <TableHead>
                 <TableRow>
                   {Array.isArray(headers) && headers.map((header, index) => (
-                    <StyledTableCell key={header.key || index}>
+                    <StyledTableCell
+                      key={header.key || index}
+                      isMobile={isMobile}
+                      isTablet={isTablet}
+                    >
                       {index === 0 && header.key === "all" ? (
                         <CheckboxInput
                           checked={all}
@@ -319,8 +380,9 @@ export default function DataTable({
                 {currentRows.map((column, rowIndex) => (
                   <TableRow
                     key={column.id || column.orderNo || rowIndex}
-                    style={
-                      column.status === "PAID" ||
+                    sx={{
+                      cursor: (
+                        column.status === "PAID" ||
                         column.status === "PENDING" ||
                         column.status === "APPROVED" ||
                         column.status === "NOT_APPROVED" ||
@@ -328,10 +390,22 @@ export default function DataTable({
                           (column.status === "ACTIVE" ||
                             column.amount ||
                             type === "logs" ||
-                            type === "debts")) // Add debts to clickable types
-                        ? { cursor: "pointer" }
-                        : null
-                    }
+                            type === "debts"))
+                      ) ? "pointer" : "default",
+                      '&:hover': {
+                        backgroundColor: (
+                          column.status === "PAID" ||
+                          column.status === "PENDING" ||
+                          column.status === "APPROVED" ||
+                          column.status === "NOT_APPROVED" ||
+                          (clickable &&
+                            (column.status === "ACTIVE" ||
+                              column.amount ||
+                              type === "logs" ||
+                              type === "debts"))
+                        ) ? 'rgba(0, 0, 0, 0.04)' : 'transparent',
+                      },
+                    }}
                     onClick={(e) => {
                       if (
                         column.status === "PAID" ||
@@ -343,7 +417,7 @@ export default function DataTable({
                             column.amount ||
                             type === "logs" ||
                             type === "bank deposit" ||
-                            type === "debts")) // Add debts to clickable
+                            type === "debts"))
                       ) {
                         e.preventDefault();
                         e.stopPropagation();
@@ -357,13 +431,15 @@ export default function DataTable({
                           component="th"
                           scope="row"
                           key={header.key || index}
+                          isMobile={isMobile}
+                          isTablet={isTablet}
                         >
                           {column.status === "ACTIVE" ||
                             column.amount ||
                             column.paymentAmount ||
                             type === "logs" ||
                             type === "bank deposit" ||
-                            type === "debts" ? ( // Add debts to checkbox condition
+                            type === "debts" ? (
                             <CheckboxInput
                               checked={
                                 all ||
@@ -378,7 +454,11 @@ export default function DataTable({
                           ) : null}
                         </StyledTableCell>
                       ) : (
-                        <StyledTableCell key={header.key || index}>
+                        <StyledTableCell
+                          key={header.key || index}
+                          isMobile={isMobile}
+                          isTablet={isTablet}
+                        >
                           {renderCellContent(column, header)}
                         </StyledTableCell>
                       )
@@ -388,19 +468,38 @@ export default function DataTable({
               </TableBody>
             </Table>
           </TableContainer>
-          <TablePagination
-            page={page}
-            pages={pages}
-            color={color}
-            handleChange={handleChange}
-          />
+          <Box sx={{ mt: { xs: 1.5, sm: 2 }, mb: { xs: 3, sm: 4, md: 5 } }}>
+            <TablePagination
+              page={page}
+              pages={pages}
+              color={color}
+              handleChange={handleChange}
+            />
+          </Box>
         </>
       ) : (
-        <span className="table-data-span">
-          No results for {searchFilter || getFilters(filters || [])}
-          {dates ? ` ${dates.startDate} to ${dates.endDate}` : null}
-        </span>
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            minHeight: { xs: 150, sm: 200, md: 250 },
+            textAlign: 'center',
+            px: { xs: 2, sm: 3 },
+          }}
+        >
+          <Typography
+            className="table-data-span"
+            sx={{
+              fontSize: { xs: '11px', sm: '12px' },
+              lineHeight: { xs: '20px', sm: '24px' },
+            }}
+          >
+            No results for {searchFilter || getFilters(filters || [])}
+            {dates ? ` ${dates.startDate} to ${dates.endDate}` : null}
+          </Typography>
+        </Box>
       )}
-    </div>
+    </Box>
   );
 }

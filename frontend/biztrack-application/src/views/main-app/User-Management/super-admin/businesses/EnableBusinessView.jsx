@@ -1,4 +1,3 @@
-// CreateBusinessForm.jsx - Fixed validation for required fields only
 import React from 'react';
 import { useFormik } from 'formik';
 import CancelRoundedIcon from '@mui/icons-material/CancelRounded';
@@ -22,11 +21,9 @@ const CreateBusinessForm = ({
     currentLogoUrl,
     submitting
 }) => {
-    const theme = useTheme(); // Get theme context
-    
-    if (!showModal) return null;
+    const theme = useTheme();
 
-    // Provide safe defaults if initialFormData is undefined
+    if (!showModal) return null;
     const safeInitialData = initialFormData || {
         businessName: '',
         registrationNumber: '',
@@ -36,7 +33,7 @@ const CreateBusinessForm = ({
         phone: '',
         website: '',
         description: '',
-        primaryColor: theme.primaryColor || '#1976d2', // Use theme primary color
+        primaryColor: theme.primaryColor || '#1976d2',
         status: 'NEW',
         logoFile: null,
         logoUrl: null,
@@ -46,63 +43,50 @@ const CreateBusinessForm = ({
 
     const formik = useFormik({
         initialValues: safeInitialData,
-        validationSchema: businessValidationSchema, // Use full schema for field validation
+        validationSchema: businessValidationSchema,
         onSubmit: (values) => {
-            console.log('Formik submit values:', values);
             handleSubmit(values);
         },
         enableReinitialize: true,
-        validateOnBlur: true, // Validate when field loses focus
-        validateOnChange: false, // Only validate on blur to prevent constant validation
+        validateOnBlur: true,
+        validateOnChange: false,
     });
-
-    // Check if required fields are valid
     const areRequiredFieldsValid = () => {
         const requiredFields = ['businessName', 'registrationNumber', 'owner', 'businessType', 'address', 'email', 'phone'];
-        
-        // Check if all required fields have values
         const hasValues = requiredFields.every(field => {
             const value = formik.values[field];
             return value && value.toString().trim().length > 0;
         });
-
         if (!hasValues) return false;
-
-        // Check if required fields don't have validation errors
         const hasNoErrors = requiredFields.every(field => !formik.errors[field]);
-        
         return hasNoErrors;
     };
 
     const handleFileDelete = () => {
         formik.setFieldValue('logoFile', null);
-        formik.setFieldTouched('logoFile', false); // Reset touched state
+        formik.setFieldTouched('logoFile', false);
     };
 
-    // Convert business types to SelectInput format
     const businessTypeOptions = businessTypes.map(type => ({
         value: type,
         label: type
     }));
 
     const statusOptions = [
-        { value: 'NEW', label: 'NEW' },
+        // { value: 'NEW', label: 'NEW' },
         { value: 'ACTIVE', label: 'ACTIVE' },
         { value: 'INACTIVE', label: 'INACTIVE' }
     ];
 
-    // Event handlers for SelectInput
     const handleSelectChange = (event) => {
         const { name, value } = event.target;
         formik.setFieldValue(name, value);
     };
-
     const handleSelectBlur = (event) => {
         const { name } = event.target;
         formik.setFieldTouched(name, true);
     };
 
-    // Enhanced input handlers with proper touch tracking
     const handleInputChange = (event) => {
         formik.handleChange(event);
     };
@@ -111,36 +95,28 @@ const CreateBusinessForm = ({
         formik.handleBlur(event);
     };
 
-    // Handle file input with proper validation
     const handleFileInput = (event) => {
         const file = event.target.files[0];
         formik.setFieldValue('logoFile', file);
         formik.setFieldTouched('logoFile', true);
     };
-
-    // Check if field should show error (touched AND has error)
     const shouldShowError = (fieldName) => {
         return formik.touched[fieldName] && !!formik.errors[fieldName];
     };
-
-    // Get error message for field
     const getErrorMessage = (fieldName) => {
         return shouldShowError(fieldName) ? formik.errors[fieldName] : '';
     };
-
-    // Check if form can be submitted
     const canSubmit = () => {
         return areRequiredFieldsValid() && !submitting;
     };
 
     return (
         <div className="bg-white rounded-lg w-3/5 max-w-4xl mx-auto shadow-lg border border-gray-200 mb-8">
-            {/* Modal Header with theme-based close button */}
-            <div 
+            <div
                 className="flex items-center justify-between p-6 border-gray-200 bg-gray-50 rounded-t-lg"
                 style={{ borderBottom: `1px solid ${theme.borderColor || '#e5e7eb'}` }}
             >
-                <h3 
+                <h3
                     className="text-xl font-semibold"
                     style={{ color: theme.textPrimary || '#1f2937' }}
                 >
@@ -154,7 +130,7 @@ const CreateBusinessForm = ({
                 >
                     <CancelRoundedIcon
                         className="main-form-close"
-                        style={{ 
+                        style={{
                             fill: theme.textSecondary || '#6b7280',
                             fontSize: '24px'
                         }}
@@ -163,7 +139,6 @@ const CreateBusinessForm = ({
             </div>
 
             <form onSubmit={formik.handleSubmit} className="p-6">
-                {/* Required Fields Section */}
                 <div className="space-y-6">
                     <div className="grid grid-cols-2 gap-4">
                         <TextInput
@@ -224,7 +199,7 @@ const CreateBusinessForm = ({
                             errorMessage={getErrorMessage('businessType')}
                         />
                     </div>
-                    
+
                     <div className="grid grid-cols-2 gap-4">
                         <TextInput
                             id="address"
@@ -239,7 +214,7 @@ const CreateBusinessForm = ({
                             error={shouldShowError('address')}
                             errorMessage={getErrorMessage('address')}
                         />
-                        
+
                         <TextInput
                             id="website"
                             label="Website"
@@ -254,7 +229,7 @@ const CreateBusinessForm = ({
                             errorMessage={getErrorMessage('website')}
                         />
                     </div>
-                    
+
                     <div className="grid grid-cols-2 gap-4">
                         <TextInput
                             id="email"
@@ -287,8 +262,6 @@ const CreateBusinessForm = ({
                         />
                     </div>
                 </div>
-
-                {/* Optional Fields Section */}
                 <div className="space-y-6 pt-6 border-t border-gray-200">
                     <div className="grid grid-cols-2 gap-4">
                         <ColorInput
@@ -347,9 +320,7 @@ const CreateBusinessForm = ({
                         />
                     </div>
                 </div>
-
-                {/* Action Buttons */}
-                <div 
+                <div
                     className="flex gap-3 pt-6 border-t border-gray-200"
                     style={{ borderTopColor: theme.borderColor || '#e5e7eb' }}
                 >
@@ -365,7 +336,7 @@ const CreateBusinessForm = ({
                         text={submitting ? 'Saving...' : (isEditing ? 'Save Changes' : 'Add Business')}
                         color={theme.primaryColor || '#2563eb'}
                         isLoading={submitting}
-                        validation={canSubmit()} // Only check required fields
+                        validation={canSubmit()}
                         action={formik.handleSubmit}
                         type="submit"
                     />

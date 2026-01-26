@@ -7,16 +7,41 @@ import DataTable from '../../../../../components/datatable';
 const USERS_TABLE_HEADERS = [
   { title: '', key: 'all' },
   { title: 'User', key: 'name' },
+  { title: 'Email', key: 'email' },
+  { title: 'Business', key: 'businessName' },
+  { title: 'Phone Number', key: 'phoneNumber' },
   { title: 'Role', key: 'role' },
-  { title: 'Contact Information', key: 'contact' },
   { title: 'Date Joined', key: 'dateJoined' },
   { title: 'Status', key: 'status' },
   { title: 'Action', key: 'action' },
 ];
 
+// Default getInitials function
+const defaultGetInitials = (firstName = '', lastName = '') => {
+  const first = firstName ? firstName.charAt(0).toUpperCase() : '';
+  const last = lastName ? lastName.charAt(0).toUpperCase() : '';
+  return first + last;
+};
+
+// Default formatDate function
+const defaultFormatDate = (dateString) => {
+  if (!dateString) return 'N/A';
+  try {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return 'N/A';
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  } catch {
+    return 'N/A';
+  }
+};
+
 const UsersTable = ({
   filteredUsers = [],
-  selectedItems,
+  selectedItems = [],
   setSelectedItems,
   toggleSelectAll,
   toggleSelectItem,
@@ -25,8 +50,8 @@ const UsersTable = ({
   openEnableModal,
   openDisableModal,
   openDeleteModal,
-  getInitials,
-  formatDate,
+  getInitials = defaultGetInitials,
+  formatDate = defaultFormatDate,
   searchTerm,
   setSearchTerm,
   filters,
@@ -35,7 +60,18 @@ const UsersTable = ({
 }) => {
   const theme = useTheme();
 
-  // No Results State
+  // Handle the case where filteredUsers is undefined or null
+  if (!filteredUsers) {
+    return (
+      <div className="text-center py-12 bg-white rounded-lg border border-gray-200 mt-4">
+        <Users size={48} className="text-gray-400 mx-auto mb-3" />
+        <h3 className="text-lg font-semibold text-gray-700 mb-1">Loading users...</h3>
+        <p className="text-gray-500">Please wait while we fetch the data</p>
+      </div>
+    );
+  }
+
+  // Then handle the empty array case
   if (filteredUsers.length === 0) {
     return (
       <div className="text-center py-12 bg-white rounded-lg border border-gray-200 mt-4">
@@ -71,23 +107,23 @@ const UsersTable = ({
     switch (action.toLowerCase()) {
       case 'view':
         console.log('Opening view modal for user:', user);
-        openEnableView(user); // Opens view modal (read-only)
+        openEnableView(user);
         break;
       case 'edit':
         console.log('Opening edit modal for user:', user);
-        openModalForEdit(user); // Opens edit modal
+        openModalForEdit(user);
         break;
       case 'enable':
         console.log('Opening enable action modal for user:', user);
-        openEnableModal(user); // Opens ActionModal with enable configuration
+        openEnableModal(user);
         break;
       case 'disable':
         console.log('Opening disable action modal for user:', user);
-        openDisableModal(user); // Opens ActionModal with disable configuration
+        openDisableModal(user);
         break;
       case 'delete':
         console.log('Opening delete action modal for user:', user);
-        openDeleteModal(user); // Opens ActionModal with delete configuration
+        openDeleteModal(user);
         break;
       default:
         console.warn('Unknown action:', action);
@@ -101,15 +137,18 @@ const UsersTable = ({
   // Transform user data for the DataTable
   const transformedUsers = filteredUsers.map(user => ({
     ...user,
-    name: `${user.firstName} ${user.lastName}`,
+    name: `${user.firstName || ''} ${user.lastName || ''}`.trim(),
+    email: user.email || 'N/A',
+    businessName: user.businessName || user.business?.name || 'N/A',
+    phoneNumber: user.phoneNumber || user.phone || 'N/A',
     initials: getInitials(user.firstName, user.lastName),
-    // Format contact information for display
-    contact: `${user.email} | ${user.phoneNumber}`,
-    // Format date joined
-    dateJoined: formatDate(user.lastLogin),
-    // Ensure status is in the right format for TablePill
-    status: user.status,
+    dateJoined: formatDate(user.dateJoined || user.createdAt || user.lastLogin),
+    status: user.status || 'N/A',
   }));
+
+  // Calculate if all items are selected
+  const isAllSelected = selectedItems.length === filteredUsers.length && 
+                       filteredUsers.length > 0;
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm">
@@ -120,7 +159,7 @@ const UsersTable = ({
         selected={selectedItems}
         selectedAction={setSelectedItems}
         selectAll={toggleSelectAll}
-        all={selectedItems.length === filteredUsers.length && filteredUsers.length > 0}
+        all={isAllSelected}
         actionSelected={handleActionSelected}
         selectedRow={handleRowClick}
         actions={getActionsForStatus}

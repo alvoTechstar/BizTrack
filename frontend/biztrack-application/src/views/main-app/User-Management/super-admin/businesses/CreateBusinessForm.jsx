@@ -1,4 +1,3 @@
-// CreateBusinessForm.jsx - Updated with themes and proper validation
 import React from 'react';
 import { useFormik } from 'formik';
 import CancelRoundedIcon from '@mui/icons-material/CancelRounded';
@@ -22,11 +21,10 @@ const CreateBusinessForm = ({
     currentLogoUrl,
     submitting
 }) => {
-    const theme = useTheme(); // Get theme context
-    
+    const theme = useTheme();
+
     if (!showModal) return null;
 
-    // Provide safe defaults if initialFormData is undefined
     const safeInitialData = initialFormData || {
         businessName: '',
         registrationNumber: '',
@@ -36,7 +34,7 @@ const CreateBusinessForm = ({
         phone: '',
         website: '',
         description: '',
-        primaryColor: theme.primaryColor || '#1976d2', // Use theme primary color
+        primaryColor: theme.primaryColor || '#1976d2',
         status: 'NEW',
         logoFile: null,
         logoUrl: null,
@@ -48,80 +46,64 @@ const CreateBusinessForm = ({
         initialValues: safeInitialData,
         validationSchema: businessValidationSchema,
         onSubmit: (values) => {
-            console.log('Formik submit values:', values);
             handleSubmit(values);
         },
         enableReinitialize: true,
-        validateOnBlur: true, // Validate when field loses focus
-        validateOnChange: true, // Validate on every change
+        validateOnBlur: true,
+        validateOnChange: true,
     });
 
     const handleFileDelete = () => {
         formik.setFieldValue('logoFile', null);
-        formik.setFieldTouched('logoFile', false); // Reset touched state
+        formik.setFieldTouched('logoFile', false);
     };
-
-    // Convert business types to SelectInput format
     const businessTypeOptions = businessTypes.map(type => ({
         value: type,
         label: type
     }));
 
     const statusOptions = [
-        { value: 'NEW', label: 'NEW' },
         { value: 'ACTIVE', label: 'ACTIVE' },
         { value: 'INACTIVE', label: 'INACTIVE' }
     ];
-
-    // Event handlers for SelectInput
     const handleSelectChange = (event) => {
         const { name, value } = event.target;
         formik.setFieldValue(name, value);
-        formik.setFieldTouched(name, true, false); // Mark as touched without validation
+        formik.setFieldTouched(name, true, false);
     };
-
     const handleSelectBlur = (event) => {
         const { name } = event.target;
-        formik.setFieldTouched(name, true, true); // Mark as touched with validation
+        formik.setFieldTouched(name, true, true);
     };
-
-    // Enhanced input handlers with proper touch tracking
     const handleInputChange = (event) => {
         formik.handleChange(event);
-        // Don't automatically mark as touched on change, only on blur
     };
 
     const handleInputBlur = (event) => {
         formik.handleBlur(event);
         formik.setFieldTouched(event.target.name, true, true);
     };
-
-    // Handle file input with proper validation
     const handleFileInput = (event) => {
         const file = event.target.files[0];
         formik.setFieldValue('logoFile', file);
         formik.setFieldTouched('logoFile', true, true);
     };
-
-    // Check if field should show error (touched AND has error)
     const shouldShowError = (fieldName) => {
         return formik.touched[fieldName] && !!formik.errors[fieldName];
     };
 
-    // Get error message for field
     const getErrorMessage = (fieldName) => {
         return shouldShowError(fieldName) ? formik.errors[fieldName] : '';
     };
 
     return (
-        <div className="bg-white rounded-lg w-3/5 max-w-4xl mx-auto shadow-lg border border-gray-200 mb-8">
-            {/* Modal Header with theme-based close button */}
-            <div 
-                className="flex items-center justify-between p-6 border-gray-200 bg-gray-50 rounded-t-lg"
+        <div className="bg-white rounded-lg w-full sm:w-11/12 md:w-4/5 lg:w-3/5 xl:w-1/2 max-w-4xl mx-auto shadow-lg border border-gray-200 mb-8 my-4 sm:my-8">
+            <div
+                className="flex items-center justify-between p-4 sm:p-6 border-gray-200 bg-gray-50 rounded-t-lg"
                 style={{ borderBottom: `1px solid ${theme.borderColor || '#e5e7eb'}` }}
             >
-                <h3 
-                    className="text-xl font-semibold"
+                <h3
+                    className="text-lg sm:text-xl font-semibold"
                     style={{ color: theme.textPrimary || '#1f2937' }}
                 >
                     {isEditing ? 'Edit Business' : 'Add New Business'}
@@ -131,21 +113,23 @@ const CreateBusinessForm = ({
                     className="hover:bg-gray-100 transition rounded-full p-1"
                     disabled={submitting}
                     type="button"
+                    aria-label="Close modal"
                 >
                     <CancelRoundedIcon
                         className="main-form-close"
-                        style={{ 
+                        style={{
                             fill: theme.textSecondary || '#6b7280',
-                            fontSize: '24px'
+                            fontSize: '20px',
+                            width: '20px',
+                            height: '20px'
                         }}
                     />
                 </button>
             </div>
 
-            <form onSubmit={formik.handleSubmit} className="p-6">
-                {/* Required Fields Section */}
-                <div className="space-y-6">
-                    <div className="grid grid-cols-2 gap-4">
+            <form onSubmit={formik.handleSubmit} className="p-4 sm:p-6">
+                <div className="space-y-4 sm:space-y-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <TextInput
                             id="businessName"
                             label="Business Name"
@@ -174,8 +158,7 @@ const CreateBusinessForm = ({
                             errorMessage={getErrorMessage('registrationNumber')}
                         />
                     </div>
-
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <TextInput
                             id="owner"
                             label="Owner Full Name"
@@ -204,8 +187,7 @@ const CreateBusinessForm = ({
                             errorMessage={getErrorMessage('businessType')}
                         />
                     </div>
-                    
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <TextInput
                             id="address"
                             label="Address"
@@ -219,7 +201,6 @@ const CreateBusinessForm = ({
                             error={shouldShowError('address')}
                             errorMessage={getErrorMessage('address')}
                         />
-                        
                         <TextInput
                             id="website"
                             label="Website"
@@ -234,8 +215,7 @@ const CreateBusinessForm = ({
                             errorMessage={getErrorMessage('website')}
                         />
                     </div>
-                    
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <TextInput
                             id="email"
                             label="Email"
@@ -250,7 +230,6 @@ const CreateBusinessForm = ({
                             error={shouldShowError('email')}
                             errorMessage={getErrorMessage('email')}
                         />
-
                         <TextInput
                             id="phone"
                             label="Phone Number"
@@ -267,10 +246,8 @@ const CreateBusinessForm = ({
                         />
                     </div>
                 </div>
-
-                {/* Optional Fields Section */}
-                <div className="space-y-6 pt-6 border-t border-gray-200">
-                    <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-4 sm:space-y-6 pt-4 sm:pt-6 border-t border-gray-200">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <ColorInput
                             id="primaryColor"
                             label="Primary Color"
@@ -295,8 +272,7 @@ const CreateBusinessForm = ({
                             errorMessage={getErrorMessage('status')}
                         />
                     </div>
-
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                         <FileInput
                             id="logoFile"
                             showImage={true}
@@ -312,7 +288,6 @@ const CreateBusinessForm = ({
                             errorMessage={getErrorMessage('logoFile')}
                             currentImageUrl={currentLogoUrl}
                         />
-
                         <TextBoxInput
                             id="description"
                             label="Description"
@@ -327,10 +302,8 @@ const CreateBusinessForm = ({
                         />
                     </div>
                 </div>
-
-                {/* Action Buttons */}
-                <div 
-                    className="flex gap-3 pt-6 border-t border-gray-200"
+                <div
+                    className="flex flex-col sm:flex-row gap-3 pt-4 sm:pt-6 border-t border-gray-200 mt-4 sm:mt-6"
                     style={{ borderTopColor: theme.borderColor || '#e5e7eb' }}
                 >
                     <AppFormButton
@@ -340,6 +313,7 @@ const CreateBusinessForm = ({
                         validation={true}
                         action={() => setShowModal(false)}
                         type="button"
+                        fullWidthOnMobile={true}
                     />
                     <AppFormButton
                         text={submitting ? 'Saving...' : (isEditing ? 'Save Changes' : 'Add Business')}
@@ -348,6 +322,7 @@ const CreateBusinessForm = ({
                         validation={formik.isValid && formik.dirty && !submitting}
                         action={formik.handleSubmit}
                         type="submit"
+                        fullWidthOnMobile={true}
                     />
                 </div>
             </form>

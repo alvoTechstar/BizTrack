@@ -3,7 +3,31 @@ import { Clock, AlertCircle, DollarSign, Eye, TrendingDown, TrendingUp } from "l
 import DataTable from "../../../../../components/datatable";
 import SummaryCard from "./SummaryCard";
 import StatusBadge from "./StatusBadge";
-import { formatCurrency, formatTime, renderTransactionItems } from "../../../../../utilities/SharedFunctions";
+import { formatCurrency, formatTime } from "../../../../../utilities/SharedFunctions";
+
+// Custom function to show only first item + count (EXACT SAME AS SALES REPORT)
+const renderFirstItemWithCount = (items) => {
+  if (!items || !Array.isArray(items) || items.length === 0) {
+    return <span className="text-gray-500">No items</span>;
+  }
+  
+  const firstItem = items[0];
+  const itemName = firstItem.productName || firstItem.name || "Unknown Product";
+  const quantity = firstItem.quantity || 1;
+  
+  return (
+    <div className="flex items-center gap-2">
+      <span className="font-medium text-sm">
+        {itemName} ({quantity}x)
+      </span>
+      {items.length > 1 && (
+        <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
+          +{items.length - 1} more
+        </span>
+      )}
+    </div>
+  );
+};
 
 const DebtReport = ({ debtData, color, onViewTransaction }) => {
   // Add safe access with defaults
@@ -60,7 +84,7 @@ const DebtReport = ({ debtData, color, onViewTransaction }) => {
     { 
       key: "items", 
       title: "Items",
-      render: (value) => renderTransactionItems(value)
+      render: (value) => renderFirstItemWithCount(value) // USING THE SAME FUNCTION
     },
     { 
       key: "action", 
@@ -74,7 +98,7 @@ const DebtReport = ({ debtData, color, onViewTransaction }) => {
       return <StatusBadge status={column.status} />;
     }
     if (header.key === "items") {
-      return renderTransactionItems(column.items);
+      return renderFirstItemWithCount(column.items); // USING THE SAME FUNCTION
     }
     if (header.key === "action") {
       return column.action;

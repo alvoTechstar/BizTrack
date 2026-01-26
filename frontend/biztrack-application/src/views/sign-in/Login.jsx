@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import TextInput from "../../components/Input/TextInput";
-import PasswordInput from "../../components/input/PasswordInput";
+import PasswordInput from "../../components/Input/PasswordInput";
 import FormButton from "../../components/buttons/FormButton";
 import NaviButton from "../../components/buttons/Navibutton";
 import loginBg from "../../assets/Backgrounds/background.png";
@@ -64,16 +64,11 @@ const Login = () => {
     setLoading(true);
     setErrorMessage("");
 
-    console.log("🔐 Login attempt:", { email, password: "***" });
-
     try {
       const response = await axios.post(`${URLS.TAG_BASE_URL}${URLS.AUTH.LOGIN}`, {
         email: email,
-        password: password // Send plain text - backend should handle hashing comparison
+        password: password
       });
-
-      console.log("📨 Login response:", response.data);
-
       if (response.data.success) {
         showToaster("true", "Login Successful", "OTP sent to your email");
         setView(1);
@@ -123,13 +118,10 @@ const Login = () => {
         email: email,
         otp: otp
       });
-
       if (response.data.success) {
         showToaster("true", "Success", "Login successful!");
-
         let userData = response.data.user;
         const token = response.data.token;
-
         if (userData && (userData.$__ || userData._doc)) {
           userData = userData._doc || userData;
         }
@@ -138,24 +130,18 @@ const Login = () => {
           showToaster("false", "Login Error", "Invalid user data received");
           return;
         }
-
-        console.log("✅ User logged in:", userData);
-
         localStorage.setItem("token", token);
+        Cookies.set("token", token, { expires: 7 });
         localStorage.setItem("user", JSON.stringify(userData));
-        Cookies.set("user", JSON.stringify(userData), { expires: 1 });
-        Cookies.set("token", token, { expires: 1 });
-
         dispatch(authActions.setAuth(userData));
-
         const dashboardRoute = getDashboardRoute(userData.role);
-        console.log("🎯 Navigating to:", dashboardRoute);
 
         setTimeout(() => {
           navigate(dashboardRoute);
         }, 1500);
       }
     } catch (error) {
+      console.error("❌ OTP verification error:", error);
       const errorMsg = error.response?.data?.message || "OTP verification failed";
       showToaster("false", "Verification Failed", errorMsg);
     } finally {

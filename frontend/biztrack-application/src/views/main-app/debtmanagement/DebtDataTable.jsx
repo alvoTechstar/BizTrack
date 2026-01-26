@@ -1,5 +1,6 @@
 import React from "react";
 import DataTable from "../../../components/datatable";
+import { useTheme } from "../../../components/theme/ThemeContext";
 
 const DebtDataTable = ({
     tableData,
@@ -24,13 +25,15 @@ const DebtDataTable = ({
     ];
 
     const tableActions = ['pay', 'view'];
+      const { primaryColor } = useTheme();
+    
 
     return (
         <div className="bg-white rounded-lg shadow-md p-6">
             <DataTable
                 type="debts"
                 clickable={true}
-                color="blue"
+                color={primaryColor}
                 data={tableData}
                 headers={tableHeaders}
                 actions={tableActions}

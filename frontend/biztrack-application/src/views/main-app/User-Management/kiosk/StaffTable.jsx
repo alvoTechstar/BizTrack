@@ -6,10 +6,13 @@ import DataTable from '../../../../components/datatable';
 
 const STAFF_TABLE_HEADERS = [
   { title: '', key: 'all' },
-  { title: 'Staff Member', key: 'name' },
+  { title: 'First Name', key: 'firstName' },
+  { title: 'Last Name', key: 'lastName' },
   { title: 'Role', key: 'role' },
-  { title: 'Contact Information', key: 'contact' },
+  { title: 'Email', key: 'email' },
+  { title: 'Phone', key: 'phone' },
   { title: 'Date Joined', key: 'dateJoined' },
+  { title: 'Last Login', key: 'lastLogin' }, 
   { title: 'Status', key: 'status' },
   { title: 'Action', key: 'action' },
 ];
@@ -73,7 +76,7 @@ const StaffTable = (props) => {
       return;
     }
 
-    console.log('Action selected:', action, 'for staff:', staff.name);
+    console.log('Action selected:', action, 'for staff:', staff.firstName, staff.lastName);
 
     switch (action.toLowerCase()) {
       case 'view':
@@ -105,12 +108,50 @@ const StaffTable = (props) => {
     console.log('Row clicked:', column);
   };
 
-  // Transform staff data for the DataTable
+  // Format last login time with relative time or exact date
+  const formatLastLogin = (lastLoginDate) => {
+    if (!lastLoginDate) {
+      return 'Never logged in';
+    }
+
+    const date = new Date(lastLoginDate);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) {
+      return 'Just now';
+    } else if (diffMins < 60) {
+      return `${diffMins}m ago`;
+    } else if (diffHours < 24) {
+      return `${diffHours}h ago`;
+    } else if (diffDays === 1) {
+      return 'Yesterday';
+    } else if (diffDays < 7) {
+      return `${diffDays}d ago`;
+    } else {
+      // For older dates, show formatted date
+      return formatDate?.(lastLoginDate) || date.toLocaleDateString();
+    }
+  };
+
+  // Transform staff data for the DataTable - UPDATED with lastLogin
   const transformedStaff = safeFilteredStaff.map(staff => ({
     ...staff,
-    contact: `${staff?.email || ''} | ${staff?.phone || ''}`,
-    dateJoined: formatDate?.(staff?.dateJoined) || '',
-    status: staff?.status === 'Active' ? 'ACTIVE' : 'INACTIVE',
+    firstName: staff?.firstName || '',
+    lastName: staff?.lastName || '',
+    email: staff?.email || '',
+    phone: staff?.phone || '',
+    role: staff?.role || '',
+    dateJoined: formatDate?.(staff?.createdAt) || staff?.createdAt || '',
+    lastLogin: staff?.lastLogin 
+      ? formatLastLogin(staff.lastLogin)
+      : 'Never logged in',
+    status: staff?.status || 'INACTIVE',
+    // Keep the original lastLogin date for sorting if needed
+    lastLoginDate: staff?.lastLogin || null,
   }));
 
   return (
@@ -118,7 +159,7 @@ const StaffTable = (props) => {
       <DataTable
         data={transformedStaff}
         headers={STAFF_TABLE_HEADERS}
-        type="staff-table"
+        type="user-table"
         selected={safeSelectedItems}
         selectedAction={setSelectedItems}
         selectAll={toggleSelectAll}

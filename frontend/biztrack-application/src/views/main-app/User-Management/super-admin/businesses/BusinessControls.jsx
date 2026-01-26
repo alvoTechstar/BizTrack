@@ -5,6 +5,7 @@ import DateRangeInput from '../../../../../components/input/DateRangeInput';
 import FilterInput from '../../../../../components/input/FilterInput';
 import AppFormButton from '../../../../../components/buttons/AppFormButton';
 import { Plus } from 'lucide-react';
+import { useTheme } from '../../../../../components/theme/ThemeContext';
 
 const BusinessControls = ({
   searchTerm,
@@ -21,7 +22,9 @@ const BusinessControls = ({
   const [tableFilter, setTableFilter] = useState(false);
   const [dateFilter, setDateFilter] = useState(false);
 
-  // Handle search input
+  const { primaryColor } = useTheme();
+
+  const themeColor = primaryColor;
   const handleSearchInput = (value) => {
     setSearchTerm(value);
   };
@@ -29,8 +32,6 @@ const BusinessControls = ({
   const handleSearchClear = () => {
     setSearchTerm('');
   };
-
-  // Handle date filter
   const handleDateFilterClick = (event) => {
     setDateFilterAnchorEl(event.currentTarget);
   };
@@ -58,8 +59,6 @@ const BusinessControls = ({
       }));
     }
   };
-
-  // Handle advanced filter
   const handleFilterClick = (event) => {
     setFilterAnchorEl(event.currentTarget);
   };
@@ -72,11 +71,10 @@ const BusinessControls = ({
     setTableFilter(isFiltered);
   };
 
-  // Filter options for the FilterInput component
   const filterOptions = ['Status', 'Business Type'];
 
   const statusFilters = [
-    { label: 'NEW', value: 'NEW' },
+    // { label: 'NEW', value: 'NEW' },
     { label: 'ACTIVE', value: 'ACTIVE' },
     { label: 'INACTIVE', value: 'INACTIVE' }
   ];
@@ -89,9 +87,7 @@ const BusinessControls = ({
   return (
     <div className="bg-white  p-4 mb-4 ml-2">
       <div className="flex gap-4 flex-wrap items-center justify-between">
-        {/* Left Side: Search and Filters */}
         <div className="flex gap-4 flex-wrap items-center flex-1 ">
-          {/* Search Input */}
           <div className="min-w-64">
             <SearchInput
               id="business-search"
@@ -101,13 +97,13 @@ const BusinessControls = ({
               handleClear={handleSearchClear}
               error={false}
               disabled={false}
+              primaryColor={themeColor}
             />
           </div>
 
-          {/* Date Range Filter */}
           <DateRangeInput
             type="business"
-            color="#2563eb"
+            color={themeColor}
             selected={filters.startDate && filters.endDate ? {
               startDate: filters.startDate,
               endDate: filters.endDate
@@ -120,9 +116,8 @@ const BusinessControls = ({
             handleClick={handleDateFilterClick}
           />
 
-          {/* Advanced Filter Button */}
           <FilterInput
-            color="#2563eb"
+            color={themeColor}
             label="advanced-filter"
             filters={statusFilters}
             filters2={typeFilters}
@@ -137,7 +132,6 @@ const BusinessControls = ({
           />
         </div>
 
-        {/* Right Side: Create Business Button */}
         <div className="flex-shrink-0">
           <AppFormButton
             text={
@@ -146,7 +140,7 @@ const BusinessControls = ({
                 Add Business
               </div>
             }
-            color="#2563eb"
+            color={themeColor}
             isLoading={false}
             validation={true}
             action={openModal}

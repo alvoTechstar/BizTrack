@@ -1,135 +1,144 @@
-import React, { createContext, useState, useEffect, useContext, useMemo } from "react";
+import React, {
+  createContext,
+  useState,
+  useEffect,
+  useContext,
+  useMemo,
+} from "react";
 import { useSelector } from "react-redux";
 import BiztrackLogo from "../../assets/Logos/biztrack-logo.png";
-import HotelLogo from "../../assets/Logos/cbl.png";
-import KioskLogo from "../../assets/Logos/ria.png";
-import HospitalLogo from "../../assets/Logos/isw.png";
 
 const ThemeContext = createContext(null);
 
-// Logo mapping based on business type
-const BUSINESS_LOGO_MAP = {
-  "kiosk": KioskLogo,
-  "hotel": HotelLogo,
-  "hospital": HospitalLogo,
-  "kiosk_admin": KioskLogo,
-  "hotel_admin": HotelLogo,
-  "hospital_admin": HospitalLogo,
-  "general": BiztrackLogo,
-  "default": BiztrackLogo
-};
-
 // Default colors
 const DEFAULT_COLORS = {
-  primary: "#118eed",
+  primary: "#edb211ff",
   success: "#22c55e",
   warning: "#f59e0b",
   error: "#ef4444",
-  secondary: "#64748b"
+  secondary: "#64748b",
 };
 
 // Default theme
 const DEFAULT_THEME = {
-  primaryColor: "#118eed",
+  primaryColor: "#edb211ff",
   logoUrl: BiztrackLogo,
   businessType: "general",
   businessName: "Business",
-  colors: DEFAULT_COLORS
+  colors: DEFAULT_COLORS,
 };
 
 export const ThemeProvider = ({ children }) => {
   const [theme, setTheme] = useState(DEFAULT_THEME);
 
-  const authState = useSelector((state) => state.auth);
-
+  // 🔑 Redux auth state (contains { user, token })
+  const authValue = useSelector((state) => state.auth?.value);
 
   useEffect(() => {
+
     const loadBusinessTheme = () => {
-      // If no auth state, return default theme
-      if (!authState) {
+      // 1️⃣ No auth → default theme
+      if (!authValue) {
         return DEFAULT_THEME;
       }
 
-      let userData = null;
+      // 2️⃣ Normalize auth shape
+      let parsedAuth = authValue;
 
-      // Try different possible Redux structures
-      if (authState.user) {
-        userData = authState.user;
-      } else if (authState.value) {
-        userData = authState.value;
-      } else if (authState.email) {
-        userData = authState;
-      }
-      // If userData is a string (from localStorage), parse it
-      if (typeof userData === "string") {
+      if (typeof authValue === "string") {
         try {
-          userData = JSON.parse(userData);
+          parsedAuth = JSON.parse(authValue);
         } catch (error) {
-          console.error("🎨 Failed to parse user data:", error);
           return DEFAULT_THEME;
         }
       }
 
-      // If we have valid user data, extract theme properties
-      if (userData && typeof userData === 'object') {
-        const primaryColor = userData.primaryColor || "#118eed";
-        const businessType = (userData.businessType || "general").toLowerCase();
-        const businessName = userData.businessName || "Business";
-
-        // Get logo based on business type
-        const logoUrl = userData.logo || BUSINESS_LOGO_MAP[businessType] || BUSINESS_LOGO_MAP.default;
+      // 🔥 CRITICAL FIX: normalize user object
+      const user =
+        parsedAuth?.user && typeof parsedAuth.user === "object"
+          ? parsedAuth.user
+          : parsedAuth;
 
 
-        return {
-          primaryColor,
-          logoUrl,
-          businessType,
-          businessName,
-          colors: {
-            primary: primaryColor,
-            success: "#22c55e",
-            warning: "#f59e0b",
-            error: "#ef4444",
-            secondary: "#64748b"
-          }
-        };
+      if (!user || typeof user !== "object") {
+        return DEFAULT_THEME;
       }
 
-      // Fallback to default theme
-      return DEFAULT_THEME;
+      // 3️⃣ Extract primary color
+      const primaryColor =
+        user.primaryColor ||
+        user.businessPrimaryColor ||
+        DEFAULT_THEME.primaryColor;
+
+      // 4️⃣ Extract business info
+      const businessType = (user.businessType || "general").toLowerCase();
+      const businessName = user.businessName || "Business";
+
+      // 5️⃣ Extract logo (uploaded OR default)
+      const possibleLogos = [
+        user.logo,
+        user.businessLogo,
+        user.logoUrl,
+        user.business?.logo,
+        user.business?.logoUrl,
+      ];
+
+
+      let logoUrl = BiztrackLogo;
+
+      for (const logo of possibleLogos) {
+        if (typeof logo === "string" && logo.trim() !== "") {
+          logoUrl = logo;
+          break;
+        }
+      }
+
+      const computedTheme = {
+        primaryColor,
+        logoUrl,
+        businessType,
+        businessName,
+        colors: {
+          primary: primaryColor,
+          success: DEFAULT_COLORS.success,
+          warning: DEFAULT_COLORS.warning,
+          error: DEFAULT_COLORS.error,
+          secondary: DEFAULT_COLORS.secondary,
+        },
+      };
+      return computedTheme;
     };
 
     const businessTheme = loadBusinessTheme();
     setTheme(businessTheme);
-  }, [authState]);
 
-  // Apply CSS variables when theme changes - WITH ERROR HANDLING
+  }, [authValue]);
+
+  // 6️⃣ Apply CSS variables
   useEffect(() => {
     const root = document.documentElement;
 
-    // Safe color access with fallbacks
-    const primaryColor = theme.primaryColor || DEFAULT_THEME.primaryColor;
-    const colors = theme.colors || DEFAULT_COLORS;
+    root.style.setProperty(
+      "--primary-color",
+      theme.primaryColor || DEFAULT_THEME.primaryColor
+    );
+    root.style.setProperty("--color-success", theme.colors.success);
+    root.style.setProperty("--color-warning", theme.colors.warning);
+    root.style.setProperty("--color-error", theme.colors.error);
+    root.style.setProperty("--color-secondary", theme.colors.secondary);
 
-    // Apply CSS variables safely
-    root.style.setProperty("--primary-color", primaryColor);
-    root.style.setProperty("--color-success", colors.success);
-    root.style.setProperty("--color-warning", colors.warning);
-    root.style.setProperty("--color-error", colors.error);
-    root.style.setProperty("--color-secondary", colors.secondary);
   }, [theme]);
 
-  // Safe theme value with fallbacks
-  const safeTheme = useMemo(() => ({
-    theme: {
-      ...theme,
-      colors: theme.colors || DEFAULT_COLORS
-    },
-    primaryColor: theme.primaryColor || DEFAULT_THEME.primaryColor,
-    logoUrl: theme.logoUrl || DEFAULT_THEME.logoUrl,
-    businessType: theme.businessType || DEFAULT_THEME.businessType,
-    businessName: theme.businessName || DEFAULT_THEME.businessName
-  }), [theme]);
+  // 7️⃣ Safe exposed context
+  const safeTheme = useMemo(() => {
+    return {
+      primaryColor: theme.primaryColor || DEFAULT_THEME.primaryColor,
+      logoUrl: theme.logoUrl || DEFAULT_THEME.logoUrl,
+      businessType: theme.businessType || DEFAULT_THEME.businessType,
+      businessName: theme.businessName || DEFAULT_THEME.businessName,
+      colors: theme.colors || DEFAULT_COLORS,
+    };
+  }, [theme]);
 
   return (
     <ThemeContext.Provider value={safeTheme}>

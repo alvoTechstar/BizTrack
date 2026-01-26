@@ -5,6 +5,7 @@ import DateRangeInput from '../../../../../components/input/DateRangeInput';
 import FilterInput from '../../../../../components/input/FilterInput';
 import AppFormButton from '../../../../../components/buttons/AppFormButton';
 import { Plus } from 'lucide-react';
+import { useTheme } from '../../../../../components/theme/ThemeContext';
 
 const UsersControls = ({
   searchTerm,
@@ -19,6 +20,14 @@ const UsersControls = ({
   const [dateFilterAnchorEl, setDateFilterAnchorEl] = useState(null);
   const [tableFilter, setTableFilter] = useState(false);
   const [dateFilter, setDateFilter] = useState(false);
+
+  // Get primary color from theme context
+  const { primaryColor } = useTheme();
+  
+  // Default color if theme context doesn't provide one
+  const themeColor = primaryColor || '#2563eb';
+
+  console.log("🎨 UsersControls - Theme primary color:", themeColor);
 
   // Handle search input
   const handleSearchInput = (value) => {
@@ -121,13 +130,14 @@ const UsersControls = ({
               handleClear={handleSearchClear}
               error={false}
               disabled={false}
+              primaryColor={themeColor} // Pass primary color to SearchInput
             />
           </div>
 
           {/* Date Range Filter */}
           <DateRangeInput
             type="users"
-            color="#2563eb"
+            color={themeColor} // Use theme color
             selected={filters.startDate && filters.endDate ? {
               startDate: filters.startDate,
               endDate: filters.endDate
@@ -142,7 +152,7 @@ const UsersControls = ({
 
           {/* Advanced Filter Button */}
           <FilterInput
-            color="#2563eb"
+            color={themeColor} // Use theme color
             label="advanced-filter"
             filters={statusFilters}
             filters2={roleFilters}
@@ -167,7 +177,7 @@ const UsersControls = ({
                 Add User
               </div>
             }
-            color="#2563eb"
+            color={themeColor} // Use theme color
             isLoading={false}
             validation={true}
             action={openModal}

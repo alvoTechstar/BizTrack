@@ -8,7 +8,7 @@ const QuickActions = () => {
       <AppFormButton
         text="Create New Business"
         icon={<AddBusiness fontSize="small" />}
-        color="#1976D2" // MUI primary color
+        color="#1976D2" 
         isLoading={false}
         validation={true}
         action={() => console.log("Create New Business")}
@@ -16,7 +16,7 @@ const QuickActions = () => {
       <AppFormButton
         text="Add New User"
         icon={<PersonAdd fontSize="small" />}
-        color="#9C27B0" // MUI secondary color
+        color="#9C27B0" 
         isLoading={false}
         validation={true}
         action={() => console.log("Add New User")}

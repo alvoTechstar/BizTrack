@@ -13,7 +13,7 @@ export default function TableActions({ status, actions, action, id }) {
   // FIX: Add safe defaults and handle non-string status
   const safeActions = Array.isArray(actions) ? actions : [];
   const safeStatus = typeof status === 'string' ? status : '';
-  
+
   // Convert status to uppercase safely
   const statusUpperCase = safeStatus.toUpperCase();
 
@@ -47,55 +47,62 @@ export default function TableActions({ status, actions, action, id }) {
 
   // DEBT MANAGEMENT ACTIONS
   const getDebtActions = () => {
-    if (statusUpperCase === 'PENDING') {
+    if (statusUpperCase === 'RECOVERED' ||
+      statusUpperCase === 'COMPLETED' ||
+      statusUpperCase === 'PAID') {
+      return ['view', 'delete']; 
+    }
+    else if (statusUpperCase === 'PENDING' || statusUpperCase === 'OVERDUE') {
       return ['view', 'pay', 'delete'];
-    } else {
+    }
+    // Default fallback
+    else {
       return ['view', 'delete'];
     }
   };
 
   // Use provided actions or fall back to appropriate logic based on context
-  const effectiveActions = safeActions.length > 0 ? safeActions : 
-    (statusUpperCase.includes('STOCK') ? getProductActions() : 
-    (statusUpperCase === 'PENDING' || statusUpperCase === 'COMPLETED') ? getDebtActions() : 
-    getBusinessActions());
+  const effectiveActions = safeActions.length > 0 ? safeActions :
+    (statusUpperCase.includes('STOCK') ? getProductActions() :
+      (statusUpperCase === 'PENDING' || statusUpperCase === 'COMPLETED') ? getDebtActions() :
+        getBusinessActions());
 
   return (
     <div className="table-actions">
       {/* ADD PAYMENT/COMPLETE ACTION FOR DEBTS */}
       {effectiveActions.includes('pay') && (
-        <ShoppingCartOutlinedIcon 
+        <ShoppingCartOutlinedIcon
           onClick={(e) => handleClick(e, "pay")}
           title="Complete Payment"
           className="action-icon"
           style={{ color: '#10B981' }} // Green color for payment
         />
       )}
-      
+
       {/* ADD RESTOCK ACTION */}
       {effectiveActions.includes('restock') && (
-        <AddCircleOutlineRoundedIcon 
+        <AddCircleOutlineRoundedIcon
           onClick={(e) => handleClick(e, "restock")}
           title="Restock"
           className="action-icon"
         />
       )}
-      
+
       {/* KEEP ALL EXISTING ACTIONS */}
       {effectiveActions.includes('edit') ? (
-        <BorderColorRoundedIcon 
+        <BorderColorRoundedIcon
           onClick={(e) => handleClick(e, "edit")}
           title="Edit"
           className="action-icon"
         />
       ) : effectiveActions.includes('view') ? (
-        <VisibilityRoundedIcon 
+        <VisibilityRoundedIcon
           onClick={(e) => handleClick(e, "view")}
           title="View"
           className="action-icon"
         />
       ) : null}
-      
+
       {effectiveActions.includes('disable') && (
         <NotInterestedRoundedIcon
           onClick={(e) => handleClick(e, "disable")}
@@ -103,25 +110,25 @@ export default function TableActions({ status, actions, action, id }) {
           className="action-icon"
         />
       )}
-      
+
       {effectiveActions.includes('enable') && (
-        <DoneRoundedIcon 
+        <DoneRoundedIcon
           onClick={(e) => handleClick(e, "enable")}
           title="Enable"
           className="action-icon"
         />
       )}
-      
+
       {effectiveActions.includes('delete') && (
-        <DeleteOutlineRoundedIcon 
+        <DeleteOutlineRoundedIcon
           onClick={(e) => handleClick(e, "delete")}
           title="Delete"
           className="action-icon"
         />
       )}
-      
+
       {effectiveActions.includes('print') && (
-        <LocalPrintshopRoundedIcon 
+        <LocalPrintshopRoundedIcon
           onClick={(e) => handleClick(e, "print")}
           title="Print"
           className="action-icon"

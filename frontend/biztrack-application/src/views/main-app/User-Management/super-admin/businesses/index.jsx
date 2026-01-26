@@ -10,10 +10,9 @@ import { GET, POST, PUT, DELETE } from "../../../../../services/DatabaseServiceI
 import URLS from '../../../../../utilities/Endpoints';
 import "../../../../../App.css";
 import ActionModal from '../../../../../components/modal/ActionModal';
+import Toaster from '../../../../../components/Toaster';
 
 const businessTypes = ['Hotel', 'Kiosk', 'Hospital'];
-
-// Update initialFormData with correct keys
 const initialFormData = {
     businessName: '',
     registrationNumber: '',
@@ -31,7 +30,6 @@ const initialFormData = {
     owner: '',
 };
 
-// Helper Functions
 const getStatusColor = (status) => {
     switch (status) {
         case 'NEW': return 'text-orange-600';
@@ -40,11 +38,8 @@ const getStatusColor = (status) => {
         default: return 'text-gray-600';
     }
 };
-
-// Safe date handling function
 const safeDateToString = (dateValue) => {
     if (!dateValue) return 'Never';
-    
     try {
         const date = new Date(dateValue);
         if (isNaN(date.getTime())) {
@@ -52,17 +47,11 @@ const safeDateToString = (dateValue) => {
         }
         return date.toISOString().split('T')[0];
     } catch (error) {
-        console.warn('Invalid date value:', dateValue, error);
         return 'Never';
     }
 };
-
-// --- Main Component ---
-
 const BusinessesPage = () => {
     const theme = useTheme();
-
-    // Data states
     const [businesses, setBusinesses] = useState([]);
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
@@ -75,51 +64,47 @@ const BusinessesPage = () => {
         startDate: null,
         endDate: null
     });
-
-    // Modal states
     const [showCreateForm, setShowCreateForm] = useState(false);
     const [formMode, setFormMode] = useState('create');
     const [selectedBusiness, setSelectedBusiness] = useState(null);
-
-    // Loading states
     const [modalLoading, setModalLoading] = useState(false);
     const [modalLoadingText, setModalLoadingText] = useState('');
     const [createLoading, setCreateLoading] = useState(false);
     const [createLoadingText, setCreateLoadingText] = useState("");
-
-    // Content Loader states
     const [loadingState, setLoadingState] = useState(true);
     const [loadingText, setLoadingText] = useState("");
     const [loadedText, setLoadedText] = useState("");
-
-    // Reusable action modal hook
+    const [toaster, setToaster] = useState({
+        open: false,
+        state: 'true',
+        title: '',
+        message: '',
+    });
     const { modalState, openModal, closeModal, setReason, handleSubmit } = useActionModal();
-
-    // Helper function to safely extract data from API response
+    const showToaster = (state, title, message) => {
+        setToaster({
+            open: true,
+            state: state ? 'true' : 'false',
+            title,
+            message,
+        });
+    };
     const extractDataFromResponse = (response) => {
         if (!response) return [];
-        
         if (response.data !== undefined) {
             return Array.isArray(response.data) ? response.data : [response.data];
         }
-        
         if (Array.isArray(response)) {
             return response;
         }
-        
         if (response._doc) {
             return [response._doc];
         }
-        
         if (typeof response === 'object' && response !== null) {
             return [response];
         }
-        
         return [];
     };
-
-    // --- API Handlers ---
-
     const fetchBusinesses = useCallback(async () => {
         setLoading(true);
         setLoadingState(true);
@@ -127,20 +112,10 @@ const BusinessesPage = () => {
         setErrorMessage(null);
 
         try {
-            console.log('📋 Fetching businesses from:', URLS.BUSINESS.GET_ALL_BUSINESSES);
             const result = await GET(URLS.BUSINESS.GET_ALL_BUSINESSES);
-
-            // Handle response format using the helper function
             let businessData = extractDataFromResponse(result);
-
-            console.log('✅ Raw business API response:', result);
-            console.log('📦 Extracted business data:', businessData);
-
-            // Transform businesses for display
             const fetchedBusinesses = businessData.map(business => {
-                // Handle different response structures
                 const businessObj = business._doc || business;
-                
                 return {
                     id: businessObj.id || businessObj._id?.toString(),
                     businessId: businessObj.businessID || businessObj.businessId || '',
@@ -159,23 +134,22 @@ const BusinessesPage = () => {
                     owner: businessObj.owner || '',
                 };
             });
-
-            console.log('✅ Transformed businesses:', fetchedBusinesses);
             setBusinesses(fetchedBusinesses);
-
             setLoadingState(true);
             setLoadedText("Businesses loaded successfully");
+            showToaster(true, 'Success', 'Businesses loaded successfully');
             setTimeout(() => {
                 setLoading(false);
             }, 1000);
 
         } catch (error) {
             console.error('❌ Error fetching businesses:', error);
-            setErrorMessage('Failed to load businesses. Please try again.');
+            const errorMsg = 'Failed to load businesses. Please try again.';
+            setErrorMessage(errorMsg);
             setBusinesses([]);
-
             setLoadingState(false);
             setLoadedText("Failed to load businesses");
+            showToaster(false, 'Error', errorMsg);
             setTimeout(() => {
                 setLoading(false);
             }, 1000);
@@ -185,12 +159,8 @@ const BusinessesPage = () => {
     useEffect(() => {
         fetchBusinesses();
     }, [fetchBusinesses]);
-
-    // --- Modal Handlers with Loading ---
-
     const openModalWithLoader = async (modalType, business = null) => {
         setModalLoading(true);
-
         switch (modalType) {
             case 'create':
                 setModalLoadingText("Loading create form...");
@@ -204,7 +174,6 @@ const BusinessesPage = () => {
             default:
                 setModalLoadingText("Loading...");
         }
-
         await new Promise(resolve => setTimeout(resolve, 1000));
 
         if (business) {
@@ -228,10 +197,7 @@ const BusinessesPage = () => {
         } else {
             setSelectedBusiness(null);
         }
-
         setModalLoading(false);
-
-        // Set form mode and open modal
         setFormMode(modalType);
         setShowCreateForm(true);
     };
@@ -252,11 +218,8 @@ const BusinessesPage = () => {
             default:
                 setModalLoadingText("Loading...");
         }
-
         await new Promise(resolve => setTimeout(resolve, 1000));
-
         const businessName = business.name || 'this business';
-
         switch (actionType) {
             case 'enable':
                 openModal(
@@ -294,24 +257,18 @@ const BusinessesPage = () => {
 
         setModalLoading(false);
     };
-
-    // Modal openers
     const openCreateModal = () => openModalWithLoader('create');
     const openEditModal = (business) => openModalWithLoader('edit', business);
     const openEnableView = (business) => openModalWithLoader('view', business);
     const openEnableModal = (business) => openActionModalWithLoader('enable', business);
     const openDisableModal = (business) => openActionModalWithLoader('disable', business);
     const openDeleteModal = (business) => openActionModalWithLoader('delete', business);
-
     const closeAllModals = () => {
         setShowCreateForm(false);
         setSelectedBusiness(null);
         setErrorMessage(null);
         closeModal();
     };
-
-    // --- Form Submission with Content Loader ---
-
     const handleFormSubmit = async (values) => {
         setSubmitting(true);
         setCreateLoading(true);
@@ -319,75 +276,76 @@ const BusinessesPage = () => {
         setErrorMessage(null);
 
         try {
-            console.log('📤 Submitting business data:', values);
-
-            // Create FormData object
             const formData = new FormData();
-
-            // Append all form fields to FormData
-            Object.keys(values).forEach(key => {
-                if (key !== 'logoFile' && key !== 'logoUrl' && key !== 'id') {
-                    let value = values[key];
-
-                    // Convert status to lowercase for backend validation
-                    if (key === 'status') {
-                        value = value.toLowerCase();
-                        if (value === 'new') {
-                            value = 'active';
-                        }
-                    }
-
-                    if (value !== null && value !== undefined) {
-                        formData.append(key, value);
-                    }
+            const textFields = {
+                'businessName': values.businessName,
+                'registrationNumber': values.registrationNumber,
+                'address': values.address,
+                'businessType': values.businessType,
+                'email': values.email,
+                'phone': values.phone,
+                'website': values.website || '',
+                'description': values.description || '',
+                'primaryColor': values.primaryColor,
+                'status': values.status.toLowerCase(),
+                'owner': values.owner || '',
+            };
+            Object.entries(textFields).forEach(([key, value]) => {
+                if (value !== null && value !== undefined) {
+                    formData.append(key, value);
                 }
             });
-
-            // Append logo file if exists
-            if (values.logoFile instanceof File) {
+            if (values.logoFile && values.logoFile instanceof File) {
                 formData.append('logo', values.logoFile);
-                console.log('📎 Logo file appended:', values.logoFile.name);
+            } else if (formMode === 'edit') {
+                if (values.logoUrl === null || values.logoUrl === '') {
+                    formData.append('logoUrl', '');
+                } else if (values.logoUrl) {
+                    formData.append('logoUrl', values.logoUrl);
+                }
+            } else {
+                formData.append('logoUrl', '');
             }
-
             let response;
+            let url;
+            const token = localStorage.getItem('token') || '';
 
             if (formMode === 'edit' && values.id) {
-                console.log(`🔄 Updating business with ID: ${values.id}`);
-                response = await PUT(URLS.BUSINESS.UPDATE_BUSINESS.replace(':id', values.id), formData, {
+                url = URLS.BUSINESS.UPDATE_BUSINESS.replace(':id', values.id);
+                response = await PUT(url, formData, {
                     headers: {
-                        'Content-Type': 'multipart/form-data',
+                        'Authorization': `Bearer ${token}`,
                     },
                 });
-                console.log('✅ Update response:', response);
             } else {
-                console.log('➕ Creating new business');
-                response = await POST(URLS.BUSINESS.CREATE_BUSINESS, formData, {
+                url = URLS.BUSINESS.CREATE_BUSINESS;
+                response = await POST(url, formData, {
                     headers: {
-                        'Content-Type': 'multipart/form-data',
+                        'Authorization': `Bearer ${token}`,
                     },
                 });
-                console.log('✅ Create response:', response);
             }
-
-            // Show success state briefly before refreshing
-            setCreateLoadingText(formMode === 'edit' ? "Business updated successfully!" : "Business created successfully!");
+            const successMessage = formMode === 'edit'
+                ? `Business "${values.businessName}" updated successfully!`
+                : `Business "${values.businessName}" created successfully!`;
+            setCreateLoadingText(successMessage);
+            showToaster(true, 'Success', successMessage);
             await new Promise(resolve => setTimeout(resolve, 1500));
-
-            // Refresh data
             await fetchBusinesses();
             closeAllModals();
-
         } catch (error) {
-            console.error('❌ Error submitting business form:', error);
             let serverError = 'A server error occurred. Please try again.';
-
             if (error.response?.data?.message) {
                 serverError = error.response.data.message;
+            } else if (error.response?.data?.errors) {
+                const validationErrors = error.response.data.errors;
+                serverError = `Validation failed: ${validationErrors.map(err => err.message).join(', ')}`;
             } else if (error.message) {
                 serverError = error.message;
             }
-
-            setErrorMessage(`Failed: ${serverError}`);
+            const errorMessage = `Failed to ${formMode === 'edit' ? 'update' : 'create'} business: ${serverError}`;
+            setErrorMessage(errorMessage);
+            showToaster(false, 'Error', errorMessage);
             setCreateLoading(false);
         } finally {
             setSubmitting(false);
@@ -395,35 +353,38 @@ const BusinessesPage = () => {
         }
     };
 
-    // --- Action Handlers ---
-
     const handleDeleteBusiness = async (businessId, reason) => {
         try {
-            console.log('🗑️ Deleting business with ID:', businessId);
             const response = await DELETE(URLS.BUSINESS.DELETE_BUSINESS.replace(':id', businessId), { reason });
-            console.log('✅ Delete response:', response);
+
+            const business = businesses.find(b => b.id === businessId);
+            const businessName = business?.name || 'Business';
+            showToaster(true, 'Success', `Business "${businessName}" deleted successfully!`);
+            await fetchBusinesses();
         } catch (error) {
             console.error('Error deleting business:', error);
+            showToaster(false, 'Error', 'Failed to delete business. Please try again.');
             throw error;
         }
     };
 
     const handleToggleStatus = async (businessId, newStatus, reason) => {
         try {
-            console.log('🔄 Toggling business status:', businessId, 'New status:', newStatus);
-            const response = await PUT(URLS.BUSINESS.TOGGLE_BUSINESS_STATUS.replace(':id', businessId), { 
+            const response = await PUT(URLS.BUSINESS.TOGGLE_BUSINESS_STATUS.replace(':id', businessId), {
                 status: newStatus,
-                reason: reason 
+                reason: reason
             });
-            console.log('✅ Toggle status response:', response);
+            const business = businesses.find(b => b.id === businessId);
+            const businessName = business?.name || 'Business';
+            const statusMessage = newStatus === 'active' ? 'enabled' : 'disabled';
+            showToaster(true, 'Success', `Business "${businessName}" ${statusMessage} successfully!`);
+            await fetchBusinesses();
         } catch (error) {
             console.error('Error toggling status:', error);
+            showToaster(false, 'Error', 'Failed to update business status. Please try again.');
             throw error;
         }
     };
-
-    // --- Selection Handlers ---
-
     const toggleSelectAll = (filteredList) => {
         if (selectedItems.length === filteredList.length && filteredList.length > 0) {
             setSelectedItems([]);
@@ -431,15 +392,11 @@ const BusinessesPage = () => {
             setSelectedItems(filteredList.map(b => b.id));
         }
     };
-
     const toggleSelectItem = (id) => {
         setSelectedItems(prev =>
             prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
         );
     };
-
-    // --- Filtering ---
-
     const filteredBusinesses = businesses.filter(b => {
         const matchesSearch = b.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
             b.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -449,22 +406,23 @@ const BusinessesPage = () => {
         return matchesSearch && matchesStatus && matchesType;
     });
 
-    // --- Render Logic ---
-
-    // Show content loader during create/update operations
     if (createLoading) {
         return (
-            <div className="min-h-screen bg-white p-8">
-                <div className="max-w-7xl mx-auto">
+            <div className="min-h-screen bg-white p-3 xs:p-4 sm:p-6">
+                <div className="w-full max-w-7xl mx-auto">
                     <div className='main-app-view'>
-                        <div className="main-app-content-container">
-                            <ContentLoader
-                                state={true}
-                                loading={true}
-                                loadingText={createLoadingText}
-                                loadedText=""
-                                color={theme.primaryColor}
-                            />
+                        <div className="main-app-content-container w-full">
+                            <div className="w-full flex items-center justify-center min-h-[200px] sm:min-h-[300px]">
+                                <div className="w-full px-2 xs:px-4">
+                                    <ContentLoader
+                                        state={true}
+                                        loading={true}
+                                        loadingText={loadingText}
+                                        loadedText={loadedText}
+                                        color={theme.primaryColor}
+                                    />
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -472,20 +430,23 @@ const BusinessesPage = () => {
         );
     }
 
-    // Show loading state for initial page load
     if (loading) {
         return (
-            <div className="min-h-screen bg-white p-8">
-                <div className="max-w-7xl mx-auto">
+            <div className="min-h-screen bg-white p-3 xs:p-4 sm:p-6">
+                <div className="w-full max-w-7xl mx-auto">
                     <div className='main-app-view'>
-                        <div className="main-app-content-container">
-                            <ContentLoader
-                                state={loadingState}
-                                loading={loading}
-                                loadingText={loadingText}
-                                loadedText={loadedText}
-                                color="#1976d2"
-                            />
+                        <div className="main-app-content-container w-full">
+                            <div className="w-full flex items-center justify-center min-h-[200px] sm:min-h-[300px]">
+                                <div className="w-full px-2 xs:px-4">
+                                    <ContentLoader
+                                        state={true}
+                                        loading={true}
+                                        loadingText={loadingText}
+                                        loadedText={loadedText}
+                                        color={theme.primaryColor}
+                                    />
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -493,31 +454,43 @@ const BusinessesPage = () => {
         );
     }
 
-    // Show loading state for modal loading
     if (modalLoading) {
         return (
-            <div className="min-h-screen bg-white p-8">
-                <div className="max-w-7xl mx-auto">
+            <div className="min-h-screen bg-white p-3 xs:p-4 sm:p-6">
+                <div className="w-full max-w-7xl mx-auto">
                     <div className='main-app-view'>
-                        <div className="main-app-content-container">
-                            <ContentLoader
-                                state={true}
-                                loading={true}
-                                loadingText={modalLoadingText}
-                                loadedText=""
-                                color={theme.primaryColor}
-                            />
+                        <div className="main-app-content-container w-full">
+                            <div className="w-full flex items-center justify-center min-h-[200px] sm:min-h-[300px]">
+                                <div className="w-full px-2 xs:px-4">
+                                    <ContentLoader
+                                        state={true}
+                                        loading={true}
+                                        loadingText={loadingText}
+                                        loadedText={loadedText}
+                                        color={theme.primaryColor}
+                                    />
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
         );
+
     }
 
     return (
-        <div className="bg-white p-3">
+        <div className="min-h-screen bg-white p-8">
+            <Toaster
+                open={toaster.open}
+                state={toaster.state}
+                title={toaster.title}
+                message={toaster.message}
+                action={(open) => setToaster({ ...toaster, open })}
+                position="right"
+            />
+
             <div className="max-w-7xl mx-auto">
-                {/* Action Modal for enable/disable/delete */}
                 {modalState.isOpen && (
                     <ActionModal
                         isOpen={modalState.isOpen}
@@ -531,8 +504,6 @@ const BusinessesPage = () => {
                         customDescription={modalState.customDescription}
                     />
                 )}
-
-                {/* Create/Edit Business Form Modal */}
                 {showCreateForm && (
                     <CreateBusinessForm
                         showModal={showCreateForm}
@@ -546,8 +517,6 @@ const BusinessesPage = () => {
                         readOnly={formMode === 'view'}
                     />
                 )}
-
-                {/* Main Table View */}
                 {!showCreateForm && !modalState.isOpen && !modalLoading && !createLoading && (
                     <>
                         {businesses.length === 0 && filteredBusinesses.length === 0 && !searchTerm ? (

@@ -52,7 +52,7 @@ export default function RestockProductModal({
   show,
   product,
   onClose,
-  onSave, // Parent component handles the API call
+  onSave,
 }) {
   const { primaryColor } = useTheme();
   const [isLoading, setIsLoading] = useState(false);
@@ -67,7 +67,7 @@ export default function RestockProductModal({
   // Formik initialization
   const formik = useFormik({
     initialValues: {
-      addQuantity: 0
+      addQuantity: ""
     },
     validationSchema: restockValidationSchema,
     onSubmit: async (values) => {
@@ -80,7 +80,6 @@ export default function RestockProductModal({
           throw new Error('Product information is missing');
         }
 
-        // Get the product ID - based on parent component, it's using _id
         const productId = product._id || product.id;
         console.log('🔍 Product ID found:', productId);
         
@@ -91,7 +90,7 @@ export default function RestockProductModal({
 
         // Calculate new stock and status
         const currentStock = product.stock || 0;
-        const newStock = currentStock + values.addQuantity;
+        const newStock = currentStock + parseInt(values.addQuantity);
         const threshold = product.threshold || 0;
         const newStatus = newStock >= threshold
           ? "In Stock"
@@ -100,24 +99,19 @@ export default function RestockProductModal({
             : "Out of Stock";
 
         // Prepare the updated product data
-        // Note: The parent component's saveRestockedProduct expects:
-        // - _id for the product ID
-        // - stock and operation for the UPDATE_STOCK endpoint
         const updatedProduct = {
           ...product,
-          _id: productId, // Ensure _id is present
-          id: productId, // Include both for compatibility
+          _id: productId,
+          id: productId,
           stock: newStock,
           status: newStatus
         };
 
         console.log('🔄 Updated product data for parent:', updatedProduct);
         
-        // Call the parent's save function which handles the API call
-        // The parent uses: URLS.PRODUCTS.UPDATE_STOCK with stock and operation
+        // Call the parent's save function
         await onSave(updatedProduct);
         
-        // Success toast will be handled by parent
         // Reset form and close modal after successful save
         formik.resetForm();
         onClose();
@@ -135,13 +129,14 @@ export default function RestockProductModal({
   // Reset form when modal opens/closes
   useEffect(() => {
     if (show) {
-      formik.resetForm({ values: { addQuantity: 0 } });
+      formik.resetForm({ values: { addQuantity: "" } });
     }
   }, [show]);
 
   // Calculate preview values with safe defaults
   const currentStock = product ? (product.stock || 0) : 0;
-  const newStock = currentStock + (formik.values.addQuantity || 0);
+  const addQuantity = formik.values.addQuantity === "" ? 0 : parseInt(formik.values.addQuantity) || 0;
+  const newStock = currentStock + addQuantity;
   const threshold = product ? (product.threshold || 0) : 0;
   const newStatus = product ? (
     newStock >= threshold
@@ -169,17 +164,6 @@ export default function RestockProductModal({
     if (!isLoading) {
       formik.resetForm();
       onClose();
-    }
-  };
-
-  // Custom handleChange for quantity input
-  const handleQuantityChange = (e) => {
-    const value = e.target.value;
-    if (value === '') {
-      formik.setFieldValue('addQuantity', '');
-    } else {
-      const numValue = parseInt(value) || 0;
-      formik.setFieldValue('addQuantity', numValue);
     }
   };
 
@@ -278,18 +262,18 @@ export default function RestockProductModal({
                     name="addQuantity"
                     label="Add Stock Quantity"
                     type="number"
-                    value={formik.values.addQuantity === 0 ? "" : formik.values.addQuantity}
-                    handleInput={handleQuantityChange}
-                    onBlur={formik.handleBlur}
+                    input={formik.values.addQuantity}
+                    handleInput={formik.handleChange}
+                    handleBlur={formik.handleBlur}
                     placeholder="Enter quantity to add"
                     required={true}
                     min="1"
                     error={formik.touched.addQuantity && Boolean(formik.errors.addQuantity)}
-                    helperText={formik.touched.addQuantity && formik.errors.addQuantity}
+                    errorMessage={formik.touched.addQuantity && formik.errors.addQuantity}
                   />
                   
                   {/* Preview Section */}
-                  {formik.values.addQuantity > 0 && (
+                  {addQuantity > 0 && (
                     <Box sx={{ mt: 2, p: 2, backgroundColor: '#f8f9fa', borderRadius: 1 }}>
                       <p className="text-sm font-semibold text-gray-700 mb-2">Preview Changes:</p>
                       <div className="grid grid-cols-2 gap-2 text-sm">
@@ -357,7 +341,7 @@ export default function RestockProductModal({
                 color={primaryColor}
                 validation={true}
                 action={formik.handleSubmit}
-                disabled={isLoading || !formik.isValid || formik.values.addQuantity <= 0}
+                disabled={isLoading || !formik.isValid || addQuantity <= 0}
                 type="submit"
               />
             </DialogActions>

@@ -18,28 +18,23 @@ const MainLayout = ({ children, sidebarOpen, toggleSidebar }) => {
       <div className="flex flex-col flex-1 overflow-hidden">
         <Topbar toggleSidebar={toggleSidebar} openProfile={handleOpenProfile} />
 
-        {/* Main content with adjusted margins */}
-        <main className="flex-1 overflow-y-auto px-6 py-4">
-          {" "}
-          {/* Changed padding here */}
-          <div
-            className="h-full mx-auto"
-            style={{
-              marginLeft: "10px",
-              marginRight: "10px",
-              maxWidth: "calc(100% - 20px)" /* Adjusts for the margins */,
-            }}
-          >
-            {/* Render the profile view or children */}
-            {profileViewOpen ? (
-              <MyProfile onClose={handleCloseProfile} />
-            ) : (
-              children
-            )}
+        {/* Main content with scrolling that includes footer */}
+        <main className="flex-1 overflow-y-auto">
+          <div className="min-h-full flex flex-col">
+            {/* Content area with bottom padding to account for footer */}
+            <div className="flex-1 pb-20">
+              {/* Render the profile view or children */}
+              {profileViewOpen ? (
+                <MyProfile onClose={handleCloseProfile} />
+              ) : (
+                children
+              )}
+            </div>
+
+            {/* Footer at the bottom */}
+            <Footer />
           </div>
         </main>
-
-        <Footer />
       </div>
     </div>
   );

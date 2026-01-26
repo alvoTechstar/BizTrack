@@ -1,45 +1,51 @@
 import React from "react";
 import {
   Store as BusinessIcon,
-  Group as AdminIcon, // Using a more appropriate icon for Admins
+  People as UsersIcon,
   Receipt as TransactionIcon,
   AttachMoney as RevenueIcon,
 } from "@mui/icons-material";
 
-const KPICards = ({ data, onCardClick }) => {
-  // Accept onCardClick prop
+const KPICards = ({ data = {}, onCardClick }) => {
+  const safeData = {
+    totalBusinesses: data.totalBusinesses || 0,
+    totalUsers: data.totalUsers || 0, 
+    totalTransactions: data.totalTransactions || 0,
+    totalRevenue: data.totalRevenue || 0,
+  };
+
   const cards = [
     {
-      id: "businesses", // ID to identify which card was clicked
+      id: "businesses",
       title: "Total Businesses",
-      value: data.totalBusinesses,
+      value: safeData.totalBusinesses.toLocaleString(), 
       icon: <BusinessIcon fontSize="large" className="text-blue-600" />,
       bgColor: "bg-blue-50",
       iconBg: "bg-blue-100",
       hover: "hover:scale-105 hover:shadow-blue-300",
     },
     {
-      id: "admins", // ID for the admins card
-      title: "Total Admins",
-      value: data.totalAdmins,
-      icon: <AdminIcon fontSize="large" className="text-indigo-600" />,
+      id: "admins",
+      title: "Total Users",
+      value: safeData.totalUsers.toLocaleString(),
+      icon: <UsersIcon fontSize="large" className="text-indigo-600" />, 
       bgColor: "bg-indigo-50",
       iconBg: "bg-indigo-100",
       hover: "hover:scale-105 hover:shadow-indigo-300",
     },
     {
-      id: "transactions", // ID for the transactions card
+      id: "transactions",
       title: "Total Transactions",
-      value: data.totalTransactions.toLocaleString(),
+      value: safeData.totalTransactions.toLocaleString(),
       icon: <TransactionIcon fontSize="large" className="text-green-600" />,
       bgColor: "bg-green-50",
       iconBg: "bg-green-100",
       hover: "hover:-translate-y-1 hover:shadow-green-300",
     },
     {
-      id: "revenue", // ID for the revenue card
+      id: "revenue",
       title: "Total Revenue",
-      value: `KSh ${data.totalRevenue.toLocaleString()}`,
+      value: `KSh ${safeData.totalRevenue.toLocaleString()}`,
       icon: <RevenueIcon fontSize="large" className="text-purple-600" />,
       bgColor: "bg-purple-50",
       iconBg: "bg-purple-100",
@@ -52,7 +58,6 @@ const KPICards = ({ data, onCardClick }) => {
       {cards.map((card) => (
         <div
           key={card.id}
-          // Call the passed-in function with the card's ID
           onClick={() => onCardClick(card.id)}
           className={`rounded-lg p-4 shadow-sm transition-all transform cursor-pointer ${card.bgColor} ${card.hover}`}
         >

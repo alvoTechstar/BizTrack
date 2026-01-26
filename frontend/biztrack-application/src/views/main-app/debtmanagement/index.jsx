@@ -187,9 +187,7 @@ const DebtManagement = () => {
       if (response.success) {
         console.log('✅ All transactions received:', response.transactions?.length || 0);
 
-        // Filter for debt transactions
         const debtTransactions = response.transactions.filter(transaction => {
-          // Check if it's a debt transaction
           const isDebtTransaction =
             transaction.type === 'debt' ||
             transaction.transactionType === 'debt' ||
@@ -209,7 +207,6 @@ const DebtManagement = () => {
 
         console.log('💰 Debt transactions found:', debtTransactions.length);
 
-        // Log each debt transaction for debugging
         debtTransactions.forEach((transaction, index) => {
           console.log(`Debt ${index + 1}:`, {
             id: transaction._id,
@@ -226,24 +223,21 @@ const DebtManagement = () => {
         const transformedDebts = debtTransactions.map(transaction => {
           const amount = transaction.totalAmount || 0;
 
-          // Determine if debt is paid
           const isPaid =
             transaction.status === 'completed' ||
             transaction.paymentStatus === 'paid' ||
-            transaction.paymentMethod !== 'debt'; // If paymentMethod is not 'debt', it's likely paid
+            transaction.paymentMethod !== 'debt';
 
-          // Determine status
           let status = transaction.status || 'pending';
           if (isPaid) {
             status = 'completed';
           }
 
-          // Calculate due date (7 days from creation if not set)
           const createdAt = transaction.timestamp || transaction.createdAt;
           let dueDate = transaction.dueDate || transaction.expectedPaymentDate;
           if (!dueDate && createdAt) {
             const createdDate = new Date(createdAt);
-            createdDate.setDate(createdDate.getDate() + 7); // 7 days credit
+            createdDate.setDate(createdDate.getDate() + 7);
             dueDate = createdDate.toISOString();
           }
 
@@ -396,14 +390,12 @@ const DebtManagement = () => {
         throw new Error('Transaction ID not found');
       }
 
-      // FIX: Check if the URL endpoint exists and has the correct format
       let updateEndpoint;
       if (URLS.TRANSACTIONS?.UPDATE_TRANSACTION) {
         updateEndpoint = URLS.TRANSACTIONS.UPDATE_TRANSACTION.replace(':id', transactionId);
       } else if (URLS.TRANSACTIONS?.UPDATE) {
         updateEndpoint = URLS.TRANSACTIONS.UPDATE.replace(':id', transactionId);
       } else {
-        // Fallback to a generic endpoint
         updateEndpoint = `/api/transactions/${transactionId}`;
         console.warn('Using fallback transaction update endpoint');
       }
@@ -417,7 +409,6 @@ const DebtManagement = () => {
         throw new Error(errorMsg);
       }
 
-      // Handle M-PESA payment if needed
       if (paymentMethod === 'M-PESA' && phone && URLS.MPESA?.STK_PUSH) {
         setMpesaLoading(true);
         const mpesaTransactionId = selectedDebt.transactionId || transactionId;
@@ -437,11 +428,9 @@ const DebtManagement = () => {
           }
         } catch (mpesaError) {
           console.error('M-PESA API error:', mpesaError);
-          // Continue even if M-PESA fails - transaction is still saved
         }
       }
 
-      // Update local state
       setDebts(prevDebts =>
         prevDebts.map(debt =>
           debt.id === selectedDebt.id
@@ -475,7 +464,6 @@ const DebtManagement = () => {
       showNotification(notificationMessage, "success");
       closeAllModals();
 
-      // Refresh data after 1 second
       setTimeout(() => {
         fetchDebts();
       }, 1000);
@@ -549,9 +537,9 @@ const DebtManagement = () => {
         expectedPaymentDate: formatDate(debt.dueDate || debt.expectedPaymentDate),
         datePaid: isPaid ? formatDate(debt.datePaid || debt.paidAt) : "Not Paid",
         isPaid: isPaid,
-        // Make sure items are included
         items: debt.items || [],
-        originalData: debt
+        originalData: debt,
+        availableActions: isPaid ? ['view'] : ['view', 'pay'] // Add this
       };
     });
   }, [filteredDebts, formatCurrency, formatDate, isOverdue]);
@@ -566,11 +554,10 @@ const DebtManagement = () => {
     setMpesaPhone("");
   };
 
-  // Loading states
   if (operationLoading || modalLoading) {
     return (
-      <div className="min-h-screen bg-white p-8">
-        <div className="max-w-7xl mx-auto">
+      <div className="min-h-screen bg-white p-2 sm:p-3 md:p-4">
+        <div className="max-w-full mx-auto">
           <div className='main-app-view'>
             <div className="main-app-content-container">
               <ContentLoader
@@ -589,8 +576,8 @@ const DebtManagement = () => {
 
   if (loading && debts.length === 0) {
     return (
-      <div className="min-h-screen bg-white p-8">
-        <div className="max-w-7xl mx-auto">
+      <div className="min-h-screen bg-white p-2 sm:p-3 md:p-4">
+        <div className="max-w-full mx-auto">
           <div className='main-app-view'>
             <div className="main-app-content-container">
               <ContentLoader
@@ -609,13 +596,13 @@ const DebtManagement = () => {
 
   if (!businessInfo.businessId && !loading) {
     return (
-      <div className="min-h-screen bg-white p-6 flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-xl font-bold text-gray-700 mb-2">Business Not Available</h2>
-          <p className="text-gray-600 mb-4">Unable to load debts. Your account is not associated with any business.</p>
+      <div className="min-h-screen bg-white p-2 sm:p-3 flex items-center justify-center">
+        <div className="text-center max-w-md">
+          <h2 className="text-sm sm:text-base font-bold text-gray-700 mb-1">Business Not Available</h2>
+          <p className="text-gray-600 mb-2 text-xs sm:text-sm">Unable to load debts.</p>
           <button
             onClick={() => window.location.reload()}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            className="px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-xs"
           >
             Retry
           </button>
@@ -629,10 +616,10 @@ const DebtManagement = () => {
 
   if (isAnyModalOpen) {
     return (
-      <div className="min-h-screen bg-white p-6 flex items-center justify-center">
-        <div className="w-full max-w-7xl mx-auto flex flex-col items-center justify-center">
+      <div className="min-h-screen bg-white p-1 sm:p-2 md:p-3 flex items-center justify-center">
+        <div className="w-full max-w-full mx-auto flex flex-col items-center justify-center">
           {showDetailModal && (
-            <div className="w-full max-w-4xl">
+            <div className="w-full max-w-full md:max-w-4xl">
               <DebtDetailModal
                 showDetailModal={showDetailModal}
                 setShowDetailModal={setShowDetailModal}
@@ -648,7 +635,7 @@ const DebtManagement = () => {
           )}
 
           {showPaymentOptionsModal && (
-            <div className="w-full max-w-md">
+            <div className="w-full max-w-full sm:max-w-md">
               <PaymentOptionsModal
                 showPaymentOptionsModal={showPaymentOptionsModal}
                 setShowPaymentOptionsModal={setShowPaymentOptionsModal}
@@ -663,7 +650,7 @@ const DebtManagement = () => {
           )}
 
           {showCashPaymentModal && (
-            <div className="w-full max-w-md">
+            <div className="w-full max-w-full sm:max-w-md">
               <CashPaymentModal
                 isOpen={showCashPaymentModal}
                 onClose={() => {
@@ -681,7 +668,7 @@ const DebtManagement = () => {
           )}
 
           {showMpesaPaymentModal && (
-            <div className="w-full max-w-md">
+            <div className="w-full max-w-full sm:max-w-md">
               <MpesaPaymentModal
                 isOpen={showMpesaPaymentModal}
                 onClose={() => {
@@ -713,38 +700,38 @@ const DebtManagement = () => {
   }
 
   return (
-    <div className="min-h-screen bg-white p-6">
-      <div className="max-w-7xl mx-auto">
-        <div className="mb-8">
-          <div className="flex justify-between items-center">
+    <div className="min-h-screen bg-white p-1 sm:p-2 md:p-3 lg:p-4">
+      <div className="max-w-full mx-auto">
+        <div className="mb-1 sm:mb-2 md:mb-3">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-2">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">
+              <h1 className="text-base sm:text-lg md:text-xl font-bold text-gray-900 mb-0.5">
                 Debt Management
               </h1>
-              <p className="text-gray-600">
-                Track and manage all customer debts and recoveries
+              <p className="text-xs sm:text-sm text-gray-600">
+                Track and manage customer debts
               </p>
               {businessInfo.businessName && (
-                <p className="text-gray-500 text-sm mt-1">
+                <p className="text-gray-500 text-xs mt-0.5">
                   Business: {businessInfo.businessName}
                 </p>
               )}
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-1">
               <button
                 onClick={generatePaymentReport}
-                className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                className="flex items-center gap-1 px-1.5 py-1 sm:px-2 sm:py-1 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors text-xs sm:text-sm"
               >
-                <TrendingUp className="h-4 w-4" />
-                Generate Report
+                <TrendingUp className="h-3 w-3" />
+                <span className="hidden xs:inline">Report</span>
               </button>
               <button
                 onClick={fetchDebts}
                 disabled={loading}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center gap-1 px-1.5 py-1 sm:px-2 sm:py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-xs sm:text-sm"
               >
-                <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-                {loading ? 'Refreshing...' : 'Refresh'}
+                <RefreshCw className={`h-3 w-3 ${loading ? 'animate-spin' : ''}`} />
+                {loading ? 'Refreshing' : 'Refresh'}
               </button>
             </div>
           </div>
@@ -756,49 +743,49 @@ const DebtManagement = () => {
           debts={debts}
         />
 
-        <div className="mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <div className="flex items-center gap-3">
-                <div className="bg-blue-100 p-2 rounded-lg">
-                  <CreditCard className="h-5 w-5 text-blue-600" />
+        <div className="mb-2 sm:mb-3">
+          <div className="grid grid-cols-2 xs:grid-cols-2 sm:grid-cols-4 gap-1 sm:gap-1.5">
+            <div className="bg-blue-50 border border-blue-200 rounded p-1.5 sm:p-2">
+              <div className="flex items-center gap-1 sm:gap-1.5">
+                <div className="bg-blue-100 p-1 rounded">
+                  <CreditCard className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-blue-600" />
                 </div>
-                <div>
-                  <p className="text-sm font-medium text-blue-700">Total Debt Records</p>
-                  <p className="text-xl font-bold text-blue-900">{debts.length}</p>
-                </div>
-              </div>
-            </div>
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-              <div className="flex items-center gap-3">
-                <div className="bg-green-100 p-2 rounded-lg">
-                  <CheckCircle className="h-5 w-5 text-green-600" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-green-700">Recovered Debts</p>
-                  <p className="text-xl font-bold text-green-900">{summary.completedCount}</p>
+                <div className="min-w-0">
+                  <p className="text-[10px] xs:text-xs font-medium text-blue-700 truncate">Total Debt</p>
+                  <p className="text-sm sm:text-base font-bold text-blue-900">{debts.length}</p>
                 </div>
               </div>
             </div>
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-              <div className="flex items-center gap-3">
-                <div className="bg-yellow-100 p-2 rounded-lg">
-                  <AlertTriangle className="h-5 w-5 text-yellow-600" />
+            <div className="bg-green-50 border border-green-200 rounded p-1.5 sm:p-2">
+              <div className="flex items-center gap-1 sm:gap-1.5">
+                <div className="bg-green-100 p-1 rounded">
+                  <CheckCircle className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-green-600" />
                 </div>
-                <div>
-                  <p className="text-sm font-medium text-yellow-700">Pending Debts</p>
-                  <p className="text-xl font-bold text-yellow-900">{summary.pendingCount}</p>
+                <div className="min-w-0">
+                  <p className="text-[10px] xs:text-xs font-medium text-green-700 truncate">Recovered</p>
+                  <p className="text-sm sm:text-base font-bold text-green-900">{summary.completedCount}</p>
                 </div>
               </div>
             </div>
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-              <div className="flex items-center gap-3">
-                <div className="bg-red-100 p-2 rounded-lg">
-                  <AlertTriangle className="h-5 w-5 text-red-600" />
+            <div className="bg-yellow-50 border border-yellow-200 rounded p-1.5 sm:p-2">
+              <div className="flex items-center gap-1 sm:gap-1.5">
+                <div className="bg-yellow-100 p-1 rounded">
+                  <AlertTriangle className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-yellow-600" />
                 </div>
-                <div>
-                  <p className="text-sm font-medium text-red-700">Overdue Debts</p>
-                  <p className="text-xl font-bold text-red-900">{summary.overdueCount}</p>
+                <div className="min-w-0">
+                  <p className="text-[10px] xs:text-xs font-medium text-yellow-700 truncate">Pending</p>
+                  <p className="text-sm sm:text-base font-bold text-yellow-900">{summary.pendingCount}</p>
+                </div>
+              </div>
+            </div>
+            <div className="bg-red-50 border border-red-200 rounded p-1.5 sm:p-2">
+              <div className="flex items-center gap-1 sm:gap-1.5">
+                <div className="bg-red-100 p-1 rounded">
+                  <AlertTriangle className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-red-600" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[10px] xs:text-xs font-medium text-red-700 truncate">Overdue</p>
+                  <p className="text-sm sm:text-base font-bold text-red-900">{summary.overdueCount}</p>
                 </div>
               </div>
             </div>
@@ -813,34 +800,34 @@ const DebtManagement = () => {
         />
 
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-            <div className="flex items-center gap-2 text-red-800">
-              <AlertTriangle className="h-5 w-5" />
-              <span>{error}</span>
+          <div className="bg-red-50 border border-red-200 rounded p-1.5 mb-2">
+            <div className="flex items-center gap-1 text-red-800">
+              <AlertTriangle className="h-3 w-3" />
+              <span className="text-xs">{error}</span>
             </div>
           </div>
         )}
 
         {debts.length === 0 && !loading ? (
-          <div className="text-center py-12 bg-gray-50 rounded-lg border border-gray-200">
-            <CreditCard className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-700 mb-2">No Debt Transactions Found</h3>
-            <p className="text-gray-500">
-              No debt transactions recorded for your business.
-              <br />
-              <span className="text-sm">Debt transactions appear when customers buy on credit in the sales system.</span>
+          <div className="text-center py-3 sm:py-4 bg-gray-50 rounded border border-gray-200 px-2 mt-2">
+            <CreditCard className="h-5 w-5 sm:h-6 sm:w-6 text-gray-400 mx-auto mb-1.5" />
+            <h3 className="text-sm font-medium text-gray-700 mb-1">No Debt Transactions</h3>
+            <p className="text-gray-500 text-xs">
+              No debt transactions recorded yet.
             </p>
           </div>
         ) : (
-          <DebtDataTable
-            tableData={tableData}
-            selectedRows={selectedRows}
-            setSelectedRows={setSelectedRows}
-            handleRowSelect={handleRowSelect}
-            handleActionSelected={handleActionSelected}
-            setSelectAll={setSelectAll}
-            searchFilter={searchFilter}
-          />
+          <div className="overflow-x-auto -mx-1 sm:mx-0">
+            <DebtDataTable
+              tableData={tableData}
+              selectedRows={selectedRows}
+              setSelectedRows={setSelectedRows}
+              handleRowSelect={handleRowSelect}
+              handleActionSelected={handleActionSelected}
+              setSelectAll={setSelectAll}
+              searchFilter={searchFilter}
+            />
+          </div>
         )}
       </div>
 
